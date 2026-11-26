@@ -26,6 +26,14 @@ Rectangle {
     signal bookmarksRequested()
     signal importRequested()
     signal welcomeRequested()
+    property var extensions: []
+    property bool fetchingExtension
+    signal addFromStore(string typed)
+    signal addFromFile(string path)
+    signal openStore()
+    signal openExtensionPage(url address)
+    signal enableExtension(var extension, bool on)
+    signal removeExtension(var extension)
 
     readonly property string folderShown: downloadFolder !== "" ? downloadFolder
         : decodeURIComponent(String(StandardPaths.writableLocation(StandardPaths.DownloadLocation)).replace("file://", ""))
@@ -37,6 +45,7 @@ Rectangle {
         { key: "tabs", icon: "panel", label: Lang.t("Sekmeler", "Tabs") },
         { key: "privacy", icon: "shield", label: Lang.t("Gizlilik", "Privacy") },
         { key: "passwords", icon: "key", label: Lang.t("Parolalar", "Passwords") },
+        { key: "extensions", icon: "puzzle", label: Lang.t("Eklentiler", "Extensions") },
         { key: "bookmarks", icon: "star", label: Lang.t("Yer imleri", "Bookmarks") },
         { key: "keys", icon: "command", label: Lang.t("Kısayollar", "Shortcuts") },
         { key: "about", icon: "alert", label: Lang.t("Hakkında", "About") }
@@ -260,6 +269,20 @@ Rectangle {
                         neverSites: page.neverSites
                         onAllow: origin => page.askAgain(origin)
                     }
+                }
+
+                // ---- extensions ----
+                ExtensionList {
+                    visible: page.section === "extensions"
+                    Layout.fillWidth: true
+                    extensions: page.extensions
+                    busy: page.fetchingExtension
+                    onAddFromStore: typed => page.addFromStore(typed)
+                    onAddFromFile: path => page.addFromFile(path)
+                    onOpenStore: page.openStore()
+                    onOpenPage: address => page.openExtensionPage(address)
+                    onEnable: (extension, on) => page.enableExtension(extension, on)
+                    onRemove: extension => page.removeExtension(extension)
                 }
 
                 // ---- bookmarks ----

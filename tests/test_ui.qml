@@ -162,7 +162,7 @@ Item {
             const made = count()
             w.openSettings(); t.check("the same tab is used again", w.current === settingsAt && count() === made && w.prefs.section === "privacy")
             for (const s of w.prefs.sections) w.openSettings(s.key)
-            t.check("every category opens", w.prefs.section === "about" && w.prefs.sections.length === 8)
+            t.check("every category opens", w.prefs.section === "about" && w.prefs.sections.length === 9)
             t.check("the command box finds the settings tab", bar.find("ayarlar").some(r => r.kind === "tab"))
             w.view.url = t.page("left"); t.check("going somewhere makes it an ordinary tab", !w.onSettings)
             w.closeTab(w.current)
@@ -366,10 +366,57 @@ Item {
                 Passwords.store = [{ origin: "https://other.example", user: "o", password: "p" }]
                 w.view.runJavaScript(w.loginScript.fill("https://other.example", "o", "p"), WebEngineScript.ApplicationWorld, done => {
                     t.check("another site's password is refused by the page script too", done === false)
-                    console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
-                    Qt.exit(t.failed)
+                    // extensions: nothing happens before a yes
+                    w.askExtension("not an extension", false)
+                    t.check("a wrong store address is refused", w.wantedExtension === null && !w.extensionQuestion.opened)
+                    w.askExtension("https://chromewebstore.google.com/detail/x/" + "a".repeat(32), false)
+                    t.check("installing asks first", w.wantedExtension !== null && WebStore.fetched.length === 0)
+                    w.addExtension()
+                    t.check("then it is fetched, and a failure is told", WebStore.fetched.length === 1 && !w.fetchingExtension && w.notice !== "")
+                    w.extensionQuestion.close()
+                    t.check("the engine's built-in extensions are not listed", w.extensions.length === 0)
+                    w.askExtension(String(Qt.resolvedUrl("extension")).replace("file://", ""), true)
+                    w.addExtension(); w.extensionQuestion.close()
+                    installedStep.start()
                 })
             })
+        }
+    }
+    Timer {
+        id: installedStep; interval: 2500
+        onTriggered: {
+            const w = t.w
+            t.check("an extension of our own is installed and on", w.extensions.length === 1 && w.extensions[0].name === "Velum test extension" && w.extensions[0].isEnabled)
+            w.view.loadHtml("<p>sayfa</p>", "https://ext.example/")
+            ranStep.start()
+        }
+    }
+    Timer {
+        id: ranStep; interval: 2000
+        onTriggered: {
+            const w = t.w
+            w.view.runJavaScript("document.documentElement.getAttribute('data-velum-extension')", mark => {
+                t.check("its content script runs on a matching page", mark === "ran")
+                w.enableExtension(w.extensions[0], false)
+                offStep.start()
+            })
+        }
+    }
+    Timer {
+        id: offStep; interval: 1000
+        onTriggered: {
+            const w = t.w
+            t.check("it can be switched off", w.extensions.length === 1 && !w.extensions[0].isEnabled)
+            w.removeExtension(w.extensions[0])
+            removedStep.start()
+        }
+    }
+    Timer {
+        id: removedStep; interval: 2000
+        onTriggered: {
+            t.check("and removed", t.w.extensions.length === 0)
+            console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
+            Qt.exit(t.failed)
         }
     }
     Timer {

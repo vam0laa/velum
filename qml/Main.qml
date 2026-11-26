@@ -20,6 +20,10 @@ ApplicationWindow {
     property bool welcomed: false
     property alias welcome: welcome
     property alias prefs: prefs
+    property var extensions: []             // the installed ones
+    property bool fetchingExtension: false
+    property var wantedExtension: null      // waiting for your yes: { text, file }
+    property alias extensionQuestion: extensionDialog
     readonly property bool onSettings: view !== null && view.kind === "settings"
     property bool pageFullScreen: false
     property int moves: 0             // counts reorderings, so that "view" is looked up again
@@ -87,6 +91,11 @@ ApplicationWindow {
         shortcuts = readList(saved.shortcuts)
         neverSave = readStrings(saved.neverSave)
         watchLogins()
+        const manager = profile.extensionManager
+        manager.installFinished.connect(extensionInstalled)
+        manager.uninstallFinished.connect(() => Qt.callLater(refreshExtensions))
+        manager.loadFinished.connect(() => Qt.callLater(refreshExtensions))
+        refreshExtensions()
         spaces = readSpaces(saved.spaces)
         if (!spaces.some(s => s.id === space))
             space = spaces[0].id
@@ -823,6 +832,71 @@ ApplicationWindow {
         })
     }
 
+    // ---- extensions ----
+    function refreshExtensions() {
+        const all = profile.extensionManager.extensions
+        const out = []
+        for (let i = 0; i < all.length; i++)
+            if (all[i].isInstalled)          // the engine's own built-in ones are not listed
+                out.push(all[i])
+        extensions = out
+    }
+
+    // nothing is fetched or installed before you agree
+    function askExtension(text, file) {
+        if (!file && WebStore.idFrom(text) === "") {
+            say(Lang.t("Bu bir Web Store adresi ya da eklenti kimliği değil.", "That is not a Web Store address or an extension id."))
+            return
+        }
+        wantedExtension = { text: String(text), file: file === true }
+        extensionDialog.open()
+    }
+
+    function addExtension() {
+        const wanted = wantedExtension
+        wantedExtension = null
+        if (!wanted)
+            return
+        if (wanted.file) {
+            profile.extensionManager.installExtension(wanted.text)
+            return
+        }
+        fetchingExtension = true
+        say(Lang.t("Eklenti indiriliyor…", "Fetching the extension…"))
+        WebStore.fetch(wanted.text, (path, problem) => {
+            fetchingExtension = false
+            if (path !== "") {
+                fetched = path
+                profile.extensionManager.installExtension(path)
+            } else if (problem === "signature") {
+                say(Lang.t("Paketin imzası doğrulanamadı; kurulmadı.", "The package's signature did not check out; it was not installed."))
+            } else {
+                say(Lang.t("Eklenti indirilemedi.", "The extension could not be fetched."))
+            }
+        })
+    }
+    property string fetched: ""       // the downloaded package being installed
+
+    function extensionInstalled(extension) {
+        if (fetched !== "") {
+            WebStore.discard(fetched)
+            fetched = ""
+        }
+        if (extension.error !== "") {
+            say(Lang.t("Eklenti kurulamadı: ", "The extension could not be installed: ") + extension.error)
+        } else {
+            profile.extensionManager.setExtensionEnabled(extension, true)
+            say(Lang.t(extension.name + " eklendi.", extension.name + " was added."))
+        }
+        Qt.callLater(refreshExtensions)
+    }
+
+    function enableExtension(extension, on) {
+        profile.extensionManager.setExtensionEnabled(extension, on)
+        Qt.callLater(refreshExtensions)
+    }
+    function removeExtension(extension) { profile.extensionManager.uninstallExtension(extension) }
+
     function say(text) {
         notice = text
         noticeTimer.restart()
@@ -1010,7 +1084,8 @@ ApplicationWindow {
             id: side
             Layout.fillHeight: true
             visible: !window.pageFullScreen && !window.horizontalTabs
-            compact: window.compactSidebar
+            // a narrow window keeps its room for the page
+            compact: window.compactSidebar || window.width < 640
             onToggle: window.compactSidebar = !window.compactSidebar
             onSearch: window.editAddress()
             view: window.view
@@ -1078,6 +1153,8 @@ ApplicationWindow {
             onMinimize: window.compactSidebar = !window.compactSidebar
             onMaximize: window.toggleWindowFullScreen()
             onCloseRequested: window.closeTab(window.current)
+            storeButton: window.view !== null && !window.fetchingExtension && WebStore.idFrom(window.view.url) !== ""
+            onStore: window.askExtension(String(window.view.url), false)
             keyButton: !window.onStartPage && (window.view?.accounts.length ?? 0) > 0
             onFill: window.fillPassword()
             readerButton: !window.onStartPage && window.view !== null && window.view !== window.miniPage && (window.view.readable || window.view.reading)
@@ -1441,6 +1518,14 @@ ApplicationWindow {
                 onBookmarksRequested: window.openBookmarks()
                 onImportRequested: window.openImport()
                 onWelcomeRequested: welcome.open()
+                extensions: window.extensions
+                fetchingExtension: window.fetchingExtension
+                onAddFromStore: typed => window.askExtension(typed, false)
+                onAddFromFile: path => window.askExtension(path, true)
+                onOpenStore: window.openTab("https://chromewebstore.google.com/")
+                onOpenExtensionPage: address => window.openTab(String(address))
+                onEnableExtension: (extension, on) => window.enableExtension(extension, on)
+                onRemoveExtension: extension => window.removeExtension(extension)
             }
 
             StartPage {
@@ -1491,6 +1576,15 @@ ApplicationWindow {
         onConfirmed: { History.clear(); Shield.clearData(window.profile) }
     }
 
+    ConfirmDialog {
+        id: extensionDialog
+        heading: Lang.t("Bu eklenti kurulsun mu?", "Install this extension?")
+        detail: Lang.t("Eklentiler gezdiğin sayfaları okuyup değiştirebilir, yazdığın parolaları da görebilir. Yalnızca güvendiğini kur.", "Extensions can read and change the pages you visit, including passwords you type. Install only what you trust.")
+                + (window.wantedExtension && !window.wantedExtension.file ? Lang.t(" Paket için Google'a bağlanılacak.", " Google will be contacted for the package.") : "")
+        action: Lang.t("Kur", "Install")
+        onConfirmed: window.addExtension()
+    }
+
     BookmarksPage {
         id: bookmarksPage
         items: window.shortcuts
@@ -1531,6 +1625,7 @@ ApplicationWindow {
             { name: Lang.t("Yer imi ekle ya da kaldır", "Add or remove a bookmark"), keys: "Ctrl+D", run: () => window.toggleBookmark() },
             { name: Lang.t("Yer imleri: düzenle, klasörle", "Bookmarks: edit and sort"), keys: "Ctrl+Shift+O", run: () => Qt.callLater(window.openBookmarks) },
             { name: Lang.t("Başka tarayıcıdan aktar", "Import from another browser"), keys: "", run: () => Qt.callLater(window.openImport) },
+            { name: Lang.t("Eklentiler", "Extensions"), keys: "", run: () => window.openSettings("extensions") },
             { name: Lang.t("Geçmiş", "History"), keys: "Ctrl+H", run: () => Qt.callLater(window.showCommandHistory) },
             { name: Lang.t("İndirmeler", "Downloads"), keys: "Ctrl+J", run: () => window.openDownloads() },
             { name: window.horizontalTabs ? Lang.t("Dikey sekmelere geç", "Move the tabs to the side") : Lang.t("Yatay sekmelere geç", "Move the tabs to the top"), keys: "", run: () => window.horizontalTabs = !window.horizontalTabs },

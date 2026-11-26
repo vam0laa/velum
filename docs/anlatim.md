@@ -349,6 +349,15 @@ qml/Welcome.qml        ilk açılış adımları
 - İki düzen aynı sekme listesini ve aynı `TabItem`'i kullanır (`horizontal: true`). Kalkan ve indirme düğmeleri ortak bileşen oldu.
 - Karşılama yalnızca normal açılışta ve daha önce görülmediyse gelir; ayarlardan yeniden açılabilir.
 
+## 7z. Eklentiler
+
+```
+src/crx.cpp            mağaza adresinden kimlik; paketin imzasını doğrulama
+src/storebridge.h      paketi Google'dan indirme (yalnızca sen istediğinde)
+qml/ExtensionList.qml  ayarlardaki sayfa
+```
+Eklentinin 32 harflik kimliği, onu imzalayan anahtarın özetidir. `verifiedZip` bu yüzden iki şeye bakar: anahtarın özeti istenen kimlik mi, ve o anahtarın imzası paketin içeriğine uyuyor mu. Biri tutmazsa kurulmaz. Kurulumu motorun kendi yöneticisi (`profile.extensionManager`) yapar; yalnızca Manifest V3.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

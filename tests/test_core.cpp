@@ -1,4 +1,9 @@
+#include <QCryptographicHash>
 #include <QDir>
+#include <QtEndian>
+#include <openssl/evp.h>
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
 #include <QSignalSpy>
 #include <QFile>
 #include <QSqlDatabase>
@@ -8,6 +13,7 @@
 
 #include "address.h"
 #include "blocker.h"
+#include "crx.h"
 #include "lists.h"
 #include "notice.h"
 #include "procinfo.h"
@@ -285,6 +291,65 @@ private slots:
         QVERIFY(!passwords::remove("", ""));
         QVERIFY(passwords::remove(a, "ali"));
         QCOMPARE(passwords::accounts({})->size(), 2);
+    }
+
+    void storeAddresses()
+    {
+        const QString id = "ddkjiahejlhfcafbddmgiahcphecmpfh";
+        QCOMPARE(crx::idFrom(" " + id + " "), id);
+        QCOMPARE(crx::idFrom("https://chromewebstore.google.com/detail/ublock-origin-lite/" + id), id);
+        QCOMPARE(crx::idFrom("https://chromewebstore.google.com/detail/" + id + "?hl=tr"), id);
+        QCOMPARE(crx::idFrom("https://chrome.google.com/webstore/detail/x/" + id), id);
+        for (const QString &no : {QString("http://chromewebstore.google.com/detail/x/" + id), QString("https://evil.example/detail/x/" + id),
+                                  QString("https://chromewebstore.google.com/search/" + id), QString(id + "a"), QString("zz"), QString()})
+            QCOMPARE(crx::idFrom(no), "");
+        QVERIFY(crx::downloadAddress(id).startsWith("https://clients2.google.com/"));
+    }
+
+    // a package built and signed here, then tampered with
+    void storePackages()
+    {
+        std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> key(EVP_RSA_gen(2048), EVP_PKEY_free);
+        QVERIFY(key != nullptr);
+        QByteArray der(i2d_PUBKEY(key.get(), nullptr), 0);
+        auto *out = reinterpret_cast<unsigned char *>(der.data());
+        i2d_PUBKEY(key.get(), &out);
+        const QByteArray raw = QCryptographicHash::hash(der, QCryptographicHash::Sha256).left(16);
+        QString id;
+        for (const char c : raw) {
+            id += QChar('a' + (quint8(c) >> 4));
+            id += QChar('a' + (quint8(c) & 15));
+        }
+        const auto field = [](quint64 number, const QByteArray &value) {
+            QByteArray bytes;
+            const auto varint = [&bytes](quint64 v) { do { bytes.append(char((v & 0x7f) | (v > 0x7f ? 0x80 : 0))); v >>= 7; } while (v); };
+            varint(number << 3 | 2);
+            varint(quint64(value.size()));
+            return bytes + value;
+        };
+        const auto number = [](quint32 v) { QByteArray b(4, 0); qToLittleEndian(v, b.data()); return b; };
+        const QByteArray zip = "PK pretend zip", stated = field(1, raw);
+        const QByteArray message = QByteArray("CRX3 SignedData\0", 16) + number(quint32(stated.size())) + stated + zip;
+        std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context(EVP_MD_CTX_new(), EVP_MD_CTX_free);
+        QVERIFY(EVP_DigestSignInit(context.get(), nullptr, EVP_sha256(), nullptr, key.get()) == 1);
+        size_t length = 512;
+        QByteArray signature(512, 0);
+        QVERIFY(EVP_DigestSign(context.get(), reinterpret_cast<unsigned char *>(signature.data()), &length,
+                               reinterpret_cast<const unsigned char *>(message.constData()), size_t(message.size())) == 1);
+        signature.resize(qsizetype(length));
+        const QByteArray header = field(2, field(1, der) + field(2, signature)) + field(10000, stated);
+        const QByteArray package = "Cr24" + number(3) + number(quint32(header.size())) + header + zip;
+
+        QCOMPARE(crx::verifiedZip(package, id), zip);
+        QVERIFY(crx::verifiedZip(package, QString(32, 'a')).isEmpty());       // asked for another one
+        QVERIFY(crx::verifiedZip(package + "x", id).isEmpty());               // changed content
+        QByteArray broken = package;
+        broken[broken.size() - 1] = 'X';
+        QVERIFY(crx::verifiedZip(broken, id).isEmpty());
+        for (qsizetype n = 0; n < package.size(); n += 7)                     // cut short anywhere
+            QVERIFY(crx::verifiedZip(package.left(n), id).isEmpty());
+        QVERIFY(crx::verifiedZip("Cr24" + number(3) + number(0xffffffffu) + header, id).isEmpty());
+        QVERIFY(crx::verifiedZip("Cr24" + number(2) + number(0) + zip, id).isEmpty());
     }
 
     void processes()

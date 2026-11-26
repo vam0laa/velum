@@ -15,6 +15,8 @@ Item {
     property bool videoButton: false      // there is a video that can go to the small window
     property bool videoOut: false
     signal video()
+    property bool storeButton: false      // the page is an extension in the Web Store
+    signal store()
     property bool keyButton: false        // a saved login fits the form on the page
     signal fill()
     property bool readerButton: false     // there is an article that can be read
@@ -69,6 +71,13 @@ Item {
             color: bar.stripe
             font.family: Theme.pixel
             font.pixelSize: 18
+        }
+        Pill {
+            visible: bar.storeButton
+            symbol: "puzzle"
+            text: Lang.t("Velum'a ekle", "add to Velum")
+            hint: Lang.t("Bu eklentiyi kur", "Install this extension")
+            onPressed: bar.store()
         }
         Pill {
             visible: bar.keyButton
