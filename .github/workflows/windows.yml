@@ -103,6 +103,7 @@ jobs:
           if (-not $p.WaitForExit(90000)) { $p.Kill(); Get-Content smoke.log; throw "Velum did not finish" }
           Get-Content smoke.log
           if ($p.ExitCode -ne 0 -or -not (Test-Path smoke.png)) { throw "Velum failed with $($p.ExitCode)" }
+          if (Select-String -Path smoke.log -Pattern "Cannot load font|TypeError|ReferenceError|is not installed" -Quiet) { throw "Velum started with errors, see the log above" }
 
       - name: Installer
         shell: pwsh

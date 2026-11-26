@@ -310,7 +310,7 @@ QtObject {
 
     property FontLoader pixelFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/VT323-Regular.ttf") }
     readonly property string pixel: pixelFont.name      // has the Turkish letters
-    property FontLoader sansFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/GoogleSansFlex.woff") }
+    property FontLoader sansFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/GoogleSansFlex.ttf") }
     readonly property string ui: web ? pixelFont.name : parsed.sheet["all"]?.["font-family"] !== undefined ? parsed.sheet["all"]["font-family"] : fontFamily !== "" ? family(fontFamily, bodyLoader) : sansFont.name
     // sizes are written for the small pixel letters; the other font needs less
     function size(n) { return web ? n : Math.round(n / 1.3) }
