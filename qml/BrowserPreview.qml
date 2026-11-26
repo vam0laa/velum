@@ -61,32 +61,40 @@ Rectangle {
             color: Theme.window
             Rectangle { anchors.centerIn: parent; width: parent.width * 0.62; height: 16; radius: Theme.round(8); color: Theme.raised }
         }
-        // a miniature of the home page
+        // a miniature of the home page: greeting, search, sites, the last pages
         Column {
-            x: 18
-            y: preview.horizontal ? 46 : 28
-            spacing: 8
-            Text { text: "Velum"; color: Theme.text; font.family: Theme.ui; font.pixelSize: 20; font.variableAxes: Theme.axes(850) }
-            Rectangle { width: sheet.width * 0.42; height: 22; radius: Theme.round(11); color: Theme.accent }
-            Rectangle { width: sheet.width * 0.5; height: 18; radius: Theme.round(9); color: Theme.raised }
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: preview.horizontal ? 42 : 22
+            spacing: 9
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Velum"; color: Theme.text; font.family: Theme.ui; font.pixelSize: 17; font.variableAxes: Theme.axes(520) }
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: sheet.width * 0.66; height: 20; radius: Theme.round(10); color: Theme.raised; border.color: Theme.line
+                Rectangle { x: 7; anchors.verticalCenter: parent.verticalCenter; width: 6; height: 6; radius: 3; color: Theme.mauve }
+                Bar { x: 20; anchors.verticalCenter: parent.verticalCenter; width: parent.width * 0.4 }
+            }
             Row {
-                spacing: 6
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 8
                 Repeater {
-                    model: 4
+                    model: 5
                     Rectangle {
                         required property int index
-                        width: 30; height: 30; radius: Theme.round(9); color: Theme.raised
-                        Rectangle { anchors.centerIn: parent; width: 14; height: 14; radius: Theme.round(4); color: Theme.rainbow[parent.index] }
+                        width: 22; height: 22; radius: Theme.round(7); color: Theme.raised; border.color: Theme.line
+                        Rectangle { anchors.centerIn: parent; width: 8; height: 8; radius: Theme.round(3); color: Theme.rainbow[parent.index] }
                     }
                 }
             }
-        }
-        Column {
-            anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
-            visible: sheet.width > 260
-            spacing: -10
-            Text { text: "09"; color: Theme.accent; font.family: Theme.ui; font.pixelSize: 46; font.variableAxes: Theme.axes(850) }
-            Text { text: "41"; color: Theme.mauve; font.family: Theme.ui; font.pixelSize: 46; font.variableAxes: Theme.axes(850) }
+            Repeater {
+                model: 3
+                Item {
+                    required property int index
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: sheet.width * 0.6; height: 8
+                    Rectangle { width: 8; height: 8; radius: Theme.round(2); color: Theme.raised }
+                    Bar { x: 16; width: parent.width * (0.5 - parent.index * 0.08); height: 6; y: 1 }
+                }
+            }
         }
     }
 }

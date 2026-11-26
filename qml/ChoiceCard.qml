@@ -14,28 +14,28 @@ AbstractButton {
     property color tone: Theme.accent
     property bool chosen: false
     Layout.fillWidth: true
-    implicitHeight: 78
+    implicitHeight: 64
     hoverEnabled: true
     scale: down ? 0.98 : 1
     Behavior on scale { NumberAnimation { duration: Theme.quick } }
     Accessible.name: label
     background: Rectangle {
-        radius: Theme.round(22)
-        color: card.chosen ? Qt.tint(Theme.surface, Qt.alpha(card.tone, 0.22)) : card.hovered ? Theme.title : Theme.surface
-        border.width: card.chosen ? 2 : 0
-        border.color: card.tone
+        radius: Theme.round(12)
+        color: card.chosen || card.hovered ? Theme.raised : "transparent"
+        border.width: 1
+        border.color: card.chosen ? card.tone : Qt.alpha(Theme.line, 0.8)
         Behavior on color { ColorAnimation { duration: Theme.quick } }
     }
     contentItem: RowLayout {
         spacing: 14
         Rectangle {
             Layout.leftMargin: 16
-            implicitWidth: card.flag ? 52 : 46; implicitHeight: card.flag ? 39 : 46
-            radius: Theme.web || card.flag ? 0 : card.chosen ? 23 : 15
-            color: card.flag ? "transparent" : card.picture.toString() !== "" ? card.tile : card.tone
+            implicitWidth: card.flag ? 40 : 36; implicitHeight: card.flag ? 30 : 36
+            radius: Theme.web || card.flag ? 0 : 10
+            color: card.flag ? "transparent" : card.picture.toString() !== "" ? card.tile : Theme.title
             Behavior on radius { NumberAnimation { duration: Theme.smooth } }
             Image {
-                anchors { fill: parent; margins: card.flag ? 0 : 8 }
+                anchors { fill: parent; margins: card.flag ? 0 : 7 }
                 visible: card.picture.toString() !== ""
                 source: card.picture
                 sourceSize: Qt.size(104, 104)
@@ -43,22 +43,22 @@ AbstractButton {
                 smooth: true
                 mipmap: true
             }
-            Text { visible: card.picture.toString() === ""; anchors.centerIn: parent; text: card.mark; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: Theme.web ? 22 : 17; font.variableAxes: Theme.axes(850) }
+            Text { visible: card.picture.toString() === ""; anchors.centerIn: parent; text: card.mark; color: Theme.mauve; font.family: Theme.ui; font.pixelSize: Theme.web ? 22 : 15; font.variableAxes: Theme.axes(550) }
         }
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 1
-            Text { Layout.fillWidth: true; text: card.label; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.web ? 20 : 16; font.variableAxes: Theme.axes(750); elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: card.label; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.web ? 20 : 14; font.variableAxes: Theme.axes(550); elide: Text.ElideRight }
             Text { Layout.fillWidth: true; visible: text !== ""; text: card.note; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.web ? 15 : 12; elide: Text.ElideRight }
         }
         Rectangle {
             Layout.rightMargin: 18
-            implicitWidth: 26; implicitHeight: 26
-            radius: Theme.round(13)
+            implicitWidth: 20; implicitHeight: 20
+            radius: Theme.round(10)
             color: card.chosen ? card.tone : "transparent"
             border.width: card.chosen ? 0 : 2
             border.color: Theme.line
-            Text { anchors.centerIn: parent; visible: card.chosen; text: "✓"; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: 16; font.variableAxes: Theme.axes(850) }
+            Text { anchors.centerIn: parent; visible: card.chosen; text: "✓"; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: 12; font.variableAxes: Theme.axes(700) }
         }
     }
 }

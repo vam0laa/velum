@@ -14,7 +14,6 @@ ColumnLayout {
 
     // ids and names as the store gives them
     readonly property var offers: [
-        { id: "ddkjiahejlhfcafbddmgiahcphecmpfh", logo: "ublock", name: "uBlock Origin Lite", note: Lang.t("Reklam ve izleyici engelleyici. Velum'un kalkanı da engeller; ikisi birlikte olur.", "Ad and tracker blocker. Velum's shield blocks too; both can run.") },
         { id: "eimadpbcbfnmbkopoojfekhnkhdbieeh", logo: "darkreader", name: "Dark Reader", note: Lang.t("Her siteyi koyu temaya çevirir.", "Turns every site dark.") },
         { id: "mnjggcdmjocbbbhaepdhchncahnbgone", logo: "sponsorblock", name: "SponsorBlock", note: Lang.t("YouTube videolarındaki sponsor bölümlerini atlar.", "Skips sponsored parts of YouTube videos.") }
     ]
@@ -36,10 +35,10 @@ ColumnLayout {
             onClicked: if (list.pick && !there) list.toggle(modelData.id)
             Accessible.name: modelData.name
             background: Rectangle {
-                radius: Theme.corner
+                radius: Theme.round(12)
                 color: row.hovered && list.pick ? Theme.title : Theme.raised
-                border.width: row.ticked ? 2 : 0
-                border.color: Theme.accent
+                border.width: 1
+                border.color: row.ticked ? Theme.accent : Theme.line
             }
             contentItem: RowLayout {
                 spacing: 12

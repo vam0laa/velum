@@ -10,4 +10,4 @@ language, search engine or extension a choice is. They are not covered by Velum'
 | brave.png | search.brave.com, its own app icon |
 | google.png | gstatic.com, Google's own "G" |
 | startpage.svg | [simple-icons](https://github.com/simple-icons/simple-icons) (CC0), in Startpage's colour |
-| ublock.png, darkreader.png, sponsorblock.png | the icon inside each extension's package from the Chrome Web Store |
+| darkreader.png, sponsorblock.png | the icon inside each extension's package from the Chrome Web Store |
