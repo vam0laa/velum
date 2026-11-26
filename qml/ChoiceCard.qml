@@ -5,7 +5,10 @@ import QtQuick.Layouts
 // A large choice: a coloured mark, a name, a line about it and a tick when chosen.
 AbstractButton {
     id: card
-    property string mark                // one or two letters
+    property string mark                // one or two letters, when there is no picture
+    property url picture                // a logo or a flag
+    property bool flag: false           // a flag keeps its shape; a logo sits on a white tile
+    property color tile: "#ffffff"
     property string label
     property string note
     property color tone: Theme.accent
@@ -27,11 +30,20 @@ AbstractButton {
         spacing: 14
         Rectangle {
             Layout.leftMargin: 16
-            implicitWidth: 46; implicitHeight: 46
-            radius: Theme.web ? 0 : card.chosen ? 23 : 15
-            color: card.tone
+            implicitWidth: card.flag ? 52 : 46; implicitHeight: card.flag ? 39 : 46
+            radius: Theme.web || card.flag ? 0 : card.chosen ? 23 : 15
+            color: card.flag ? "transparent" : card.picture.toString() !== "" ? card.tile : card.tone
             Behavior on radius { NumberAnimation { duration: Theme.smooth } }
-            Text { anchors.centerIn: parent; text: card.mark; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: Theme.web ? 22 : 17; font.variableAxes: Theme.axes(850) }
+            Image {
+                anchors { fill: parent; margins: card.flag ? 0 : 8 }
+                visible: card.picture.toString() !== ""
+                source: card.picture
+                sourceSize: Qt.size(104, 104)
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
+            }
+            Text { visible: card.picture.toString() === ""; anchors.centerIn: parent; text: card.mark; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: Theme.web ? 22 : 17; font.variableAxes: Theme.axes(850) }
         }
         ColumnLayout {
             Layout.fillWidth: true

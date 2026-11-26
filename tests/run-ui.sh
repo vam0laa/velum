@@ -7,7 +7,7 @@ trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/ui"
 cp "$here"/../qml/*.qml "$here"/ui/*.qml "$work/ui/"
 cp "$here/test_ui.qml" "$work/" && cp -r "$here/extension" "$work/"
-mkdir -p "$work/data" && cp -r "$here/../data/velum.svg" "$here/../data/fonts" "$here/../data/sky.jpg" "$here/../data/sky-night.jpg" "$here/../data/scanline.png" "$work/data/"
+mkdir -p "$work/data" && cp -r "$here/../data/velum.svg" "$here/../data/fonts" "$here/../data/sky.jpg" "$here/../data/sky-night.jpg" "$here/../data/logos" "$here/../data/scanline.png" "$work/data/"
 {
     for f in Theme Lang Address DesktopColors Shield History Resources Notifier Importer Passwords WebStore DefaultBrowser; do echo "singleton $f $f.qml"; done
     for f in "$here"/../qml/*.qml; do n=$(basename "$f" .qml); [ "$n" = Theme ] || [ "$n" = Lang ] || echo "$n $n.qml"; done

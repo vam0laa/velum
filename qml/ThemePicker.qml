@@ -26,7 +26,7 @@ ColumnLayout {
                 implicitWidth: 118
                 implicitHeight: 100
                 hoverEnabled: true
-                onClicked: Theme.palette = modelData.key
+                onClicked: if (!current) Theme.change(() => Theme.palette = modelData.key)
                 Accessible.name: modelData.label
                 background: Rectangle {
                     radius: Theme.radius

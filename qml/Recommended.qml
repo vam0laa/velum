@@ -14,9 +14,9 @@ ColumnLayout {
 
     // ids and names as the store gives them
     readonly property var offers: [
-        { id: "ddkjiahejlhfcafbddmgiahcphecmpfh", name: "uBlock Origin Lite", note: Lang.t("Reklam ve izleyici engelleyici. Velum'un kalkanı da engeller; ikisi birlikte olur.", "Ad and tracker blocker. Velum's shield blocks too; both can run.") },
-        { id: "eimadpbcbfnmbkopoojfekhnkhdbieeh", name: "Dark Reader", note: Lang.t("Her siteyi koyu temaya çevirir.", "Turns every site dark.") },
-        { id: "mnjggcdmjocbbbhaepdhchncahnbgone", name: "SponsorBlock", note: Lang.t("YouTube videolarındaki sponsor bölümlerini atlar.", "Skips sponsored parts of YouTube videos.") }
+        { id: "ddkjiahejlhfcafbddmgiahcphecmpfh", logo: "ublock", name: "uBlock Origin Lite", note: Lang.t("Reklam ve izleyici engelleyici. Velum'un kalkanı da engeller; ikisi birlikte olur.", "Ad and tracker blocker. Velum's shield blocks too; both can run.") },
+        { id: "eimadpbcbfnmbkopoojfekhnkhdbieeh", logo: "darkreader", name: "Dark Reader", note: Lang.t("Her siteyi koyu temaya çevirir.", "Turns every site dark.") },
+        { id: "mnjggcdmjocbbbhaepdhchncahnbgone", logo: "sponsorblock", name: "SponsorBlock", note: Lang.t("YouTube videolarındaki sponsor bölümlerini atlar.", "Skips sponsored parts of YouTube videos.") }
     ]
 
     function toggle(id) { picked = picked.includes(id) ? picked.filter(x => x !== id) : picked.concat([id]) }
@@ -43,12 +43,15 @@ ColumnLayout {
             }
             contentItem: RowLayout {
                 spacing: 12
-                Rectangle {
+                // the extension's own icon, from its package
+                Image {
                     Layout.leftMargin: 14
-                    implicitWidth: 38; implicitHeight: 38
-                    radius: Theme.web ? 0 : 11
-                    color: Theme.rainbow[row.index % Theme.rainbow.length]
-                    Text { anchors.centerIn: parent; text: row.modelData.name.charAt(0); color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: 18; font.variableAxes: Theme.axes(800) }
+                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 40
+                    source: Qt.resolvedUrl("../data/logos/" + row.modelData.logo + ".png")
+                    sourceSize: Qt.size(128, 128)
+                    fillMode: Image.PreserveAspectFit
+                    mipmap: true
                 }
                 ColumnLayout {
                     Layout.fillWidth: true

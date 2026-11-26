@@ -211,6 +211,9 @@ Item {
             Theme.hour = hourNow
             t.check("typing it again goes back", Theme.secret("velum:webcore") && !Theme.web && Theme.shown === "lucid")
             Theme.palette = "lucid"
+            Theme.motion = false
+            Theme.change(() => Theme.palette = "nord"); t.check("with motion off colours change at once", Theme.palette === "nord")
+            Theme.motion = true; Theme.palette = "lucid"
             Theme.glass = true
             t.check("glass makes the backgrounds see-through, popups stay solid", Theme.frameBack.a < 0.6 && Theme.paneBack.a < 0.6 && Theme.window.a === 1)
             Theme.glass = false; t.check("without glass they are solid", Theme.frameBack.a === 1 && Theme.sheetBack.a === 1)

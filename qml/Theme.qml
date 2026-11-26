@@ -31,6 +31,15 @@ QtObject {
         property alias motion: theme.motion
     }
 
+    // set by the window: applies a change of colours with an animation
+    property var washer: null
+    function change(apply) {
+        if (washer && motion)
+            washer(apply)
+        else
+            apply()
+    }
+
     // Words typed into the address field that are not addresses. True: handled here.
     function secret(typed) {
         const word = String(typed).trim().toLowerCase()

@@ -67,6 +67,8 @@ Popup {
     component Label: Text { color: Theme.text; font.family: Theme.ui; textFormat: Text.PlainText }
 
     contentItem: Item {
+        // its own sheet, so that a photograph of it is complete
+        Rectangle { anchors.fill: parent; color: Theme.surface }
         focus: true
         Keys.onReturnPressed: welcome.next()
         Keys.onEnterPressed: welcome.next()
@@ -230,13 +232,15 @@ Popup {
                             spacing: 12
                             BrowserPreview { Layout.alignment: Qt.AlignHCenter; Layout.preferredWidth: Math.min(460, content.width); horizontal: welcome.horizontalTabs; visible: area.height > 520 }
                             Repeater {
-                                model: [{ key: "auto", mark: "◎", label: Lang.t("Sistem dili", "System language"), note: Lang.t("Bilgisayarın hangi dildeyse", "Whatever your computer speaks") },
-                                        { key: "tr", mark: "TR", label: "Türkçe", note: "Arayüz Türkçe olur" },
-                                        { key: "en", mark: "EN", label: "English", note: "The interface in English" }]
+                                model: [{ key: "auto", mark: "◎", flag: "", label: Lang.t("Sistem dili", "System language"), note: Lang.t("Bilgisayarın hangi dildeyse", "Whatever your computer speaks") },
+                                        { key: "tr", mark: "TR", flag: "tr", label: "Türkçe", note: "Arayüz Türkçe olur" },
+                                        { key: "en", mark: "EN", flag: "gb", label: "English", note: "The interface in English" }]
                                 ChoiceCard {
                                     required property var modelData
                                     required property int index
                                     mark: modelData.mark
+                                    flag: modelData.flag !== ""
+                                    picture: modelData.flag !== "" ? Qt.resolvedUrl("../data/logos/" + modelData.flag + ".svg") : ""
                                     label: modelData.label
                                     note: modelData.note
                                     tone: Theme.rainbow[index]
@@ -294,6 +298,7 @@ Popup {
                                     required property var modelData
                                     required property int index
                                     mark: String(modelData.label).charAt(0)
+                                    picture: Qt.resolvedUrl("../data/logos/" + modelData.key + (modelData.key === "startpage" ? ".svg" : ".png"))
                                     label: modelData.label
                                     note: parent.notes[modelData.key] ?? ""
                                     tone: Theme.rainbow[index % Theme.rainbow.length]

@@ -406,6 +406,10 @@ Gizli görünüm: adres ya da arama kutusuna `velum:webcore` yazılınca açıl�
 
 `qml/Welcome.qml` bütün pencereyi kaplar: solda başlık ve ilerleme, sağda seçimler. `BrowserPreview.qml` seçilen renk ve düzeni anında gösteren küçük bir Velum çizer; `ChoiceCard.qml` büyük seçim kartıdır. Dar pencerede iki sütun alt alta gelir; düğmeler tek yerde tanımlıdır, iki `LayoutItemProxy`'den görünen onları gösterir. Enter / sağ ok ilerler, sol ok geri döner.
 
+## Renk geçişi
+
+`qml/ThemeWash.qml`: renk seçilince önce eski görünümün fotoğrafı çekilip üste konur, yeni renkler altta uygulanır, fotoğrafta ortadan büyüyen yuvarlak bir delik açılır (`MultiEffect` maskesi). Tema değiştiren her yer `Theme.change()` kullanır; animasyonlar kapalıysa doğrudan uygulanır.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

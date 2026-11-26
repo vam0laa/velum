@@ -1160,6 +1160,10 @@ ApplicationWindow {
         }
         else if (action === "allow" && ask)
             answer(ask, true)
+        else if (action.startsWith("wash:")) {
+            themeWash.duration = 12000          // slow enough to be photographed
+            Theme.change(() => Theme.palette = action.slice(5))
+        }
         else if (action === "menu")
             mainMenu.popup(width - mainMenu.width - 12, 90)
         else if (action === "passwords")
@@ -1203,548 +1207,555 @@ ApplicationWindow {
         commandBar.show(true, "")
     }
 
-    GridLayout {
-        // with the tabs on top the page reaches the edges; beside them the windows float
-        readonly property int gaps: window.pageFullScreen || window.horizontalTabs ? 0 : 10
-        anchors { fill: parent; margins: gaps; rightMargin: gaps ? gaps + 4 : 0; bottomMargin: gaps ? gaps + 4 : 0 }
-        columns: window.horizontalTabs ? 1 : 2
-        rowSpacing: 0
-        columnSpacing: gaps ? 18 : 0
+    // everything but the floating boxes; it is what a change of colours photographs
+    Item {
+        id: scene
+        anchors.fill: parent
+        Rectangle { anchors.fill: parent; color: Theme.frameBack }
 
-        Sidebar {
-            id: side
-            Layout.fillHeight: true
-            visible: !window.pageFullScreen && !window.horizontalTabs
-            // a narrow window keeps its room for the page
-            compact: window.compactSidebar || window.width < 640
-            onToggle: window.compactSidebar = !window.compactSidebar
-            onSearch: window.editAddress()
-            view: window.view
-            tabModel: tabs
-            current: window.current
-            onPicked: i => window.current = i
-            onClosed: i => window.closeTab(i)
-            onNewTab: window.newTab()
-            pinnedCount: window.pinnedCount
-            host: window.currentHost
-            onReloadPage: window.view.reload()
-            onClearData: clearDialog.open()
-            onSettings: window.openSettings()
-            downloads: window.downloads
-            onShowFolder: folder => Qt.openUrlExternally("file://" + folder.split("/").map(encodeURIComponent).join("/"))
-            onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
-            onMoved: (from, to) => window.moveTab(from, to)
-            onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
-            spaces: window.spaces
-            space: window.space
-            onSpaceChosen: id => window.switchSpace(id)
-            onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
-            onSpaceAdd: spaceDialog.show(0, "", false)
-            onMenu: at => window.showMenu(at)
-        }
+        GridLayout {
+            // with the tabs on top the page reaches the edges; beside them the windows float
+            readonly property int gaps: window.pageFullScreen || window.horizontalTabs ? 0 : 10
+            anchors { fill: parent; margins: gaps; rightMargin: gaps ? gaps + 4 : 0; bottomMargin: gaps ? gaps + 4 : 0 }
+            columns: window.horizontalTabs ? 1 : 2
+            rowSpacing: 0
+            columnSpacing: gaps ? 18 : 0
 
-        TopBar {
-            id: topBar
-            Layout.fillWidth: true
-            visible: !window.pageFullScreen && window.horizontalTabs
-            view: window.view
-            tabModel: tabs
-            current: window.current
-            pinnedCount: window.pinnedCount
-            host: window.currentHost
-            downloads: window.downloads
-            spaces: window.spaces
-            space: window.space
-            onPicked: i => window.current = i
-            onClosed: i => window.closeTab(i)
-            onNewTab: window.newTab()
-            onMoved: (from, to) => window.moveTab(from, to)
-            onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
-            onReloadPage: window.view.reload()
-            onClearData: clearDialog.open()
-            onSettings: window.openSettings()
-            onHome: window.goHome()
-            bookmarks: window.shortcuts
-            showBookmarks: window.showBookmarkBar
-            iconFor: window.iconNames.length >= 0 && window.iconRevision >= 0 ? url => window.iconFor(url) : url => ""
-            onOpenBookmark: address => window.navigate(address, false)
-            onImportRequested: window.openImport()
-            bookmarked: window.bookmarked
-            onToggleBookmark: window.toggleBookmark()
-            onExtensions: window.openSettings("extensions")
-            onMenu: at => window.showMenu(at)
-            onMaximize: window.toggleWindowFullScreen()
-            onCloseTabRequested: window.closeTab(window.current)
-            pageButtons.storeButton: card.storeButton
-            pageButtons.keyButton: card.keyButton
-            pageButtons.readerButton: card.readerButton
-            pageButtons.readerOn: card.readerOn
-            pageButtons.videoButton: card.videoButton
-            pageButtons.videoOut: card.videoOut
-            pageButtons.onStore: card.store()
-            pageButtons.onFill: card.fill_()
-            pageButtons.onReader: card.reader()
-            pageButtons.onVideo: card.video()
-            onShowFolder: folder => Qt.openUrlExternally("file://" + folder.split("/").map(encodeURIComponent).join("/"))
-            onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
-            onSpaceChosen: id => window.switchSpace(id)
-            onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
-            onSpaceAdd: spaceDialog.show(0, "", false)
-        }
-
-        // the page, in a window of its own
-        Panel {
-            id: card
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            chrome: !window.pageFullScreen && !window.horizontalTabs
-            title: window.onSettings ? Lang.t("ayarlar", "settings") : window.onStartPage ? Lang.t("başlangıç", "start") : window.view && window.view.title !== "" ? window.view.title : window.currentHost
-            stripe: Theme.rainbow[Math.max(0, window.current) % Theme.rainbow.length]
-            minimizable: !window.horizontalTabs
-            maximizable: true
-            closable: true
-            onMinimize: window.compactSidebar = !window.compactSidebar
-            onMaximize: window.toggleWindowFullScreen()
-            onCloseRequested: window.closeTab(window.current)
-            storeButton: window.view !== null && !window.fetchingExtension && WebStore.idFrom(window.view.url) !== ""
-            onStore: window.askExtension(String(window.view.url), false)
-            keyButton: !window.onStartPage && (window.view?.accounts.length ?? 0) > 0
-            onFill_: window.fillPassword()
-            readerButton: !window.onStartPage && window.view !== null && window.view !== window.miniPage && (window.view.readable || window.view.reading)
-            readerOn: window.view?.reading ?? false
-            onReader: window.toggleReader()
-            videoButton: window.miniPage !== null || (!window.onStartPage && (window.view?.recentlyAudible ?? false))
-            videoOut: window.miniPage !== null
-            onVideo: window.toggleMini()
-
-            Item {
-                id: pagesArea
-                anchors.fill: parent
-
-                Repeater {
-                    id: views
-                    model: tabs
-
-                    WebEngineView {
-                        id: web
-                        required property int index
-                        required property string startUrl
-                        required property bool lazy
-                        required property string kind
-                        property bool started: false
-                        property bool crashed: false
-                        property string loginOrigin: ""     // set while a login form is shown
-                        property var accounts: []           // saved logins that fit it
-                        // how the watcher inside the page talks to Velum
-                        property QtObject loginBridge: QtObject {
-                            WebChannel.id: "velum"
-                            function offer(origin, user, password) { window.offerPassword(String(origin), String(user), String(password)) }
-                            function form(origin, present) {
-                                web.loginOrigin = present ? String(origin) : ""
-                                window.findAccounts(web)
-                            }
-                        }
-                        webChannel: WebChannel { registeredObjects: [web.loginBridge] }
-                        webChannelWorld: WebEngineScript.ApplicationWorld
-                        property bool readable: false       // there is an article here
-                        property bool reading: false        // and it is shown in reading mode
-                        property var failure: null          // { url, text, certificate }
-                        // loads the address a restored tab was waiting with
-                        function load_() {
-                            if (!started && startUrl !== "") {
-                                started = true
-                                url = startUrl
-                            }
-                        }
-                        property double hiddenSince: 0     // when it was last looked at; 0 while shown
-                        // a tab being looked at is always awake
-                        onVisibleChanged: {
-                            if (visible) {
-                                if (lazy)
-                                    load_()
-                                lifecycleState = WebEngineView.LifecycleState.Active
-                                hiddenSince = 0
-                            } else {
-                                hiddenSince = Date.now()
-                            }
-                        }
-                        onLifecycleStateChanged: tabs.setProperty(index, "asleep", lifecycleState)
-                        readonly property bool beside: window.splitShown && (web === window.splitLeft || web === window.splitRight)
-                        // "parent" is the small window while the video is out there
-                        readonly property real room: parent?.width ?? 0
-                        readonly property real divide: Math.round(room * window.splitRatio)
-                        visible: web === window.view || web === window.miniPage || beside
-                        x: beside && web === window.splitRight ? divide + 4 : 0
-                        width: !beside ? room : web === window.splitLeft ? divide - 4 : room - divide - 4
-                        height: parent?.height ?? 0
-                        // clicking into the other half makes that tab the current one
-                        onActiveFocusChanged: if (activeFocus && beside && web !== window.view) window.current = index
-
-                        profile: window.profile
-                        // an empty tab lets the glass through; a web page gets a solid sheet
-                        backgroundColor: Theme.glass && (url.toString() === "" || url.toString() === "about:blank") ? "transparent" : Theme.surface
-                        settings.fullScreenSupportEnabled: true      // video full screen
-                        settings.errorPageEnabled: false             // Velum explains problems itself
-                        // a bad certificate is never accepted, only explained
-                        onCertificateError: error => {
-                            if (error.isMainFrame)
-                                failure = { url: String(error.url), text: error.description, certificate: true }
-                            error.rejectCertificate()
-                        }
-                        onRenderProcessTerminated: (status, code) => {
-                            if (web === window.miniPage)
-                                window.closeMini()
-                            // putting a tab to sleep ends its process too; that is not a crash
-                            if (status !== WebEngineView.NormalTerminationStatus && lifecycleState === WebEngineView.LifecycleState.Active)
-                                crashed = true
-                        }
-                        onContextMenuRequested: request => {
-                            request.accepted = true          // Velum draws its own menu
-                            pageMenu.view = web
-                            pageMenu.describe(request)
-                            const at = web.mapToItem(null, request.position.x, request.position.y)
-                            pageMenu.popup(at.x, at.y - (window.header?.height ?? 0))
-                        }
-                        onFindTextFinished: result => {
-                            if (web === window.view) {
-                                findBar.matches = result.numberOfMatches
-                                findBar.current = result.activeMatch
-                            }
-                        }
-                        settings.dnsPrefetchEnabled: false           // no lookups for links you did not click
-                        settings.hyperlinkAuditingEnabled: false     // no "ping" tracking on links
-                        settings.pluginsEnabled: true
-                        settings.pdfViewerEnabled: true
-
-                        Component.onCompleted: {
-                            if (!lazy)
-                                load_()
-                            if (web !== window.view)
-                                hiddenSince = Date.now()
-                        }
-                        Component.onDestruction: window.dropAsks(web)
-
-                        // before a page loads: restart its counter and give it the shield's script
-                        onNavigationRequested: request => {
-                            if (!request.isMainFrame)
-                                return
-                            window.dropAsks(web)
-                            Shield.resetCount(window.hostOf(request.url))
-                            const source = Shield.pageScript(request.url)
-                            if (source === "") {
-                                userScripts.collection = []
-                                return
-                            }
-                            const script = WebEngine.script()
-                            script.name = "velum-shield"
-                            script.sourceCode = source
-                            script.injectionPoint = WebEngineScript.DocumentCreation
-                            script.worldId = WebEngineScript.MainWorld
-                            userScripts.collection = [script]
-                        }
-
-                        // keep the tab list in step with the page
-                        onTitleChanged: {
-                            if (lazy && !started)
-                                return
-                            tabs.setProperty(index, "title", url.toString() === "about:blank" ? "" : title)
-                            window.touchSession()
-                            History.setTitle(String(url), title)
-                        }
-                        onIconChanged: {
-                            tabs.setProperty(index, "siteIcon", String(icon))
-                            window.keepIcon(url, icon)
-                        }
-                        onLoadingChanged: info => {
-                            tabs.setProperty(index, "loading", loading)
-                            if (info.status === WebEngineView.LoadStartedStatus) {
-                                if (web === window.miniPage)      // another page: the video is gone
-                                    window.closeMini()
-                                readable = false
-                                reading = false
-                                loginOrigin = ""
-                                accounts = []
-                                crashed = false
-                                failure = null
-                            }
-                            if (info.status === WebEngineView.LoadSucceededStatus) {
-                                History.add(String(url), title)
-                                web.runJavaScript(reader.probe, WebEngineScript.ApplicationWorld, found => web.readable = found === true)
-                            }
-                            // -3 means "stopped": by you, or because another page was asked for
-                            if (info.status === WebEngineView.LoadFailedStatus && info.errorCode !== -3 && !failure)
-                                failure = { url: String(info.url), text: info.errorString, certificate: false }
-                        }
-                        onUrlChanged: {
-                            window.closeReader(web)      // sites that change page without loading
-                            // going somewhere turns the settings tab into an ordinary one
-                            if (kind !== "" && url.toString() !== "" && url.toString() !== "about:blank")
-                                tabs.setProperty(index, "kind", "")
-                            if (lazy && !started)
-                                return
-                            tabs.setProperty(index, "pageUrl", String(url))
-                            window.touchSession()
-                            if (tabs.get(index).pinned)
-                                window.savePinned()
-                        }
-
-                        // links that ask for a new window become tabs
-                        onNewWindowRequested: request => request.openIn(window.openTab(""))
-                        onWindowCloseRequested: window.closeTab(index)
-
-                        onFullScreenRequested: request => {
-                            if (web === window.miniPage) {
-                                request.reject()
-                                return
-                            }
-                            window.pageFullScreen = request.toggleOn
-                            if (request.toggleOn)
-                                window.showFullScreen()
-                            else
-                                window.showNormal()
-                            request.accept()
-                        }
-
-                        // Camera, microphone, location and the like: you are asked.
-                        // Kinds Velum cannot honour yet (such as notifications) are refused.
-                        onPermissionRequested: permission => {
-                            const wish = window.wishFor(permission.permissionType)
-                            if (wish === "") {
-                                permission.deny()
-                                return
-                            }
-                            window.asks = window.asks.concat([{ page: web, permission: permission, wish: wish,
-                                                                site: window.hostOf(permission.origin) || String(permission.origin) }])
-                        }
-                        // do not tell pages your computer's addresses on the local network
-                        settings.webRTCPublicInterfacesOnly: true
-                    }
-                }
+            Sidebar {
+                id: side
+                Layout.fillHeight: true
+                visible: !window.pageFullScreen && !window.horizontalTabs
+                // a narrow window keeps its room for the page
+                compact: window.compactSidebar || window.width < 640
+                onToggle: window.compactSidebar = !window.compactSidebar
+                onSearch: window.editAddress()
+                view: window.view
+                tabModel: tabs
+                current: window.current
+                onPicked: i => window.current = i
+                onClosed: i => window.closeTab(i)
+                onNewTab: window.newTab()
+                pinnedCount: window.pinnedCount
+                host: window.currentHost
+                onReloadPage: window.view.reload()
+                onClearData: clearDialog.open()
+                onSettings: window.openSettings()
+                downloads: window.downloads
+                onShowFolder: folder => Qt.openUrlExternally("file://" + folder.split("/").map(encodeURIComponent).join("/"))
+                onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
+                onMoved: (from, to) => window.moveTab(from, to)
+                onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
+                spaces: window.spaces
+                space: window.space
+                onSpaceChosen: id => window.switchSpace(id)
+                onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
+                onSpaceAdd: spaceDialog.show(0, "", false)
+                onMenu: at => window.showMenu(at)
             }
 
-            // how far the page has loaded, a thin line along its top
-            Rectangle {
-                id: progress
-                readonly property bool busy: window.view !== null && window.view.loading && !window.onStartPage
-                x: window.view?.x ?? 0
-                z: 3
-                height: 3
-                radius: Theme.radius
-                width: (window.view?.width ?? 0) * (busy ? Math.max(0.08, window.view.loadProgress / 100) : 1)
-                opacity: busy ? 1 : 0
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop { position: 0; color: Theme.accent }
-                    GradientStop { position: 1; color: Theme.pink }
-                }
-                Behavior on width { enabled: progress.busy; NumberAnimation { duration: Theme.smooth } }
-                Behavior on opacity { NumberAnimation { duration: Theme.smooth * 2 } }
-            }
-
-            // the line between the two halves: drag to resize, double click to even out
-            Item {
-                id: splitter
-                visible: window.splitShown
-                x: Math.round(parent.width * window.splitRatio) - 4
-                width: 8
-                height: parent.height
-                z: 2
-                Rectangle { anchors.centerIn: parent; width: handle.containsMouse || handle.pressed ? 4 : 2; height: parent.height; color: handle.containsMouse || handle.pressed ? Theme.accent : Theme.line }
-                MouseArea {
-                    id: handle
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.SplitHCursor
-                    preventStealing: true
-                    onPositionChanged: mouse => {
-                        if (pressed)
-                            window.splitRatio = Math.max(0.2, Math.min(0.8, mapToItem(splitter.parent, mouse.x, 0).x / splitter.parent.width))
-                    }
-                    onDoubleClicked: window.splitRatio = 0.5
-                }
-            }
-            // marks which half the address bar and the keys act on
-            Rectangle {
-                visible: window.splitShown
-                x: window.view?.x ?? 0
-                width: window.view?.width ?? 0
-                height: 2
-                color: Theme.accent
-                z: 2
-            }
-
-            ProblemPage {
-                x: window.splitShown ? window.view.x : 0
-                width: window.splitShown ? window.view.width : parent.width
-                height: parent.height
-                visible: !window.onStartPage && window.view !== null && (window.view.crashed || window.view.failure !== null)
-                heading: window.view?.crashed ? Lang.t("Bu sekme çöktü", "This tab crashed") : window.view?.failure?.certificate ? Lang.t("Bu bağlantı güvenli değil", "This connection is not safe") : Lang.t("Sayfa açılamadı", "The page could not be opened")
-                address: window.view ? (window.view.failure?.url ?? String(window.view.url)) : ""
-                detail: window.view?.crashed ? Lang.t("Sayfayı çizen süreç beklenmedik şekilde kapandı.", "The process drawing the page ended unexpectedly.") : window.view?.failure?.text ?? ""
-                advice: window.view?.crashed ? Lang.t("Yeniden denemek çoğu zaman yeter.", "Trying again is usually enough.")
-                      : window.view?.failure?.certificate ? Lang.t("Sitenin sertifikası doğrulanamadı. Biri araya girmiş olabilir; Velum bu uyarıyı atlamana izin vermez.", "The site's certificate could not be verified. Someone may be in between; Velum does not let you skip this.")
-                      : Shield.httpsFirst ? Lang.t("İnternet bağlantını ve adresi kontrol et. Site yalnızca http destekliyorsa kalkan panelinden \"Önce HTTPS\"i kapatabilirsin.", "Check your connection and the address. If the site only supports http, switch \"HTTPS first\" off in the shield panel.")
-                      : Lang.t("İnternet bağlantını ve adresi kontrol et.", "Check your connection and the address.")
-                onRetry: {
-                    const page = window.view
-                    const target = page.failure?.url ?? String(page.url)
-                    page.failure = null
-                    page.crashed = false
-                    if (String(page.url) === target)
-                        page.reload()
-                    else
-                        page.url = target
-                }
-            }
-
-            FindBar {
-                id: findBar
-                anchors { top: parent.top; right: parent.right; margins: 12 }
-                z: 3
-                onSearch: (text, backwards) => window.view.findText(text, backwards ? WebEngineView.FindBackward : 0)
-                onClosed: { window.view?.findText(""); window.view?.forceActiveFocus() }
-            }
-
-            PermissionBar {
-                anchors { top: parent.top; left: parent.left; margins: 12 }
-                z: 2
-                visible: window.ask !== null
-                site: window.ask?.site ?? ""
-                wish: window.ask?.wish ?? ""
-                onAnswered: allow => window.answer(window.ask, allow)
-            }
-
-            // what the window shows while the current tab's video is out
-            Rectangle {
-                anchors.fill: parent
-                visible: window.miniPage !== null && window.view === window.miniPage
-                color: Theme.surface
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 14
-                    Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "pip"; size: 48; color: Theme.mauve }
-                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("Video küçük pencerede oynuyor", "The video is playing in the small window"); color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(23); font.weight: Font.Normal }
-                    TextButton { anchors.horizontalCenter: parent.horizontalCenter; strong: true; text: Lang.t("Buraya geri al", "Bring it back"); onClicked: window.closeMini() }
-                }
-            }
-
-            // letter size and the way out, while reading
-            Rectangle {
-                anchors { right: parent.right; bottom: parent.bottom; margins: 18 }
-                visible: window.view?.reading ?? false
-                z: 3
-                width: readerControls.implicitWidth + 14
-                height: 42
-                radius: Theme.radius
-                color: Theme.window
-                border.color: Theme.line
-                Row {
-                    id: readerControls
-                    anchors.centerIn: parent
-                    spacing: 6
-                    TextButton { text: "A−"; implicitHeight: 28; enabled: window.readerSize > 14; onClicked: window.sizeReader(-2) }
-                    TextButton { text: "A+"; implicitHeight: 28; enabled: window.readerSize < 28; onClicked: window.sizeReader(2) }
-                    TextButton { text: Lang.t("Çık", "Close"); implicitHeight: 28; strong: true; onClicked: window.toggleReader() }
-                }
-            }
-
-            PasswordBar {
-                anchors { top: parent.top; right: parent.right; margins: 12 }
-                z: 4
-                visible: offer !== null
-                offer: window.passwordOffer
-                onAccepted: user => window.savePassword(user)
-                onLater: window.passwordOffer = null
-                onNever: window.neverFor(window.passwordOffer.origin)
-            }
-
-            // a short message at the bottom of the page
-            Rectangle {
-                anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: window.notice !== "" ? 18 : -10 }
-                width: Math.min(parent.width - 24, noticeText.implicitWidth + 32)
-                height: 38
-                radius: Theme.radius
-                z: 3
-                opacity: window.notice !== "" ? 1 : 0
-                visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: Theme.smooth } }
-                Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
-                Shadow { radius: Theme.radius }
-                color: Theme.raised
-                border.color: Theme.line
-                Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
-            }
-
-            SettingsPage {
-                id: prefs
-                x: window.splitShown ? window.view.x : 0
-                width: window.splitShown ? window.view.width : parent.width
-                height: parent.height
-                visible: window.onSettings
-                sleepMode: window.sleepMode
-                restoreSession: window.restoreSession
-                downloadFolder: window.downloadFolder
-                horizontalTabs: window.horizontalTabs
-                compactSidebar: window.compactSidebar
-                neverSites: window.neverSave
-                bookmarkCount: window.shortcuts.length
-                onSleepModeChosen: mode => window.sleepMode = mode
-                onRestoreSessionChosen: on => window.restoreSession = on
-                onDownloadFolderChosen: folder => window.downloadFolder = folder
-                onLayoutChosen: h => window.horizontalTabs = h
-                onCompactChosen: on => window.compactSidebar = on
-                onClearRequested: clearDialog.open()
-                onAskAgain: origin => window.askAgainFor(origin)
-                onBookmarksRequested: window.openBookmarks()
-                onImportRequested: window.openImport()
-                onWelcomeRequested: welcome.open()
-                startBackground: window.startBackground
-                startPicture: window.startPicture
-                showClock: window.showClock
-                showShield: window.showShield
-                showNote: window.showNote
-                showFrequent: window.showFrequent
-                showBookmarkBar: window.showBookmarkBar
-                onStartChanged: (name, value) => window[name] = value
-                extensions: window.extensions
-                fetchingExtension: window.fetchingExtension
-                onAddFromStore: typed => window.askExtension(typed, false)
-                onAddFromFile: path => window.askExtension(path, true)
-                onOpenStore: window.openTab("https://chromewebstore.google.com/")
-                onOpenExtensionPage: address => window.openTab(String(address))
-                onEnableExtension: (extension, on) => window.enableExtension(extension, on)
-                onRemoveExtension: extension => window.removeExtension(extension)
-            }
-
-            StartPage {
-                id: start
-                x: window.splitShown ? window.view.x : 0
-                width: window.splitShown ? window.view.width : parent.width
-                height: parent.height
-                visible: window.onStartPage
-                hasWidevine: window.hasWidevine
-                shortcuts: window.shortcuts.slice(0, 10)
-                total: window.shortcuts.length
-                onManage: window.openBookmarks()
-                frequent: window.showFrequent ? window.frequentPages : []
-                blocked: Shield.total
-                note: window.note
-                background: window.startBackground
-                picture: window.startPicture
-                showClock: window.showClock
-                showShield: window.showShield
-                showNote: window.showNote
-                showFrequent: window.showFrequent
+            TopBar {
+                id: topBar
+                Layout.fillWidth: true
+                visible: !window.pageFullScreen && window.horizontalTabs
+                view: window.view
+                tabModel: tabs
+                current: window.current
+                pinnedCount: window.pinnedCount
+                host: window.currentHost
+                downloads: window.downloads
+                spaces: window.spaces
+                space: window.space
+                onPicked: i => window.current = i
+                onClosed: i => window.closeTab(i)
+                onNewTab: window.newTab()
+                onMoved: (from, to) => window.moveTab(from, to)
+                onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
+                onReloadPage: window.view.reload()
+                onClearData: clearDialog.open()
+                onSettings: window.openSettings()
+                onHome: window.goHome()
+                bookmarks: window.shortcuts
+                showBookmarks: window.showBookmarkBar
                 iconFor: window.iconNames.length >= 0 && window.iconRevision >= 0 ? url => window.iconFor(url) : url => ""
-                onNoteEdited: text => window.note = text
-                onCustomize: window.openSettings("look")
-                onAddShortcut: typed => window.addShortcut(typed)
-                onRemoveShortcut: i => window.removeShortcut(i)
-                onGo: target => {
-                    window.view.url = target
-                    if (start.field)
-                        start.field.text = ""
-                    window.view.forceActiveFocus()
+                onOpenBookmark: address => window.navigate(address, false)
+                onImportRequested: window.openImport()
+                bookmarked: window.bookmarked
+                onToggleBookmark: window.toggleBookmark()
+                onExtensions: window.openSettings("extensions")
+                onMenu: at => window.showMenu(at)
+                onMaximize: window.toggleWindowFullScreen()
+                onCloseTabRequested: window.closeTab(window.current)
+                pageButtons.storeButton: card.storeButton
+                pageButtons.keyButton: card.keyButton
+                pageButtons.readerButton: card.readerButton
+                pageButtons.readerOn: card.readerOn
+                pageButtons.videoButton: card.videoButton
+                pageButtons.videoOut: card.videoOut
+                pageButtons.onStore: card.store()
+                pageButtons.onFill: card.fill_()
+                pageButtons.onReader: card.reader()
+                pageButtons.onVideo: card.video()
+                onShowFolder: folder => Qt.openUrlExternally("file://" + folder.split("/").map(encodeURIComponent).join("/"))
+                onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
+                onSpaceChosen: id => window.switchSpace(id)
+                onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
+                onSpaceAdd: spaceDialog.show(0, "", false)
+            }
+
+            // the page, in a window of its own
+            Panel {
+                id: card
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                chrome: !window.pageFullScreen && !window.horizontalTabs
+                title: window.onSettings ? Lang.t("ayarlar", "settings") : window.onStartPage ? Lang.t("başlangıç", "start") : window.view && window.view.title !== "" ? window.view.title : window.currentHost
+                stripe: Theme.rainbow[Math.max(0, window.current) % Theme.rainbow.length]
+                minimizable: !window.horizontalTabs
+                maximizable: true
+                closable: true
+                onMinimize: window.compactSidebar = !window.compactSidebar
+                onMaximize: window.toggleWindowFullScreen()
+                onCloseRequested: window.closeTab(window.current)
+                storeButton: window.view !== null && !window.fetchingExtension && WebStore.idFrom(window.view.url) !== ""
+                onStore: window.askExtension(String(window.view.url), false)
+                keyButton: !window.onStartPage && (window.view?.accounts.length ?? 0) > 0
+                onFill_: window.fillPassword()
+                readerButton: !window.onStartPage && window.view !== null && window.view !== window.miniPage && (window.view.readable || window.view.reading)
+                readerOn: window.view?.reading ?? false
+                onReader: window.toggleReader()
+                videoButton: window.miniPage !== null || (!window.onStartPage && (window.view?.recentlyAudible ?? false))
+                videoOut: window.miniPage !== null
+                onVideo: window.toggleMini()
+
+                Item {
+                    id: pagesArea
+                    anchors.fill: parent
+
+                    Repeater {
+                        id: views
+                        model: tabs
+
+                        WebEngineView {
+                            id: web
+                            required property int index
+                            required property string startUrl
+                            required property bool lazy
+                            required property string kind
+                            property bool started: false
+                            property bool crashed: false
+                            property string loginOrigin: ""     // set while a login form is shown
+                            property var accounts: []           // saved logins that fit it
+                            // how the watcher inside the page talks to Velum
+                            property QtObject loginBridge: QtObject {
+                                WebChannel.id: "velum"
+                                function offer(origin, user, password) { window.offerPassword(String(origin), String(user), String(password)) }
+                                function form(origin, present) {
+                                    web.loginOrigin = present ? String(origin) : ""
+                                    window.findAccounts(web)
+                                }
+                            }
+                            webChannel: WebChannel { registeredObjects: [web.loginBridge] }
+                            webChannelWorld: WebEngineScript.ApplicationWorld
+                            property bool readable: false       // there is an article here
+                            property bool reading: false        // and it is shown in reading mode
+                            property var failure: null          // { url, text, certificate }
+                            // loads the address a restored tab was waiting with
+                            function load_() {
+                                if (!started && startUrl !== "") {
+                                    started = true
+                                    url = startUrl
+                                }
+                            }
+                            property double hiddenSince: 0     // when it was last looked at; 0 while shown
+                            // a tab being looked at is always awake
+                            onVisibleChanged: {
+                                if (visible) {
+                                    if (lazy)
+                                        load_()
+                                    lifecycleState = WebEngineView.LifecycleState.Active
+                                    hiddenSince = 0
+                                } else {
+                                    hiddenSince = Date.now()
+                                }
+                            }
+                            onLifecycleStateChanged: tabs.setProperty(index, "asleep", lifecycleState)
+                            readonly property bool beside: window.splitShown && (web === window.splitLeft || web === window.splitRight)
+                            // "parent" is the small window while the video is out there
+                            readonly property real room: parent?.width ?? 0
+                            readonly property real divide: Math.round(room * window.splitRatio)
+                            visible: web === window.view || web === window.miniPage || beside
+                            x: beside && web === window.splitRight ? divide + 4 : 0
+                            width: !beside ? room : web === window.splitLeft ? divide - 4 : room - divide - 4
+                            height: parent?.height ?? 0
+                            // clicking into the other half makes that tab the current one
+                            onActiveFocusChanged: if (activeFocus && beside && web !== window.view) window.current = index
+
+                            profile: window.profile
+                            // an empty tab lets the glass through; a web page gets a solid sheet
+                            backgroundColor: Theme.glass && (url.toString() === "" || url.toString() === "about:blank") ? "transparent" : Theme.surface
+                            settings.fullScreenSupportEnabled: true      // video full screen
+                            settings.errorPageEnabled: false             // Velum explains problems itself
+                            // a bad certificate is never accepted, only explained
+                            onCertificateError: error => {
+                                if (error.isMainFrame)
+                                    failure = { url: String(error.url), text: error.description, certificate: true }
+                                error.rejectCertificate()
+                            }
+                            onRenderProcessTerminated: (status, code) => {
+                                if (web === window.miniPage)
+                                    window.closeMini()
+                                // putting a tab to sleep ends its process too; that is not a crash
+                                if (status !== WebEngineView.NormalTerminationStatus && lifecycleState === WebEngineView.LifecycleState.Active)
+                                    crashed = true
+                            }
+                            onContextMenuRequested: request => {
+                                request.accepted = true          // Velum draws its own menu
+                                pageMenu.view = web
+                                pageMenu.describe(request)
+                                const at = web.mapToItem(null, request.position.x, request.position.y)
+                                pageMenu.popup(at.x, at.y - (window.header?.height ?? 0))
+                            }
+                            onFindTextFinished: result => {
+                                if (web === window.view) {
+                                    findBar.matches = result.numberOfMatches
+                                    findBar.current = result.activeMatch
+                                }
+                            }
+                            settings.dnsPrefetchEnabled: false           // no lookups for links you did not click
+                            settings.hyperlinkAuditingEnabled: false     // no "ping" tracking on links
+                            settings.pluginsEnabled: true
+                            settings.pdfViewerEnabled: true
+
+                            Component.onCompleted: {
+                                if (!lazy)
+                                    load_()
+                                if (web !== window.view)
+                                    hiddenSince = Date.now()
+                            }
+                            Component.onDestruction: window.dropAsks(web)
+
+                            // before a page loads: restart its counter and give it the shield's script
+                            onNavigationRequested: request => {
+                                if (!request.isMainFrame)
+                                    return
+                                window.dropAsks(web)
+                                Shield.resetCount(window.hostOf(request.url))
+                                const source = Shield.pageScript(request.url)
+                                if (source === "") {
+                                    userScripts.collection = []
+                                    return
+                                }
+                                const script = WebEngine.script()
+                                script.name = "velum-shield"
+                                script.sourceCode = source
+                                script.injectionPoint = WebEngineScript.DocumentCreation
+                                script.worldId = WebEngineScript.MainWorld
+                                userScripts.collection = [script]
+                            }
+
+                            // keep the tab list in step with the page
+                            onTitleChanged: {
+                                if (lazy && !started)
+                                    return
+                                tabs.setProperty(index, "title", url.toString() === "about:blank" ? "" : title)
+                                window.touchSession()
+                                History.setTitle(String(url), title)
+                            }
+                            onIconChanged: {
+                                tabs.setProperty(index, "siteIcon", String(icon))
+                                window.keepIcon(url, icon)
+                            }
+                            onLoadingChanged: info => {
+                                tabs.setProperty(index, "loading", loading)
+                                if (info.status === WebEngineView.LoadStartedStatus) {
+                                    if (web === window.miniPage)      // another page: the video is gone
+                                        window.closeMini()
+                                    readable = false
+                                    reading = false
+                                    loginOrigin = ""
+                                    accounts = []
+                                    crashed = false
+                                    failure = null
+                                }
+                                if (info.status === WebEngineView.LoadSucceededStatus) {
+                                    History.add(String(url), title)
+                                    web.runJavaScript(reader.probe, WebEngineScript.ApplicationWorld, found => web.readable = found === true)
+                                }
+                                // -3 means "stopped": by you, or because another page was asked for
+                                if (info.status === WebEngineView.LoadFailedStatus && info.errorCode !== -3 && !failure)
+                                    failure = { url: String(info.url), text: info.errorString, certificate: false }
+                            }
+                            onUrlChanged: {
+                                window.closeReader(web)      // sites that change page without loading
+                                // going somewhere turns the settings tab into an ordinary one
+                                if (kind !== "" && url.toString() !== "" && url.toString() !== "about:blank")
+                                    tabs.setProperty(index, "kind", "")
+                                if (lazy && !started)
+                                    return
+                                tabs.setProperty(index, "pageUrl", String(url))
+                                window.touchSession()
+                                if (tabs.get(index).pinned)
+                                    window.savePinned()
+                            }
+
+                            // links that ask for a new window become tabs
+                            onNewWindowRequested: request => request.openIn(window.openTab(""))
+                            onWindowCloseRequested: window.closeTab(index)
+
+                            onFullScreenRequested: request => {
+                                if (web === window.miniPage) {
+                                    request.reject()
+                                    return
+                                }
+                                window.pageFullScreen = request.toggleOn
+                                if (request.toggleOn)
+                                    window.showFullScreen()
+                                else
+                                    window.showNormal()
+                                request.accept()
+                            }
+
+                            // Camera, microphone, location and the like: you are asked.
+                            // Kinds Velum cannot honour yet (such as notifications) are refused.
+                            onPermissionRequested: permission => {
+                                const wish = window.wishFor(permission.permissionType)
+                                if (wish === "") {
+                                    permission.deny()
+                                    return
+                                }
+                                window.asks = window.asks.concat([{ page: web, permission: permission, wish: wish,
+                                                                    site: window.hostOf(permission.origin) || String(permission.origin) }])
+                            }
+                            // do not tell pages your computer's addresses on the local network
+                            settings.webRTCPublicInterfacesOnly: true
+                        }
+                    }
+                }
+
+                // how far the page has loaded, a thin line along its top
+                Rectangle {
+                    id: progress
+                    readonly property bool busy: window.view !== null && window.view.loading && !window.onStartPage
+                    x: window.view?.x ?? 0
+                    z: 3
+                    height: 3
+                    radius: Theme.radius
+                    width: (window.view?.width ?? 0) * (busy ? Math.max(0.08, window.view.loadProgress / 100) : 1)
+                    opacity: busy ? 1 : 0
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0; color: Theme.accent }
+                        GradientStop { position: 1; color: Theme.pink }
+                    }
+                    Behavior on width { enabled: progress.busy; NumberAnimation { duration: Theme.smooth } }
+                    Behavior on opacity { NumberAnimation { duration: Theme.smooth * 2 } }
+                }
+
+                // the line between the two halves: drag to resize, double click to even out
+                Item {
+                    id: splitter
+                    visible: window.splitShown
+                    x: Math.round(parent.width * window.splitRatio) - 4
+                    width: 8
+                    height: parent.height
+                    z: 2
+                    Rectangle { anchors.centerIn: parent; width: handle.containsMouse || handle.pressed ? 4 : 2; height: parent.height; color: handle.containsMouse || handle.pressed ? Theme.accent : Theme.line }
+                    MouseArea {
+                        id: handle
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.SplitHCursor
+                        preventStealing: true
+                        onPositionChanged: mouse => {
+                            if (pressed)
+                                window.splitRatio = Math.max(0.2, Math.min(0.8, mapToItem(splitter.parent, mouse.x, 0).x / splitter.parent.width))
+                        }
+                        onDoubleClicked: window.splitRatio = 0.5
+                    }
+                }
+                // marks which half the address bar and the keys act on
+                Rectangle {
+                    visible: window.splitShown
+                    x: window.view?.x ?? 0
+                    width: window.view?.width ?? 0
+                    height: 2
+                    color: Theme.accent
+                    z: 2
+                }
+
+                ProblemPage {
+                    x: window.splitShown ? window.view.x : 0
+                    width: window.splitShown ? window.view.width : parent.width
+                    height: parent.height
+                    visible: !window.onStartPage && window.view !== null && (window.view.crashed || window.view.failure !== null)
+                    heading: window.view?.crashed ? Lang.t("Bu sekme çöktü", "This tab crashed") : window.view?.failure?.certificate ? Lang.t("Bu bağlantı güvenli değil", "This connection is not safe") : Lang.t("Sayfa açılamadı", "The page could not be opened")
+                    address: window.view ? (window.view.failure?.url ?? String(window.view.url)) : ""
+                    detail: window.view?.crashed ? Lang.t("Sayfayı çizen süreç beklenmedik şekilde kapandı.", "The process drawing the page ended unexpectedly.") : window.view?.failure?.text ?? ""
+                    advice: window.view?.crashed ? Lang.t("Yeniden denemek çoğu zaman yeter.", "Trying again is usually enough.")
+                          : window.view?.failure?.certificate ? Lang.t("Sitenin sertifikası doğrulanamadı. Biri araya girmiş olabilir; Velum bu uyarıyı atlamana izin vermez.", "The site's certificate could not be verified. Someone may be in between; Velum does not let you skip this.")
+                          : Shield.httpsFirst ? Lang.t("İnternet bağlantını ve adresi kontrol et. Site yalnızca http destekliyorsa kalkan panelinden \"Önce HTTPS\"i kapatabilirsin.", "Check your connection and the address. If the site only supports http, switch \"HTTPS first\" off in the shield panel.")
+                          : Lang.t("İnternet bağlantını ve adresi kontrol et.", "Check your connection and the address.")
+                    onRetry: {
+                        const page = window.view
+                        const target = page.failure?.url ?? String(page.url)
+                        page.failure = null
+                        page.crashed = false
+                        if (String(page.url) === target)
+                            page.reload()
+                        else
+                            page.url = target
+                    }
+                }
+
+                FindBar {
+                    id: findBar
+                    anchors { top: parent.top; right: parent.right; margins: 12 }
+                    z: 3
+                    onSearch: (text, backwards) => window.view.findText(text, backwards ? WebEngineView.FindBackward : 0)
+                    onClosed: { window.view?.findText(""); window.view?.forceActiveFocus() }
+                }
+
+                PermissionBar {
+                    anchors { top: parent.top; left: parent.left; margins: 12 }
+                    z: 2
+                    visible: window.ask !== null
+                    site: window.ask?.site ?? ""
+                    wish: window.ask?.wish ?? ""
+                    onAnswered: allow => window.answer(window.ask, allow)
+                }
+
+                // what the window shows while the current tab's video is out
+                Rectangle {
+                    anchors.fill: parent
+                    visible: window.miniPage !== null && window.view === window.miniPage
+                    color: Theme.surface
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 14
+                        Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "pip"; size: 48; color: Theme.mauve }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("Video küçük pencerede oynuyor", "The video is playing in the small window"); color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(23); font.weight: Font.Normal }
+                        TextButton { anchors.horizontalCenter: parent.horizontalCenter; strong: true; text: Lang.t("Buraya geri al", "Bring it back"); onClicked: window.closeMini() }
+                    }
+                }
+
+                // letter size and the way out, while reading
+                Rectangle {
+                    anchors { right: parent.right; bottom: parent.bottom; margins: 18 }
+                    visible: window.view?.reading ?? false
+                    z: 3
+                    width: readerControls.implicitWidth + 14
+                    height: 42
+                    radius: Theme.radius
+                    color: Theme.window
+                    border.color: Theme.line
+                    Row {
+                        id: readerControls
+                        anchors.centerIn: parent
+                        spacing: 6
+                        TextButton { text: "A−"; implicitHeight: 28; enabled: window.readerSize > 14; onClicked: window.sizeReader(-2) }
+                        TextButton { text: "A+"; implicitHeight: 28; enabled: window.readerSize < 28; onClicked: window.sizeReader(2) }
+                        TextButton { text: Lang.t("Çık", "Close"); implicitHeight: 28; strong: true; onClicked: window.toggleReader() }
+                    }
+                }
+
+                PasswordBar {
+                    anchors { top: parent.top; right: parent.right; margins: 12 }
+                    z: 4
+                    visible: offer !== null
+                    offer: window.passwordOffer
+                    onAccepted: user => window.savePassword(user)
+                    onLater: window.passwordOffer = null
+                    onNever: window.neverFor(window.passwordOffer.origin)
+                }
+
+                // a short message at the bottom of the page
+                Rectangle {
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: window.notice !== "" ? 18 : -10 }
+                    width: Math.min(parent.width - 24, noticeText.implicitWidth + 32)
+                    height: 38
+                    radius: Theme.radius
+                    z: 3
+                    opacity: window.notice !== "" ? 1 : 0
+                    visible: opacity > 0
+                    Behavior on opacity { NumberAnimation { duration: Theme.smooth } }
+                    Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
+                    Shadow { radius: Theme.radius }
+                    color: Theme.raised
+                    border.color: Theme.line
+                    Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+                }
+
+                SettingsPage {
+                    id: prefs
+                    x: window.splitShown ? window.view.x : 0
+                    width: window.splitShown ? window.view.width : parent.width
+                    height: parent.height
+                    visible: window.onSettings
+                    sleepMode: window.sleepMode
+                    restoreSession: window.restoreSession
+                    downloadFolder: window.downloadFolder
+                    horizontalTabs: window.horizontalTabs
+                    compactSidebar: window.compactSidebar
+                    neverSites: window.neverSave
+                    bookmarkCount: window.shortcuts.length
+                    onSleepModeChosen: mode => window.sleepMode = mode
+                    onRestoreSessionChosen: on => window.restoreSession = on
+                    onDownloadFolderChosen: folder => window.downloadFolder = folder
+                    onLayoutChosen: h => window.horizontalTabs = h
+                    onCompactChosen: on => window.compactSidebar = on
+                    onClearRequested: clearDialog.open()
+                    onAskAgain: origin => window.askAgainFor(origin)
+                    onBookmarksRequested: window.openBookmarks()
+                    onImportRequested: window.openImport()
+                    onWelcomeRequested: welcome.open()
+                    startBackground: window.startBackground
+                    startPicture: window.startPicture
+                    showClock: window.showClock
+                    showShield: window.showShield
+                    showNote: window.showNote
+                    showFrequent: window.showFrequent
+                    showBookmarkBar: window.showBookmarkBar
+                    onStartChanged: (name, value) => window[name] = value
+                    extensions: window.extensions
+                    fetchingExtension: window.fetchingExtension
+                    onAddFromStore: typed => window.askExtension(typed, false)
+                    onAddFromFile: path => window.askExtension(path, true)
+                    onOpenStore: window.openTab("https://chromewebstore.google.com/")
+                    onOpenExtensionPage: address => window.openTab(String(address))
+                    onEnableExtension: (extension, on) => window.enableExtension(extension, on)
+                    onRemoveExtension: extension => window.removeExtension(extension)
+                }
+
+                StartPage {
+                    id: start
+                    x: window.splitShown ? window.view.x : 0
+                    width: window.splitShown ? window.view.width : parent.width
+                    height: parent.height
+                    visible: window.onStartPage
+                    hasWidevine: window.hasWidevine
+                    shortcuts: window.shortcuts.slice(0, 10)
+                    total: window.shortcuts.length
+                    onManage: window.openBookmarks()
+                    frequent: window.showFrequent ? window.frequentPages : []
+                    blocked: Shield.total
+                    note: window.note
+                    background: window.startBackground
+                    picture: window.startPicture
+                    showClock: window.showClock
+                    showShield: window.showShield
+                    showNote: window.showNote
+                    showFrequent: window.showFrequent
+                    iconFor: window.iconNames.length >= 0 && window.iconRevision >= 0 ? url => window.iconFor(url) : url => ""
+                    onNoteEdited: text => window.note = text
+                    onCustomize: window.openSettings("look")
+                    onAddShortcut: typed => window.addShortcut(typed)
+                    onRemoveShortcut: i => window.removeShortcut(i)
+                    onGo: target => {
+                        window.view.url = target
+                        if (start.field)
+                            start.field.text = ""
+                        window.view.forceActiveFocus()
+                    }
                 }
             }
         }
@@ -1863,6 +1874,16 @@ ApplicationWindow {
         onOpenInTab: url => window.openTab(url)
         onSearchFor: text => window.openTab(String(Address.search(text)))
         onFind: window.findInPage()
+    }
+
+    // colours spread from the middle when you pick others
+    ThemeWash {
+        id: themeWash
+        parent: window.Overlay.overlay
+        z: 100000
+        target: welcome.opened ? welcome.contentItem : scene
+        Component.onCompleted: Theme.washer = themeWash.run
+        Component.onDestruction: if (Theme.washer === themeWash.run) Theme.washer = null
     }
 
     // the menu behind the three lines

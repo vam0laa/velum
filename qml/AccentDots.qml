@@ -12,7 +12,7 @@ Row {
             readonly property bool current: (Theme.accentChoice || "blue") === modelData
             implicitWidth: 24
             implicitHeight: 24
-            onClicked: Theme.accentChoice = modelData === "blue" ? "" : modelData
+            onClicked: if (!current) Theme.change(() => Theme.accentChoice = dot.modelData === "blue" ? "" : dot.modelData)
             Accessible.name: modelData
             contentItem: Item {
                 Rectangle { anchors.centerIn: parent; width: 24; height: 24; radius: Theme.radius; color: "transparent"; border.width: dot.current ? 2 : 0; border.color: Theme.pick(Theme.accents[dot.modelData]) }

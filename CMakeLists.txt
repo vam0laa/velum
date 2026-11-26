@@ -45,6 +45,7 @@ qt_add_qml_module(velum
         qml/ClassicStart.qml
         qml/MonthCard.qml
         qml/Recommended.qml
+        qml/ThemeWash.qml
         qml/BrowserPreview.qml
         qml/ChoiceCard.qml
         qml/WebStart.qml
@@ -97,7 +98,7 @@ qt_add_qml_module(velum
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
-    RESOURCES data/velum.svg data/sky.jpg data/sky-night.jpg data/scanline.png data/fonts/VT323-Regular.ttf data/fonts/GoogleSansFlex.woff
+    RESOURCES data/velum.svg data/sky.jpg data/sky-night.jpg data/scanline.png data/logos/tr.svg data/logos/gb.svg data/logos/duckduckgo.png data/logos/brave.png data/logos/google.png data/logos/startpage.svg data/logos/ublock.png data/logos/darkreader.png data/logos/sponsorblock.png data/fonts/VT323-Regular.ttf data/fonts/GoogleSansFlex.woff
     SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h src/importbridge.h src/passwordbridge.h src/storebridge.h src/defaultbrowser.h
     IMPORTS QtQuick
 )
