@@ -741,7 +741,6 @@ ApplicationWindow {
     Connections {
         target: Shield
         function onChanged() { window.guardEarly() }
-        function onCountsChanged() { window.guardEarly() }
     }
 
     function watchLogins() { return passwordLogic.watchLogins() }

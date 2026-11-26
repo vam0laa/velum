@@ -65,7 +65,8 @@ WebEngineView {
 
     profile: app.profile
     // an empty tab lets the glass through; a web page gets a solid sheet
-    backgroundColor: Theme.seeThrough && (url.toString() === "" || url.toString() === "about:blank") ? "transparent" : Theme.surface
+    // a web page that sets no colour of its own expects white behind its black writing
+    backgroundColor: url.toString() === "" || url.toString() === "about:blank" ? (Theme.seeThrough ? "transparent" : Theme.surface) : "white"
     settings.fullScreenSupportEnabled: true      // video full screen
     settings.errorPageEnabled: false             // Velum explains problems itself
     // saving power: nothing starts playing by itself
