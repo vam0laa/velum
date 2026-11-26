@@ -51,6 +51,8 @@ Item {
             t.check("a search is not a shortcut", !w.addShortcut("some words"))
             w.removeShortcut(0); t.check("a shortcut is removed", w.shortcuts.length === 0)
             t.check("no old style sheet paints over the new home page", w.homeCss === "")
+            t.check("sites are told the languages", w.profile.httpAcceptLanguage.indexOf("en") >= 0 && w.acceptLanguages("tr_TR") === "tr-TR,tr,en-US,en"
+                    && w.acceptLanguages("en_US") === "en-US,en" && w.acceptLanguages("C") === "en-US,en")
             {
                 const page = { mendUrl: "", mendTries: 0, tries: 0, tryAgain: function() { this.tries++ } }
                 const broken = "net::ERR_SSL_PROTOCOL_ERROR"

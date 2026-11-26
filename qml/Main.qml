@@ -220,6 +220,8 @@ ApplicationWindow {
         }
         // Present Velum as the Chrome engine it is. Some sites refuse names they do not know.
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
+        // every browser says which languages you read; one that does not looks like a robot
+        profile.httpAcceptLanguage = acceptLanguages(Qt.locale().name)
         shortcuts = readList(saved.shortcuts)
         readHome()
         tabLogic.readGroups()
@@ -798,6 +800,12 @@ ApplicationWindow {
         iconRevision++
     }
     function fetchIcon(url) { siteLogic.fetchIcon(url) }
+    // "tr_TR" becomes "tr-TR,tr,en-US,en": the computer's language first, then English
+    function acceptLanguages(name) {
+        const [language, region] = String(name).split("_")
+        const own = /^[a-z]{2,3}$/.test(language) ? [region ? language + "-" + region : language, language] : []
+        return own.concat(["en-US", "en"]).filter((l, i, all) => all.indexOf(l) === i).join(",")
+    }
     function iconFor(url) { return siteLogic.iconFor(url) }
     function keepIcon(pageUrl, icon) { return siteLogic.keepIcon(pageUrl, icon) }
     // draws an icon out of sight and writes the picture down
