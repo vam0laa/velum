@@ -22,7 +22,9 @@ ApplicationWindow {
     property var spaces: [{ id: 1, name: "" }]     // an empty name reads "General"
     property int space: 1             // the workspace being looked at
     property var lastInSpace: ({})    // the page each workspace was left on
-    property var shortcuts: []        // shown on the start page: [{ title, url }]
+    // the bookmarks, in order: [{ title, url, folder }]. The first ten are on the start page.
+    property var shortcuts: []
+    property alias bookmarks: bookmarksPage
     property int sleepMode: 1                    // 0 never, 1 early, 2 relaxed
     readonly property bool autoSleep: sleepMode > 0
     readonly property int freezeAfter: (sleepMode === 2 ? 5 : 2) * 60 * 1000      // milliseconds unseen
@@ -311,13 +313,66 @@ ApplicationWindow {
 
     function addShortcut(typed, title) {
         const url = String(Address.resolve(typed))
-        if (url === "" || url === "about:blank" || Address.isSearch(typed) || shortcuts.some(s => s.url === url) || shortcuts.length >= 500)
+        if (url === "" || url === "about:blank" || Address.isSearch(typed) || shortcuts.some(s => s.url === url) || shortcuts.length >= maxBookmarks)
             return false
         const name = title || Address.display(url).replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0]
-        shortcuts = shortcuts.concat([{ title: name, url: url }])
-        saved.shortcuts = JSON.stringify(shortcuts)
+        keepBookmarks(shortcuts.concat([{ title: name, url: url }]))
         return true
     }
+
+    readonly property int maxBookmarks: 2000
+    function keepBookmarks(list) {
+        shortcuts = list
+        saved.shortcuts = JSON.stringify(list)
+    }
+
+    // From the manager: index -1 adds. False when the address cannot be used.
+    function saveBookmark(index, title, address, folder) {
+        const url = String(Address.resolve(address))
+        if (url === "" || url === "about:blank" || Address.isSearch(address) || shortcuts.some((s, i) => s.url === url && i !== index))
+            return false
+        if (index < 0 ? shortcuts.length >= maxBookmarks : index >= shortcuts.length)
+            return false
+        const item = { title: String(title).trim() || Address.display(url).replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0], url: url }
+        if (String(folder).trim() !== "")
+            item.folder = String(folder).trim()
+        const list = shortcuts.slice()
+        if (index < 0)
+            list.push(item)
+        else
+            list[index] = item
+        keepBookmarks(list)
+        return true
+    }
+
+    function restoreBookmark(item, index) {
+        if (shortcuts.some(s => s.url === item.url))
+            return
+        const list = shortcuts.slice()
+        list.splice(Math.max(0, Math.min(index, list.length)), 0, item)
+        keepBookmarks(list)
+    }
+
+    // the two change places
+    function moveBookmark(from, to) {
+        if (from === to || !shortcuts[from] || !shortcuts[to])
+            return
+        const list = shortcuts.slice()
+        list[from] = shortcuts[to]
+        list[to] = shortcuts[from]
+        keepBookmarks(list)
+    }
+
+    // an empty new name puts the bookmarks outside any folder
+    function renameFolder(from, to) {
+        keepBookmarks(shortcuts.map(s => {
+            if ((s.folder ?? "") !== from)
+                return s
+            return to.trim() === "" ? { title: s.title, url: s.url } : { title: s.title, url: s.url, folder: to.trim() }
+        }))
+    }
+
+    function openBookmarks() { bookmarksPage.open() }
 
     // Ctrl+D: bookmark the page, or remove the bookmark it already has
     function toggleBookmark() {
@@ -639,8 +694,7 @@ ApplicationWindow {
     }
 
     function removeShortcut(index) {
-        shortcuts = shortcuts.filter((s, i) => i !== index)
-        saved.shortcuts = JSON.stringify(shortcuts)
+        keepBookmarks(shortcuts.filter((s, i) => i !== index))
     }
 
     function navigate(target, inNewTab) {
@@ -699,6 +753,8 @@ ApplicationWindow {
         }
         else if (action === "allow" && ask)
             answer(ask, true)
+        else if (action === "bookmarks")
+            openBookmarks()
         else if (action === "mini")
             toggleMini()
         else if (action.startsWith("space:"))
@@ -1062,6 +1118,8 @@ ApplicationWindow {
                 hasWidevine: window.hasWidevine
                 field.pageUrl: ""
                 shortcuts: window.shortcuts.slice(0, 10)
+                total: window.shortcuts.length
+                onManage: window.openBookmarks()
                 onAddShortcut: typed => window.addShortcut(typed)
                 onRemoveShortcut: i => window.removeShortcut(i)
                 onGo: target => {
@@ -1102,6 +1160,17 @@ ApplicationWindow {
         onConfirmed: { History.clear(); Shield.clearData(window.profile) }
     }
 
+    BookmarksPage {
+        id: bookmarksPage
+        items: window.shortcuts
+        save: (index, title, address, folder) => window.saveBookmark(index, title, address, folder)
+        onRemoved: index => window.removeShortcut(index)
+        onRestored: (item, index) => window.restoreBookmark(item, index)
+        onMoved: (from, to) => window.moveBookmark(from, to)
+        onFolderRenamed: (from, to) => window.renameFolder(from, to)
+        onChosen: target => window.navigate(target, true)
+    }
+
     MiniPlayer {
         id: miniPlayer
         onBackRequested: window.closeMini()
@@ -1123,6 +1192,7 @@ ApplicationWindow {
             { name: Lang.t("Sekmeyi sabitle ya da çöz", "Pin or unpin the tab"), keys: "Ctrl+Shift+P", run: () => window.togglePin(window.current) },
             { name: Lang.t("Kapatılan sekmeyi geri aç", "Reopen the closed tab"), keys: "Ctrl+Shift+T", run: () => window.reopenClosed() },
             { name: Lang.t("Yer imi ekle ya da kaldır", "Add or remove a bookmark"), keys: "Ctrl+D", run: () => window.toggleBookmark() },
+            { name: Lang.t("Yer imleri: düzenle, klasörle", "Bookmarks: edit and sort"), keys: "Ctrl+Shift+O", run: () => Qt.callLater(window.openBookmarks) },
             { name: Lang.t("Geçmiş", "History"), keys: "Ctrl+H", run: () => Qt.callLater(window.showCommandHistory) },
             { name: Lang.t("İndirmeler", "Downloads"), keys: "Ctrl+J", run: () => side.openDownloads() },
             { name: Lang.t("Kaynaklar: hangi sekme ne kadar yiyor", "Resources: what each tab uses"), keys: "Shift+Esc", run: () => resources.open() },
@@ -1188,6 +1258,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+P"; onActivated: window.togglePin(window.current) }
     Shortcut { sequence: "Ctrl+D"; onActivated: window.toggleBookmark() }
     Shortcut { sequences: [StandardKey.Find]; onActivated: window.findInPage() }
+    Shortcut { sequence: "Ctrl+Shift+O"; onActivated: window.openBookmarks() }
     Shortcut { sequence: "Alt+P"; onActivated: window.toggleMini() }
     Shortcut { sequence: "Alt+1"; onActivated: window.switchSpace(window.spaces[0]?.id) }
     Shortcut { sequence: "Alt+2"; onActivated: window.switchSpace(window.spaces[1]?.id ?? 0) }

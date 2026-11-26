@@ -14,6 +14,8 @@ Rectangle {
     signal go(url target)
     signal removeShortcut(int index)
     signal addShortcut(string typed)
+    property int total: 0               // all bookmarks, also those not shown here
+    signal manage()
 
     function greeting(hour) {
         if (hour < 5) return Lang.t("İyi geceler", "Good night")
@@ -183,6 +185,12 @@ Rectangle {
                 Keys.onEscapePressed: { text = ""; visible = false }
                 // the base field would navigate; here Enter only adds
                 onGo: {}
+            }
+            TextButton {
+                Layout.alignment: Qt.AlignHCenter
+                visible: page.total > 0
+                text: Lang.t("Bütün yer imleri (", "All bookmarks (") + page.total + ")"
+                onClicked: page.manage()
             }
             Text {
                 Layout.alignment: Qt.AlignHCenter

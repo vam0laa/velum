@@ -63,6 +63,7 @@ qt_add_qml_module(velum
         qml/SpaceBar.qml
         qml/SpaceDialog.qml
         qml/MiniPlayer.qml
+        qml/BookmarksPage.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml

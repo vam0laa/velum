@@ -34,6 +34,7 @@ Install for your user: `cmake --install build --prefix ~/.local`
 | Ctrl+F | find in page (Enter, Shift+Enter, Esc) |
 | Ctrl+, | settings |
 | Ctrl+\ | split view: two tabs side by side (also in the tab menu) |
+| Ctrl+Shift+O | bookmark manager: folders, search, edit, reorder, undo |
 | Alt+P | the video in a small window that stays on top (button in the title bar while a page plays sound) |
 | Alt+1…6 | workspaces: separate sets of tabs (pinned tabs and logins are shared) |
 | Ctrl+Tab, Ctrl+Shift+Tab | next / previous tab |

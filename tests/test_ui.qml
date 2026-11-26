@@ -91,6 +91,28 @@ Item {
             Lang.choice = "en"
             t.check("changing the language rewrites the commands", bar.find("full screen").some(r => r.kind === "command") && w.wishFor(WebEnginePermission.PermissionType.Geolocation) === "wants to know your location.")
             Lang.choice = "tr"
+            // the bookmark manager
+            const marks = w.bookmarks
+            while (w.shortcuts.length) w.removeShortcut(0)
+            t.check("a bookmark is saved with a name and a folder", w.saveBookmark(-1, " Site ", "vamola.dev", " Linux ") && w.shortcuts[0].title === "Site" && w.shortcuts[0].folder === "Linux")
+            t.check("a missing name comes from the address", w.saveBookmark(-1, "", "example.org", "") && w.shortcuts[1].title === "example.org" && w.shortcuts[1].folder === undefined)
+            t.check("bad and repeated addresses are refused", !w.saveBookmark(-1, "x", "two words", "") && !w.saveBookmark(-1, "x", "vamola.dev", "") && !w.saveBookmark(9, "x", "new.example", ""))
+            t.check("editing keeps its own address", w.saveBookmark(0, "Yeni ad", "vamola.dev", "Linux") && w.shortcuts[0].title === "Yeni ad" && w.shortcuts.length === 2)
+            marks.open()
+            t.check("folders are listed", marks.folders.length === 1 && marks.folders[0] === "Linux" && marks.rows.length === 2)
+            marks.folder = "Linux"; t.check("a folder shows its own", marks.rows.length === 1 && marks.rows[0].index === 0)
+            marks.folder = "*"; marks.query = "EXAMPLE"; t.check("searching narrows the list", marks.rows.length === 1 && marks.rows[0].index === 1)
+            marks.query = ""
+            w.moveBookmark(0, 1); t.check("bookmarks change places", w.shortcuts[0].title === "example.org")
+            marks.remove(0); t.check("deleting can be undone", w.shortcuts.length === 1 && marks.undo !== null)
+            marks.restored(marks.undo.item, marks.undo.index); t.check("undo puts it back in place", w.shortcuts.length === 2 && w.shortcuts[0].title === "example.org")
+            marks.folder = "Linux"; w.renameFolder("Linux", "Araçlar")
+            t.check("renaming a folder moves its bookmarks", w.shortcuts[1].folder === "Araçlar" && marks.folder === "*")
+            w.renameFolder("Araçlar", ""); t.check("dissolving a folder keeps them", w.shortcuts.length === 2 && marks.folders.length === 0)
+            marks.edit(-1); marks.commit(); t.check("an empty form reports the problem", marks.editing === -1 && marks.error !== "")
+            marks.close()
+            while (w.shortcuts.length) w.removeShortcut(0)
+
             // workspaces
             const kept = w.pageAt(w.current), first = w.space, home = w.current
             w.togglePin(home)

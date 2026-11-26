@@ -299,6 +299,10 @@ Qt WebEngine tarayıcıların "picture-in-picture" özelliğini desteklemiyor. O
 
 Pencerenin başlığı `Picture-in-Picture`: Hyprland kuralları bu başlığı tanıyıp pencereyi yüzen ve sabit yapar. Sınırlar: başka siteden gömülü (iframe) videolar bulunamaz; sitenin kendi çizdiği altyazılar küçük pencerede görünmez.
 
+## 7s. Yer imi yöneticisi
+
+`qml/BookmarksPage.qml` yalnızca gösterir ve ister; listeyi `Main.qml` tutar ve değiştirir (`saveBookmark`, `moveBookmark`, `renameFolder`). Klasörler ayrıca saklanmaz: yer imlerinin `folder` alanlarından çıkarılır, bu yüzden boş klasör kalmaz.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.
