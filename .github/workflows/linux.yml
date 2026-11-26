@@ -82,6 +82,10 @@ jobs:
           plugins="$QT_ROOT_DIR/plugins"
           # only SQLite is used; the other database drivers want libraries nobody has
           find "$plugins/sqldrivers" -type f ! -name libqsqlite.so -delete
+          # a plugin that wants a library which is not here (serial GPS and the like) stays out
+          find "$plugins" -name '*.so' | while read -r so; do
+              if ldd "$so" | grep -q 'not found'; then echo "left out: ${so#$plugins/}"; rm "$so"; fi
+          done
           export EXTRA_PLATFORM_PLUGINS="$(cd $plugins/platforms && ls libqwayland*.so libqoffscreen.so | paste -sd';')"
           export EXTRA_QT_PLUGINS="$(cd $plugins && ls -d wayland-* imageformats tls networkinformation 2>/dev/null | paste -sd';')"
           export LDAI_OUTPUT="out/Velum-$VERSION-x86_64.AppImage"
