@@ -18,6 +18,7 @@ QList<Source> sources()
         list("ublock-quick-fixes.txt", "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/quick-fixes.txt", true),
         list("ublock-privacy.txt", "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/privacy.txt", true),
         list("ublock-unbreak.txt", "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/unbreak.txt", true),
+        list(harmfulFile, "https://urlhaus.abuse.ch/downloads/hostfile/", false),
         list("resources.json", "https://raw.githubusercontent.com/brave/adblock-resources/master/dist/resources.json", false),
     };
 }
@@ -28,6 +29,8 @@ bool plausible(const QString &file, const QByteArray &data)
         const QJsonDocument doc = QJsonDocument::fromJson(data);
         return doc.isArray() && !doc.array().isEmpty();
     }
+    if (file == QLatin1String(harmfulFile))
+        return data.size() > 100 && (data.contains("\n127.0.0.1\t") || data.contains("\n127.0.0.1 "));
     const QByteArray start = data.left(200).trimmed();
     return data.size() > 200 && (start.startsWith('!') || start.startsWith("[Adblock"));
 }

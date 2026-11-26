@@ -19,4 +19,12 @@ QtObject {
     function setAllowed(h, a) {}
     function pageScript(u) { return "" }
     function updateLists() {}
+    property bool safeBrowsing: true
+    property string secureDns: "off"
+    property int cookieRevision: 0
+    property var sites: [{ site: "a.example", count: 2 }, { site: "b.example", count: 1 }]
+    function harmful(h) { return h === "kotu.example" }
+    function blockedHosts(h) { return h === "a.example" ? [{ host: "ads.example", count: 3 }] : [] }
+    function cookieSites(text) { return sites.filter(s => s.site.indexOf(text) >= 0) }
+    function removeCookies(site) { sites = sites.filter(s => s.site !== site); cookieRevision++ }
 }

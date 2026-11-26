@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 
 // The saved logins, in the settings. Passwords are never shown; they can be copied or deleted.
@@ -36,6 +37,51 @@ ColumnLayout {
         color: panel.broken ? Theme.danger : Theme.text
         font.family: Theme.ui; font.pixelSize: Theme.size(17)
         wrapMode: Text.WordWrap
+    }
+    // adding one yourself, with a strong password made for you; saving an existing name changes it
+    component Field: TextField {
+        id: field
+        Layout.fillWidth: true
+        implicitHeight: 32
+        leftPadding: 10
+        color: Theme.text
+        placeholderTextColor: Theme.dim
+        font.family: Theme.ui; font.pixelSize: Theme.size(16)
+        background: Rectangle { radius: Theme.radius; color: Theme.surface; border.color: field.activeFocus ? Theme.accent : Theme.line }
+    }
+    property bool adding: false
+    function add(site, user, secret) {
+        const origin = Passwords.origin(site.indexOf("://") < 0 ? "https://" + site : site)
+        if (origin === "" || secret === "") {
+            said = Lang.t("Site adresi (https) ve parola gerekli.", "A site address (https) and a password are needed.")
+            return false
+        }
+        Passwords.save(origin, user.trim(), secret, ok => { panel.refresh(); panel.said = ok ? Lang.t("Kaydedildi.", "Saved.") : Lang.t("Kaydedilemedi.", "Could not save.") })
+        adding = false
+        return true
+    }
+    FileDialog { id: csvIn; nameFilters: ["CSV (*.csv)"]; onAccepted: Passwords.importCsv(selectedFile, n => { panel.refresh(); panel.said = n < 0 ? Lang.t("Bu dosya bir parola dosyası olarak okunamadı.", "This file could not be read as a password file.") : Lang.t(n + " parola alındı. Dosyayı artık silmelisin.", n + " passwords taken in. Delete the file now.") }) }
+    FileDialog { id: csvOut; fileMode: FileDialog.SaveFile; defaultSuffix: "csv"; nameFilters: ["CSV (*.csv)"]; onAccepted: Passwords.exportCsv(selectedFile, n => panel.said = n < 0 ? Lang.t("Dışa aktarılamadı.", "Could not export.") : Lang.t(n + " parola ŞİFRESİZ olarak yazıldı. İşin bitince dosyayı sil.", n + " passwords written UNENCRYPTED. Delete the file when done.")) }
+    RowLayout {
+        Layout.fillWidth: true
+        TextButton { text: panel.adding ? Lang.t("Vazgeç", "Cancel") : Lang.t("Parola ekle", "Add a password"); onClicked: panel.adding = !panel.adding }
+        Item { Layout.fillWidth: true }
+        TextButton { text: Lang.t("CSV'den al", "Import CSV"); onClicked: csvIn.open() }
+        property bool sure: false
+        TextButton { text: parent.sure ? Lang.t("Şifresiz yazılacak, emin misin?", "Written unencrypted, sure?") : Lang.t("CSV'ye ver", "Export CSV"); enabled: panel.accounts.length > 0; onClicked: { if (parent.sure) csvOut.open(); parent.sure = !parent.sure } }
+    }
+    ColumnLayout {
+        Layout.fillWidth: true
+        visible: panel.adding
+        Field { id: newSite; placeholderText: Lang.t("Site (örn. ornek.com)", "Site (e.g. example.com)") }
+        Field { id: newUser; placeholderText: Lang.t("Kullanıcı adı", "User name") }
+        RowLayout {
+            Layout.fillWidth: true
+            Field { id: newSecret; placeholderText: Lang.t("Parola", "Password"); echoMode: shown.on ? TextInput.Normal : TextInput.Password }
+            TextButton { id: shown; property bool on: false; text: on ? Lang.t("Gizle", "Hide") : Lang.t("Göster", "Show"); onClicked: on = !on }
+            TextButton { text: Lang.t("Güçlü parola üret", "Generate a strong one"); onClicked: { newSecret.text = Passwords.generate(20); shown.on = true } }
+        }
+        TextButton { Layout.alignment: Qt.AlignRight; strong: true; text: Lang.t("Kaydet", "Save"); onClicked: if (panel.add(newSite.text.trim(), newUser.text, newSecret.text)) { newSite.text = ""; newUser.text = ""; newSecret.text = ""; shown.on = false } }
     }
     ListView {
         id: list

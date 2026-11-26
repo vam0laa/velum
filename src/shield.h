@@ -1,5 +1,8 @@
 #pragma once
 #include <QHash>
+#include <QNetworkCookie>
+#include <QVariantList>
+#include <QWebEngineCookieStore>
 #include <QNetworkAccessManager>
 #include <QReadWriteLock>
 #include <QObject>
@@ -26,6 +29,11 @@ class Shield : public QWebEngineUrlRequestInterceptor
     // the value forgetOnExit had at start: the engine accepts its cookie setting only once
     Q_PROPERTY(bool forgettingThisRun READ forgettingThisRun CONSTANT)
     Q_PROPERTY(bool ready READ ready NOTIFY changed)
+    // refuse sites on the list of known harmful ones (abuse.ch URLhaus)
+    Q_PROPERTY(bool safeBrowsing READ safeBrowsing WRITE setSafeBrowsing NOTIFY changed)
+    // "off": the system looks names up; "cloudflare" or "quad9": only over an encrypted line
+    Q_PROPERTY(QString secureDns READ secureDns WRITE setSecureDns NOTIFY changed)
+    Q_PROPERTY(int cookieRevision READ cookieRevision NOTIFY cookiesChanged)
     // "none", "loading", "ready", "downloading", "failed" or "cleared"; statusText() words it
     Q_PROPERTY(QString statusCode READ statusCode NOTIFY changed)
     Q_PROPERTY(double total READ total NOTIFY countsChanged)        // everything blocked so far
@@ -60,13 +68,27 @@ public:
     Q_INVOKABLE QString pageScript(const QUrl &url) const;
     Q_INVOKABLE void updateLists();
     Q_INVOKABLE void clearData(QObject *profile);                   // cookies and cached files
+    bool safeBrowsing() const { return m_safe; }
+    void setSafeBrowsing(bool on);
+    bool isHarmful(const QString &host) const { return m_safe && m_bad.contains(host.toLower()); }
+    Q_INVOKABLE bool harmful(const QString &host) const { return isHarmful(host); }
+    QString secureDns() const { return m_dns; }
+    void setSecureDns(const QString &provider);
+    // [{ host, count }] of what was refused on `site`, most first
+    Q_INVOKABLE QVariantList blockedHosts(const QString &site, int /*revision*/ = 0) const;
+    int cookieRevision() const { return m_cookieRevision; }
+    // [{ site, count }] of the sites that have cookies here
+    Q_INVOKABLE QVariantList cookieSites(const QString &text, int /*revision*/ = 0) const;
+    Q_INVOKABLE void removeCookies(const QString &site);
 
 signals:
     void changed();
     void countsChanged();
+    void cookiesChanged();
 
 private:
     void load();
+    void applyDns();
     void setStatus(const QString &code, int count = 0);
     QString folder() const;
 
@@ -74,6 +96,14 @@ private:
     QNetworkAccessManager m_network;
     QHash<QString, int> m_counts;
     QSet<QString> m_allowed;
+    QSet<QString> m_bad;                                   // known harmful hosts
+    QHash<QString, QHash<QString, int>> m_blockedBy;       // site -> refused host -> times
+    QHash<QString, QList<QNetworkCookie>> m_cookies;       // domain -> cookies
+    QWebEngineCookieStore *m_cookieStore = nullptr;
+    QTimer m_cookieNotify;
+    QString m_dns = QStringLiteral("off");
+    int m_cookieRevision = 0;
+    bool m_safe = true;
     // the cookie filter runs on the engine's network thread, so what it reads is guarded
     mutable QReadWriteLock m_lock;
     std::atomic<bool> m_blockCookies{true};

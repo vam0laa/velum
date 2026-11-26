@@ -384,6 +384,13 @@ Item {
                 h.removeSince(3600); t.check("recent pages can be removed", h.rows.length === 1)
                 h.close()
             }
+            // ---- privacy and passwords ----
+            {
+                w.openSettings("privacy"); t.check("the privacy cards are there", w.prefs.section === "privacy")
+                w.listPermissions(); t.check("a fresh profile has no permissions", w.permissions.length === 0)
+                w.popupSites = ["a.example"]; w.prefs.forgetPopup("a.example"); t.check("a window permission can be taken back", w.popupSites.length === 0)
+                w.closeTab(w.current)
+            }
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")

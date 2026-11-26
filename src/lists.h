@@ -7,6 +7,9 @@
 // The filter lists Velum downloads, and the checks a download must pass.
 namespace lists {
 
+// the list of hosts known to hand out harmful software; not an ad filter
+inline constexpr char harmfulFile[] = "harmful-hosts.txt";
+
 struct Source {
     QString file;
     QUrl url;

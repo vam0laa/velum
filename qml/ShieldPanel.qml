@@ -17,6 +17,9 @@ Popup {
     background: WindowBackground { title: Lang.t("koruma", "shield"); stripe: Theme.green }
     topPadding: 42
     readonly property bool siteAllowed: Shield.allowed(host, Shield.revision)
+    property url address                  // of the page, for what the connection is
+    readonly property bool encrypted: String(address).indexOf("https:") === 0
+    readonly property var refused: visible ? Shield.blockedHosts(host, Shield.revision) : []
 
     ColumnLayout {
         anchors.left: parent.left
@@ -36,6 +39,31 @@ Popup {
             elide: Text.ElideRight
             color: Theme.dim
             font.family: Theme.ui; font.pixelSize: Theme.size(16)
+        }
+        Text {
+            Layout.fillWidth: true
+            visible: panel.host !== ""
+            text: panel.encrypted ? Lang.t("✓ Bağlantı şifreli (HTTPS)", "✓ The connection is encrypted (HTTPS)") : Lang.t("⚠ Bağlantı şifresiz", "⚠ The connection is not encrypted")
+            color: panel.encrypted ? Theme.green : Theme.danger
+            font.family: Theme.ui; font.pixelSize: Theme.size(16)
+        }
+        // what was refused, by name
+        ListView {
+            Layout.fillWidth: true
+            implicitHeight: Math.min(contentHeight, 110)
+            visible: panel.refused.length > 0
+            clip: true
+            model: panel.refused
+            boundsBehavior: Flickable.StopAtBounds
+            delegate: Text {
+                required property var modelData
+                width: ListView.view.width
+                text: modelData.count + " ×  " + modelData.host
+                textFormat: Text.PlainText
+                elide: Text.ElideMiddle
+                color: Theme.dim
+                font.family: Theme.ui; font.pixelSize: Theme.size(15)
+            }
         }
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.line }
         Toggle {

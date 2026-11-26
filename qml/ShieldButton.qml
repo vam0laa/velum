@@ -5,6 +5,7 @@ IconButton {
     id: button
     property string host                // of the current page
     property bool beside: false         // the panel opens to the right instead of below
+    property url address                // of the current page
     signal reload()
     signal clearRequested()
     readonly property int blocked: Shield.blockedCount(host, Shield.revision)
@@ -25,6 +26,7 @@ IconButton {
     ShieldPanel {
         id: panel
         host: button.host
+        address: button.address
         x: button.beside ? button.width + 8 : button.width - width
         y: button.beside ? 0 : button.height + 6
         onReload: button.reload()

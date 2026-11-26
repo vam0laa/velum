@@ -47,6 +47,21 @@ QtObject {
             item.permission.deny()
     }
 
+    // what sites were allowed or refused, for the settings
+    function listPermissions() {
+        const out = []
+        for (const p of app.profile.listAllPermissions()) {
+            const what = app.wishFor(p.permissionType)
+            if (what !== "" && (p.state === WebEnginePermission.State.Granted || p.state === WebEnginePermission.State.Denied))
+                out.push({ site: app.hostOf(p.origin) || String(p.origin), what: what, allowed: p.state === WebEnginePermission.State.Granted, permission: p })
+        }
+        app.permissions = out
+    }
+    function resetPermission(item) {
+        item.permission.reset()
+        listPermissions()
+    }
+
     // a page that is leaving or closing takes its questions with it
     function dropAsks(page) {
         for (const item of app.asks.filter(a => a.page === page))

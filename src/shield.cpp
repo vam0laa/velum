@@ -1,4 +1,6 @@
 #include "shield.h"
+#include "library.h"
+#include <QWebEngineGlobalSettings>
 
 #include <QDateTime>
 #include <QDir>
@@ -64,6 +66,12 @@ Shield::Shield(QObject *parent) : QWebEngineUrlRequestInterceptor(parent)
     m_blockCookies = settings.value(QStringLiteral("shield/blockThirdPartyCookies"), true).toBool();
     m_forget = settings.value(QStringLiteral("shield/forgetOnExit"), false).toBool();
     m_forgettingThisRun = m_forget;
+    m_safe = settings.value(QStringLiteral("shield/safeBrowsing"), true).toBool();
+    m_dns = settings.value(QStringLiteral("shield/secureDns"), QStringLiteral("off")).toString();
+    applyDns();
+    m_cookieNotify.setSingleShot(true);
+    m_cookieNotify.setInterval(300);
+    connect(&m_cookieNotify, &QTimer::timeout, this, [this] { ++m_cookieRevision; emit cookiesChanged(); });
     // what sites keep besides cookies; removed before the engine opens it
     if (m_forget) {
         const QString engine = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/QtWebEngine/velum/");
@@ -133,6 +141,11 @@ void Shield::load()
         QFile file(folder() + QLatin1Char('/') + source.file);
         if (!file.open(QIODevice::ReadOnly))
             continue;
+        if (source.file == QLatin1String(lists::harmfulFile)) {
+            const QStringList hosts = library::hostList(file.readAll());
+            m_bad = QSet<QString>(hosts.begin(), hosts.end());
+            continue;
+        }
         if (source.file.endsWith(QLatin1String(".json")))
             resources = file.readAll();
         else
@@ -211,6 +224,12 @@ void Shield::interceptRequest(QWebEngineUrlRequestInfo &info)
         return;
     }
 
+    // a site known to hand out harmful software is refused, even as the page itself
+    if (isHarmful(url.host())) {
+        info.block(true);
+        return;
+    }
+
     // the page the user asked for is never blocked; lists are about what the page pulls in
     if (!m_enabled || !m_blocker || isMainPage(type))
         return;
@@ -222,6 +241,8 @@ void Shield::interceptRequest(QWebEngineUrlRequestInfo &info)
         qCDebug(shieldLog).noquote() << "blocked" << url.host() << url.path().left(60);
         info.block(true);
         ++m_counts[site];
+        if (m_blockedBy[site].size() < 200 || m_blockedBy[site].contains(url.host()))
+            ++m_blockedBy[site][url.host()];
         ++m_total;
         if (!m_notify.isActive())
             m_notify.start();
@@ -247,6 +268,88 @@ void Shield::attach(QObject *profile)
     });
     if (m_forget)
         quick->cookieStore()->deleteAllCookies();
+    // a list of the cookies, for the settings
+    m_cookieStore = quick->cookieStore();
+    connect(m_cookieStore, &QWebEngineCookieStore::cookieAdded, this, [this](const QNetworkCookie &c) {
+        auto &list = m_cookies[c.domain().startsWith(QLatin1Char('.')) ? c.domain().mid(1) : c.domain()];
+        list.removeIf([&c](const QNetworkCookie &o) { return o.hasSameIdentifier(c); });
+        list.append(c);
+        m_cookieNotify.start();
+    });
+    connect(m_cookieStore, &QWebEngineCookieStore::cookieRemoved, this, [this](const QNetworkCookie &c) {
+        const QString site = c.domain().startsWith(QLatin1Char('.')) ? c.domain().mid(1) : c.domain();
+        if (m_cookies.contains(site)) {
+            m_cookies[site].removeIf([&c](const QNetworkCookie &o) { return o.hasSameIdentifier(c); });
+            if (m_cookies[site].isEmpty())
+                m_cookies.remove(site);
+            m_cookieNotify.start();
+        }
+    });
+    m_cookieStore->loadAllCookies();
+}
+
+QVariantList Shield::blockedHosts(const QString &site, int) const
+{
+    QList<std::pair<int, QString>> sorted;
+    const auto found = m_blockedBy.value(site);
+    for (auto it = found.begin(); it != found.end(); ++it)
+        sorted.append({-it.value(), it.key()});
+    std::sort(sorted.begin(), sorted.end());
+    QVariantList out;
+    for (const auto &[count, host] : std::as_const(sorted))
+        out.append(QVariantMap{{QStringLiteral("host"), host}, {QStringLiteral("count"), -count}});
+    return out;
+}
+
+QVariantList Shield::cookieSites(const QString &text, int) const
+{
+    QStringList sites = m_cookies.keys();
+    sites.sort();
+    QVariantList out;
+    for (const QString &site : std::as_const(sites))
+        if (site.contains(text.trimmed(), Qt::CaseInsensitive))
+            out.append(QVariantMap{{QStringLiteral("site"), site}, {QStringLiteral("count"), int(m_cookies.value(site).size())}});
+    return out;
+}
+
+void Shield::removeCookies(const QString &site)
+{
+    if (!m_cookieStore)
+        return;
+    const auto list = m_cookies.value(site);
+    for (const QNetworkCookie &c : list)
+        m_cookieStore->deleteCookie(c);
+}
+
+void Shield::setSafeBrowsing(bool on)
+{
+    if (m_safe == on)
+        return;
+    m_safe = on;
+    QSettings().setValue(QStringLiteral("shield/safeBrowsing"), on);
+    emit changed();
+}
+
+void Shield::setSecureDns(const QString &provider)
+{
+    const QString clean = provider == QLatin1String("cloudflare") || provider == QLatin1String("quad9") ? provider : QStringLiteral("off");
+    if (m_dns == clean)
+        return;
+    m_dns = clean;
+    QSettings().setValue(QStringLiteral("shield/secureDns"), clean);
+    applyDns();
+    emit changed();
+}
+
+void Shield::applyDns()
+{
+    using namespace QWebEngineGlobalSettings;
+    if (m_dns == QLatin1String("cloudflare"))
+        setDnsMode({SecureDnsMode::SecureOnly, {QStringLiteral("https://cloudflare-dns.com/dns-query")}});
+    else if (m_dns == QLatin1String("quad9"))
+        setDnsMode({SecureDnsMode::SecureOnly, {QStringLiteral("https://dns.quad9.net/dns-query")}});
+    else
+        setDnsMode({SecureDnsMode::SystemOnly, {}});
 }
 
 void Shield::clearData(QObject *profile)
@@ -278,6 +381,7 @@ void Shield::setForgetOnExit(bool on)
 
 void Shield::resetCount(const QString &host)
 {
+    m_blockedBy.remove(host);
     if (m_counts.remove(host)) {
         ++m_revision;
         emit countsChanged();

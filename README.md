@@ -43,6 +43,10 @@ Downloads can be paused, resumed, opened (never files that can run programs) and
 
 Ctrl+H opens the history by day, with search and removal by age. Bookmarks have folders inside folders ("Work/Tools"), are read from and written to the HTML file every browser knows, and show as menus on the bookmarks bar. Settings → General backs bookmarks and your look up into one file locked with a password (AES-256, scrypt).
 
+## Privacy and passwords
+
+The shield panel says whether the connection is encrypted and names what was refused. Sites on the abuse.ch URLhaus list of harmful hosts are not opened (can be switched off). Settings → Privacy has secure DNS (Cloudflare or Quad9), the permissions given since start, and the sites that keep cookies. Passwords can be added by hand with a generated strong one, and exchanged with other browsers as CSV (which is not encrypted).
+
 ## Speed
 
 Three modes in the menu and in Settings → Performance: balanced, game (background tabs freeze within seconds, no animations) and saver. A memory limit puts the longest unseen tabs to sleep. Graphics acceleration is one switch (on unless you switch it off), also asked on the welcome pages. Shortcuts can be changed in Settings → Shortcuts.

@@ -243,6 +243,7 @@ Item {
                     flat: true
                     implicitWidth: 32; implicitHeight: 28
                     host: bar.host
+                    address: bar.view?.url ?? ""
                     onReload: bar.reloadPage()
                     onClearRequested: bar.clearData()
                 }

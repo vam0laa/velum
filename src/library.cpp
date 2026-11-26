@@ -1,5 +1,6 @@
 #include "library.h"
 
+#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QUrl>
 #include <QVariantMap>
@@ -113,6 +114,106 @@ QVariantList fromHtml(const QString &html)
                 item.insert(QStringLiteral("folder"), folders.mid(0, 6).join(QLatin1Char('/')));
             out.append(item);
         }
+    }
+    return out;
+}
+
+QString generatePassword(int length)
+{
+    // no characters that look like one another (0 O, 1 l I)
+    const QString groups[] = {QStringLiteral("abcdefghijkmnopqrstuvwxyz"), QStringLiteral("ABCDEFGHJKLMNPQRSTUVWXYZ"),
+                              QStringLiteral("23456789"), QStringLiteral("!#$%&*+-=?@_")};
+    const QString all = groups[0] + groups[1] + groups[2] + groups[3];
+    auto *random = QRandomGenerator::system();
+    const int n = qBound(12, length, 64);
+    QString out;
+    for (const QString &g : groups)
+        out += g[random->bounded(int(g.size()))];
+    while (out.size() < n)
+        out += all[random->bounded(int(all.size()))];
+    for (int i = int(out.size()) - 1; i > 0; --i) {     // the sure four must not stay in front
+        const int j = random->bounded(i + 1);
+        const QChar c = out[i];
+        out[i] = out[j];
+        out[j] = c;
+    }
+    return out;
+}
+
+QList<Login> fromCsv(const QString &csv)
+{
+    QList<QStringList> rows;
+    QStringList row;
+    QString cell;
+    bool quoted = false;
+    for (qsizetype i = 0; i < csv.size() && rows.size() <= 5000; ++i) {
+        const QChar c = csv[i];
+        if (quoted) {
+            if (c == QLatin1Char('"') && i + 1 < csv.size() && csv[i + 1] == QLatin1Char('"'))
+                cell += csv[++i];
+            else if (c == QLatin1Char('"'))
+                quoted = false;
+            else
+                cell += c;
+        } else if (c == QLatin1Char('"') && cell.isEmpty()) {
+            quoted = true;
+        } else if (c == QLatin1Char(',')) {
+            row.append(cell);
+            cell.clear();
+        } else if (c == QLatin1Char('\n')) {
+            row.append(cell);
+            cell.clear();
+            rows.append(row);
+            row.clear();
+        } else if (c != QLatin1Char('\r')) {
+            cell += c;
+        }
+    }
+    if (!cell.isEmpty() || !row.isEmpty()) {
+        row.append(cell);
+        rows.append(row);
+    }
+    QList<Login> out;
+    if (rows.isEmpty())
+        return out;
+    int url = -1, user = -1, password = -1;
+    for (int i = 0; i < rows.first().size(); ++i) {
+        const QString name = rows.first()[i].trimmed().toLower().remove(QChar(0xFEFF));
+        if (name == QLatin1String("url") || name == QLatin1String("login_uri"))
+            url = i;
+        else if (name == QLatin1String("username") || name == QLatin1String("login_username"))
+            user = i;
+        else if (name == QLatin1String("password") || name == QLatin1String("login_password"))
+            password = i;
+    }
+    if (url < 0 || user < 0 || password < 0)
+        return out;
+    for (qsizetype r = 1; r < rows.size(); ++r) {
+        const QStringList &line = rows[r];
+        if (line.size() > qMax(url, qMax(user, password)) && !line[url].isEmpty() && !line[password].isEmpty())
+            out.append({line[url], line[user], line[password]});
+    }
+    return out;
+}
+
+QString toCsv(const QList<Login> &logins)
+{
+    const auto cell = [](QString s) { return QLatin1Char('"') + s.replace(QLatin1Char('"'), QStringLiteral("\"\"")) + QLatin1Char('"'); };
+    QString out = QStringLiteral("name,url,username,password\n");
+    for (const Login &l : logins)
+        out += cell(QUrl(l.url).host()) + QLatin1Char(',') + cell(l.url) + QLatin1Char(',') + cell(l.user) + QLatin1Char(',') + cell(l.password) + QLatin1Char('\n');
+    return out;
+}
+
+QStringList hostList(const QByteArray &file)
+{
+    static const QRegularExpression line(QStringLiteral("^(?:127\\.0\\.0\\.1|0\\.0\\.0\\.0)\\s+([a-z0-9._-]+\\.[a-z0-9-]+)\\s*$"),
+                                         QRegularExpression::CaseInsensitiveOption | QRegularExpression::MultilineOption);
+    QStringList out;
+    for (auto it = line.globalMatch(QString::fromUtf8(file)); it.hasNext() && out.size() < 200000;) {
+        const QString host = it.next().captured(1).toLower();
+        if (host != QLatin1String("localhost.localdomain"))
+            out << host;
     }
     return out;
 }

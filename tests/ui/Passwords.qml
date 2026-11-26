@@ -13,4 +13,7 @@ QtObject {
     function password(origin, user, done) { const a = store.find(x => x.origin === origin && x.user === user); done(a ? a.password : null) }
     function remove(origin, user, done) { store = store.filter(a => a.origin !== origin || a.user !== user); done(true) }
     function copy(origin, user, done) { done(true) }
+    function generate(length) { return "Aa2!".repeat(8).slice(0, length) }
+    function importCsv(file, done) { save("https://csv.example", "u", "p", () => {}); done(1) }
+    function exportCsv(file, done) { done(store.length) }
 }

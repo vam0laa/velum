@@ -51,6 +51,11 @@ Rectangle {
     property bool showBookmarkBar
     signal startChanged(string name, var value)      // a property of the window and its new value
     signal designRequested()
+    property var permissions: []
+    property var popupSites: []
+    signal resetPermission(var item)
+    signal forgetPopup(string site)
+    signal permissionsWanted()
     property string backupResult
     signal backupRequested(url file, string password)
     signal restoreRequested(url file, string password)
@@ -89,7 +94,7 @@ Rectangle {
         const q = query.trim().toLocaleLowerCase()
         return q === "" ? section === key : String(words).toLocaleLowerCase().indexOf(q) >= 0
     }
-    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, backup1, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
+    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, backup1, privacy3, privacy4, privacy5, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
 
     color: Theme.styled("settings", "background", Theme.sheetBack)
 
@@ -463,6 +468,34 @@ Rectangle {
                     symbol: "history"
                     Toggle { label: Lang.t("Çıkışta unut", "Forget on exit"); note: Lang.t("Geçmiş, çerezler ve sekmeler; sonraki açılıştan itibaren", "History, cookies and tabs; from the next start"); on: Shield.forgetOnExit; onClicked: Shield.forgetOnExit = !Shield.forgetOnExit }
                     TextButton { Layout.fillWidth: true; implicitHeight: 40; text: Lang.t("Gezinme verilerini sil…", "Delete browsing data…"); onClicked: page.clearRequested() }
+                }
+
+                Group {
+                    id: privacy3
+                    wanted: page.shows("privacy", "zararlı site güvenli göz atma dns şifreli safe browsing malware")
+                    heading: Lang.t("Güvenlik", "Safety")
+                    symbol: "shield"
+                    Toggle { label: Lang.t("Zararlı siteleri engelle", "Block harmful sites"); note: Lang.t("abuse.ch URLhaus listesi, günde bir indirilir", "The abuse.ch URLhaus list, fetched daily"); on: Shield.safeBrowsing; onClicked: Shield.safeBrowsing = !Shield.safeBrowsing }
+                    Line {
+                        label: Lang.t("Şifreli DNS", "Secure DNS")
+                        Dropdown { options: [{ key: "off", label: Lang.t("Kapalı (sistem)", "Off (system)") }, { key: "cloudflare", label: "Cloudflare" }, { key: "quad9", label: "Quad9" }]; current: Shield.secureDns; onChosen: key => Shield.secureDns = key }
+                    }
+                    Note { visible: Shield.secureDns !== "off"; text: Lang.t("Adresler yalnız seçtiğin sağlayıcıya, şifreli sorulur. Ağ bunu engellerse siteler açılmaz; o zaman kapat.", "Names are asked only from this provider, encrypted. If your network blocks that, sites will not open; switch it off then.") }
+                }
+                Group {
+                    id: privacy4
+                    wanted: page.shows("privacy", "site izinleri kamera mikrofon konum permission camera microphone location")
+                    heading: Lang.t("Site izinleri", "Site permissions")
+                    symbol: "key"
+                    PermissionList { Layout.fillWidth: true; items: page.permissions; popups: page.popupSites; onReset: item => page.resetPermission(item); onForgetPopup: site => page.forgetPopup(site) }
+                    onVisibleChanged: if (visible) page.permissionsWanted()
+                }
+                Group {
+                    id: privacy5
+                    wanted: page.shows("privacy", "çerez site sil cookies delete")
+                    heading: Lang.t("Çerezler", "Cookies")
+                    symbol: "history"
+                    CookieList { Layout.fillWidth: true }
                 }
 
                 // ---- passwords ----

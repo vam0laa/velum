@@ -159,7 +159,9 @@ WebEngineView {
             if (info.errorDomain === WebEngineLoadingInfo.HttpStatusCodeDomain)
                 app.explainIfBlank(web, String(info.url), info.errorCode)
             else
-                failure = { url: String(info.url), text: info.errorString, certificate: false }
+                failure = { url: String(info.url), text: Shield.harmful(app.hostOf(info.url))
+                    ? Lang.t("Velum bu siteyi açmadı: zararlı yazılım dağıttığı bildirilen siteler listesinde (URLhaus). Ayarlar → Gizlilik'ten kapatılabilir.", "Velum did not open this site: it is listed as handing out harmful software (URLhaus). This can be switched off in Settings → Privacy.")
+                    : info.errorString, certificate: false }
         }
     }
     onUrlChanged: {

@@ -66,6 +66,7 @@ Panel {
             ShieldButton {
                 Layout.alignment: Qt.AlignHCenter
                 host: side.host
+                address: side.view?.url ?? ""
                 beside: side.compact
                 onReload: side.reloadPage()
                 onClearRequested: side.clearData()

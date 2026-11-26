@@ -439,6 +439,35 @@ private slots:
         QCOMPARE(store.browse("", 10).size(), 0);
     }
 
+    void passwordTools()
+    {
+        for (int i = 0; i < 50; ++i) {
+            const QString p = library::generatePassword(20);
+            QCOMPARE(p.size(), 20);
+            QVERIFY(p.contains(QRegularExpression("[a-z]")) && p.contains(QRegularExpression("[A-Z]")) && p.contains(QRegularExpression("[0-9]")) && p.contains(QRegularExpression("[^a-zA-Z0-9]")));
+        }
+        QCOMPARE(library::generatePassword(1).size(), 12);
+        QVERIFY(library::generatePassword(20) != library::generatePassword(20));
+        const auto read = library::fromCsv("\xEF\xBB\xBFname,url,username,password,note\r\n\"A, inc\",https://a.example/login,me,\"p\"\"w,1\"\r\nb,https://b.example,,secret\r\nbad,,x,\r\n");
+        QCOMPARE(read.size(), 2);
+        QCOMPARE(read[0].password, "p\"w,1");
+        QCOMPARE(read[1].user, "");
+        const auto again = library::fromCsv(library::toCsv(read));
+        QCOMPARE(again.size(), 2);
+        QCOMPARE(again[0].password, read[0].password);
+        QVERIFY(library::fromCsv("a,b,c\n1,2,3\n").isEmpty());
+    }
+
+    void harmfulHosts()
+    {
+        QCOMPARE(library::hostList("# comment\r\n127.0.0.1\tBad.Example\r\n0.0.0.0 worse.example.com\r\n127.0.0.1\tlocalhost\r\nnot a line\r\n"),
+                 (QStringList{"bad.example", "worse.example.com"}));
+        QByteArray list = "# URLhaus\n127.0.0.1\tx.example\n";
+        list += QByteArray(100, '#');
+        QVERIFY(lists::plausible(lists::harmfulFile, list));
+        QVERIFY(!lists::plausible(lists::harmfulFile, QByteArray(400, 'x')));
+    }
+
     void heldDownloads()
     {
         QTemporaryDir dir;

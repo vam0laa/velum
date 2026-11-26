@@ -744,6 +744,9 @@ ApplicationWindow {
 
     // sites you let open windows by themselves, until Velum is closed
     property var popupSites: []
+    property var permissions: []
+    function listPermissions() { askLogic.listPermissions() }
+    function resetPermission(item) { askLogic.resetPermission(item) }
     function newWindowFrom(from, clicked, background, fill) { return askLogic.newWindowFrom(from, clicked, background, fill) }
 
     // Goes to the settings tab of this workspace, making one if there is none.
@@ -1122,6 +1125,11 @@ ApplicationWindow {
                     backupResult: window.backupResult
                     onBackupRequested: (file, password) => window.backupResult = window.backup.save(file, password)
                     onRestoreRequested: (file, password) => window.backupResult = window.backup.restore(file, password)
+                    permissions: window.permissions
+                    popupSites: window.popupSites
+                    onPermissionsWanted: window.listPermissions()
+                    onResetPermission: item => window.resetPermission(item)
+                    onForgetPopup: site => window.popupSites = window.popupSites.filter(s => s !== site)
                     canUndoImport: window.beforeImport !== ""
                     onUndoImport: window.undoImport()
                             powerMode: window.powerMode

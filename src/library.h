@@ -14,6 +14,20 @@ QString toHtml(const QVariantList &bookmarks);
 // Reads such a file. Only web and file addresses are taken; at most 5000.
 QVariantList fromHtml(const QString &html);
 
+// A random password of `length` characters (12 to 64) with at least one small letter, one
+// capital, one digit and one sign, from the system's random source.
+QString generatePassword(int length);
+
+// The password file browsers exchange: a header naming url, username and password columns.
+struct Login {
+    QString url, user, password;
+};
+QList<Login> fromCsv(const QString &csv);          // at most 5000
+QString toCsv(const QList<Login> &logins);
+
+// Host names of a "hosts file" list (127.0.0.1<tab>name), as used for known harmful sites.
+QStringList hostList(const QByteArray &file);
+
 // AES-256-GCM with a key made from the password by scrypt. A changed byte, or another
 // password, and nothing opens.
 QByteArray seal(const QByteArray &plain, const QString &password);
