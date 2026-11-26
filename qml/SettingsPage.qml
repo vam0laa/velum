@@ -26,6 +26,13 @@ Rectangle {
     signal bookmarksRequested()
     signal importRequested()
     signal welcomeRequested()
+    property string startBackground
+    property string startPicture
+    property bool showClock
+    property bool showShield
+    property bool showNote
+    property bool showFrequent
+    signal startChanged(string name, var value)      // a property of the window and its new value
     property var extensions: []
     property bool fetchingExtension
     signal addFromStore(string typed)
@@ -65,6 +72,16 @@ Rectangle {
         id: folders
         title: Lang.t("İndirme klasörünü seç", "Choose the downloads folder")
         onAccepted: page.downloadFolderChosen(decodeURIComponent(String(selectedFolder).replace("file://", "")))
+    }
+
+    FileDialog {
+        id: pictures
+        title: Lang.t("Arka plan resmini seç", "Choose the background picture")
+        nameFilters: [Lang.t("Resimler", "Pictures") + " (*.png *.jpg *.jpeg *.webp)"]
+        onAccepted: {
+            page.startChanged("startPicture", decodeURIComponent(String(selectedFile).replace("file://", "")))
+            page.startChanged("startBackground", "image")
+        }
     }
 
     component Line: RowLayout {
@@ -169,6 +186,31 @@ Rectangle {
                         on: page.compactSidebar
                         onClicked: page.compactChosen(!page.compactSidebar)
                     }
+                }
+
+                Card {
+                    visible: page.section === "look"
+                    heading: Lang.t("başlangıç sayfası", "start page")
+                    tone: Theme.pink
+                    Segments {
+                        options: [{ key: "plain", label: Lang.t("Sade", "Plain") }, { key: "glow", label: Lang.t("Işıltı", "Glow") }, { key: "dots", label: Lang.t("Noktalar", "Dots") }, { key: "image", label: Lang.t("Resim", "Picture") }]
+                        current: page.startBackground
+                        onChosen: key => {
+                            if (key === "image" && page.startPicture === "")
+                                pictures.open()
+                            else
+                                page.startChanged("startBackground", key)
+                        }
+                    }
+                    Line {
+                        visible: page.startBackground === "image"
+                        label: page.startPicture
+                        TextButton { text: Lang.t("Resim seç…", "Choose…"); onClicked: pictures.open() }
+                    }
+                    Toggle { label: Lang.t("Saat ve tarih", "Clock and date"); on: page.showClock; onClicked: page.startChanged("showClock", !page.showClock) }
+                    Toggle { label: Lang.t("Kalkan sayacı", "Shield counter"); on: page.showShield; onClicked: page.startChanged("showShield", !page.showShield) }
+                    Toggle { label: Lang.t("Sık gidilenler", "Most visited"); note: Lang.t("Geçmişinden, bu bilgisayarda", "From your history, on this computer"); on: page.showFrequent; onClicked: page.startChanged("showFrequent", !page.showFrequent) }
+                    Toggle { label: Lang.t("Not kâğıdı", "Note"); on: page.showNote; onClicked: page.startChanged("showNote", !page.showNote) }
                 }
 
                 // ---- general ----

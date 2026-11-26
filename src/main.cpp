@@ -1,4 +1,5 @@
 #include <QCommandLineParser>
+#include <QDir>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QIcon>
@@ -75,7 +76,11 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     // the welcome pages are not shown to development runs
     const bool greet = !args.isSet(shot) && !args.isSet(demo) && !args.isSet(box);
+    // where the icons of your bookmarked sites are kept, for the start page
+    const QString icons = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/icons");
+    QDir().mkpath(icons);
     engine.setInitialProperties({{QStringLiteral("startUrls"), start},
+                                 {QStringLiteral("iconFolder"), icons},
                                  {QStringLiteral("greet"), greet},
                                  {QStringLiteral("hasWidevine"), !cdm.isEmpty()}});
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,

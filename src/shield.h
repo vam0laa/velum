@@ -28,6 +28,7 @@ class Shield : public QWebEngineUrlRequestInterceptor
     Q_PROPERTY(bool ready READ ready NOTIFY changed)
     // "none", "loading", "ready", "downloading", "failed" or "cleared"; statusText() words it
     Q_PROPERTY(QString statusCode READ statusCode NOTIFY changed)
+    Q_PROPERTY(double total READ total NOTIFY countsChanged)        // everything blocked so far
     Q_PROPERTY(int revision READ revision NOTIFY countsChanged)   // bindings watch this to re-read counts
 
 public:
@@ -49,6 +50,7 @@ public:
     // the arguments after `turkish` only make interface bindings re-read the text
     Q_INVOKABLE QString statusText(bool turkish, int revision = 0, const QString &code = {}) const;
     int revision() const { return m_revision; }
+    double total() const { return double(m_total); }
 
     Q_INVOKABLE void attach(QObject *profile);                      // start watching a browser profile
     Q_INVOKABLE int blockedCount(const QString &host, int /*revision*/ = 0) const { return m_counts.value(host); }
@@ -81,6 +83,7 @@ private:
     QString m_status = QStringLiteral("none");
     int m_statusCount = 0;
     int m_revision = 0;
+    qint64 m_total = 0;
     int m_pending = 0;
     int m_failed = 0;
     bool m_enabled = true;

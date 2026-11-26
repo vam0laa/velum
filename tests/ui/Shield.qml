@@ -11,6 +11,7 @@ QtObject {
     property string statusCode: "none"
     function statusText(tr, r, c) { return "" }
     property int revision: 0
+    property real total: 1234
     function attach(p) {}
     function blockedCount(h) { return 0 }
     function resetCount(h) {}

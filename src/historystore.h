@@ -26,6 +26,8 @@ public:
     int merge(const QList<Visit> &visits);
     // Newest first; with text, pages whose address or title contains it, most visited first.
     QVariantList search(const QString &text, int limit) const;
+    // pages visited more than once, most visited first
+    QVariantList frequent(int limit) const;
     void remove(const QString &url);
     void clear();
     void forgetBefore(qint64 when);

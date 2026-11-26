@@ -16,6 +16,19 @@ ApplicationWindow {
     property int current: 0
     property bool compactSidebar: false
     property bool horizontalTabs: false     // the tabs along the top instead of down the side
+    // the start page, as you set it up
+    property string startBackground: "glow"
+    property string startPicture: ""
+    property bool showClock: true
+    property bool showShield: true
+    property bool showNote: true
+    property bool showFrequent: true
+    property string note: ""
+    property var frequentPages: []
+    property string iconFolder: ""          // "" keeps no site icons
+    property int iconRevision: 0
+    property var iconsSaved: ({})       // this run: site -> the icon last written
+    property var iconNames: []          // sites that have an icon on disk
     property bool greet: false              // show the welcome pages if they were never seen
     property bool welcomed: false
     property alias welcome: welcome
@@ -90,6 +103,7 @@ ApplicationWindow {
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
         shortcuts = readList(saved.shortcuts)
         neverSave = readStrings(saved.neverSave)
+        iconNames = readStrings(saved.iconNames)
         watchLogins()
         const manager = profile.extensionManager
         manager.installFinished.connect(extensionInstalled)
@@ -128,6 +142,7 @@ ApplicationWindow {
         current = chosen
         restored = true
         followCurrent()
+        refreshFrequent()
         // the chosen tab was already visible or hidden before "current" settled
         Qt.callLater(() => view?.load_())
         if (greet && !welcomed)
@@ -211,9 +226,17 @@ ApplicationWindow {
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
         property alias horizontalTabs: window.horizontalTabs
+        property alias startBackground: window.startBackground
+        property alias startPicture: window.startPicture
+        property alias showClock: window.showClock
+        property alias showShield: window.showShield
+        property alias showNote: window.showNote
+        property alias showFrequent: window.showFrequent
+        property alias note: window.note
         property alias welcomed: window.welcomed
         property alias readerSize: window.readerSize
         property string neverSave: "[]"
+        property string iconNames: "[]"
         property string spaces: "[]"
         property alias space: window.space
         property alias width: window.width
@@ -897,6 +920,68 @@ ApplicationWindow {
     }
     function removeExtension(extension) { profile.extensionManager.uninstallExtension(extension) }
 
+    // ---- the start page ----
+    // one page per site, the most visited first
+    function refreshFrequent() {
+        const seen = new Set(), out = []
+        for (const p of History.frequent(60)) {
+            const host = hostOf(p.url)
+            if (host === "" || seen.has(host))
+                continue
+            seen.add(host)
+            out.push({ url: p.url, title: p.title || host })
+            if (out.length === 6)
+                break
+        }
+        frequentPages = out
+    }
+    onOnStartPageChanged: if (onStartPage) refreshFrequent()
+
+    // Icons are kept only for sites you bookmarked, taken from pages you opened.
+    function iconName(url) {
+        const host = hostOf(url).replace(/^www\./, "")
+        return /^[a-z0-9.-]+$/.test(host) && host.indexOf("..") < 0 ? host : ""
+    }
+    function iconFor(url) {
+        const name = iconName(url)
+        return iconFolder === "" || !iconNames.includes(name) ? "" : "file://" + iconFolder + "/" + name + ".png#" + iconRevision
+    }
+    function keepIcon(pageUrl, icon) {
+        const name = iconName(pageUrl)
+        if (iconFolder === "" || name === "" || String(icon) === "" || iconsSaved[name] === String(icon)
+                || !shortcuts.some(s => iconName(s.url) === name))
+            return
+        iconsSaved[name] = String(icon)
+        iconGrabber.createObject(iconShelf, { source: icon, name: name })
+    }
+    // draws an icon out of sight and writes the picture down
+    Item { id: iconShelf; x: -200; width: 64; height: 64 }
+    Component {
+        id: iconGrabber
+        Image {
+            id: grab
+            property string name
+            width: 64
+            height: 64
+            sourceSize: Qt.size(64, 64)
+            onStatusChanged: {
+                if (status === Image.Ready)
+                    Qt.callLater(() => grab.grabToImage(result => {
+                        if (result.saveToFile(window.iconFolder + "/" + grab.name + ".png")) {
+                            if (!window.iconNames.includes(grab.name)) {
+                                window.iconNames = window.iconNames.concat([grab.name])
+                                saved.iconNames = JSON.stringify(window.iconNames)
+                            }
+                            window.iconRevision++
+                        }
+                        grab.destroy()
+                    }))
+                else if (status === Image.Error)
+                    grab.destroy()
+            }
+        }
+    }
+
     function say(text) {
         notice = text
         noticeTimer.restart()
@@ -1042,6 +1127,11 @@ ApplicationWindow {
             openPasswords()
         else if (action === "offer")
             passwordOffer = { origin: "https://ornek.example", user: "vamola", password: "deneme", changed: false }
+        else if (action.startsWith("fetch:"))
+            WebStore.fetch(action.slice(6), (path, problem) => {
+                console.warn("fetch result: " + (path !== "" ? "checked package" : problem))
+                WebStore.discard(path)
+            })
         else if (action === "reader")
             toggleReader()
         else if (action === "import")
@@ -1297,7 +1387,10 @@ ApplicationWindow {
                             window.touchSession()
                             History.setTitle(String(url), title)
                         }
-                        onIconChanged: tabs.setProperty(index, "siteIcon", String(icon))
+                        onIconChanged: {
+                            tabs.setProperty(index, "siteIcon", String(icon))
+                            window.keepIcon(url, icon)
+                        }
                         onLoadingChanged: info => {
                             tabs.setProperty(index, "loading", loading)
                             if (info.status === WebEngineView.LoadStartedStatus) {
@@ -1518,6 +1611,13 @@ ApplicationWindow {
                 onBookmarksRequested: window.openBookmarks()
                 onImportRequested: window.openImport()
                 onWelcomeRequested: welcome.open()
+                startBackground: window.startBackground
+                startPicture: window.startPicture
+                showClock: window.showClock
+                showShield: window.showShield
+                showNote: window.showNote
+                showFrequent: window.showFrequent
+                onStartChanged: (name, value) => window[name] = value
                 extensions: window.extensions
                 fetchingExtension: window.fetchingExtension
                 onAddFromStore: typed => window.askExtension(typed, false)
@@ -1539,6 +1639,18 @@ ApplicationWindow {
                 shortcuts: window.shortcuts.slice(0, 10)
                 total: window.shortcuts.length
                 onManage: window.openBookmarks()
+                frequent: window.showFrequent ? window.frequentPages : []
+                blocked: Shield.total
+                note: window.note
+                background: window.startBackground
+                picture: window.startPicture
+                showClock: window.showClock
+                showShield: window.showShield
+                showNote: window.showNote
+                showFrequent: window.showFrequent
+                iconFor: window.iconNames.length >= 0 && window.iconRevision >= 0 ? url => window.iconFor(url) : url => ""
+                onNoteEdited: text => window.note = text
+                onCustomize: window.openSettings("look")
                 onAddShortcut: typed => window.addShortcut(typed)
                 onRemoveShortcut: i => window.removeShortcut(i)
                 onGo: target => {

@@ -37,6 +37,7 @@ public:
         }
         return m_store.merge(visits);
     }
+    Q_INVOKABLE QVariantList frequent(int limit) const { return m_store.frequent(limit); }
     Q_INVOKABLE void remove(const QString &url) { m_store.remove(url); }
     Q_INVOKABLE void clear() { m_store.clear(); }
 

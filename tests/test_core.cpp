@@ -181,6 +181,8 @@ private slots:
         QCOMPARE(h.search("secret", 10).size(), 0);
         h.setTitle("https://b.example/x", "Renamed");
         QCOMPARE(h.search("renamed", 10).size(), 1);
+        QCOMPARE(h.frequent(5).size(), 1);          // only the page seen twice
+        QCOMPARE(h.frequent(5).first().toMap().value("url").toString(), "https://a.example/");
         h.forgetBefore(250);
         QCOMPARE(h.search("", 10).size(), 2);
         h.remove("https://a.example/");

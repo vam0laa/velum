@@ -358,6 +358,12 @@ qml/ExtensionList.qml  ayarlardaki sayfa
 ```
 Eklentinin 32 harflik kimliği, onu imzalayan anahtarın özetidir. `verifiedZip` bu yüzden iki şeye bakar: anahtarın özeti istenen kimlik mi, ve o anahtarın imzası paketin içeriğine uyuyor mu. Biri tutmazsa kurulmaz. Kurulumu motorun kendi yöneticisi (`profile.extensionManager`) yapar; yalnızca Manifest V3.
 
+## 7x. Başlangıç sayfası
+
+- `qml/Backdrop.qml` arka planı çizer (ışıltı: radyal renk geçişleri).
+- Site simgeleri: yalnızca yer imine eklediğin bir siteyi açtığında, motorun elindeki simge bir kez ekran dışında çizilip `icons/` klasörüne yazılır. Başlangıç sayfası ağdan bir şey istemez.
+- "Sık gidilenler" geçmişten, site başına bir tane. Kalkan sayacı yalnızca bir sayıdır, nereyle ilgili olduğu tutulmaz.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

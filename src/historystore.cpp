@@ -102,6 +102,19 @@ QVariantList HistoryStore::search(const QString &text, int limit) const
     return out;
 }
 
+QVariantList HistoryStore::frequent(int limit) const
+{
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT url, title FROM pages WHERE visits > 1 ORDER BY visits DESC, last DESC LIMIT ?"));
+    q.addBindValue(limit);
+    QVariantList out;
+    if (!q.exec())
+        return out;
+    while (q.next())
+        out.append(QVariantMap{{QStringLiteral("url"), q.value(0)}, {QStringLiteral("title"), q.value(1)}});
+    return out;
+}
+
 void HistoryStore::remove(const QString &url)
 {
     QSqlQuery q(m_db);

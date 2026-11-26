@@ -175,6 +175,15 @@ Item {
             Theme.palette = "latte"; t.check("a light theme is known as light", !Theme.dark)
             Theme.accentChoice = "pink"; t.check("the accent can be chosen", String(Theme.accent) === String(Theme.pink))
             Theme.accentChoice = ""; Theme.palette = "mocha"; t.check("every theme has all its colours", Theme.themes.every(x => [...Array(15).keys()].every(i => String(Theme.colorOf(x.key, i)).startsWith("#"))))
+            // the start page
+            History.pages = [{ url: "https://a.example/1", title: "A" }, { url: "https://a.example/2", title: "A2" }, { url: "https://b.example/", title: "" }]
+            w.refreshFrequent()
+            t.check("most visited shows one page per site", w.frequentPages.length === 2 && w.frequentPages[1].title === "b.example")
+            History.pages = []; w.refreshFrequent()
+            t.check("site icon names are safe file names", w.iconName("https://www.vamola.dev/x") === "vamola.dev" && w.iconName("https://..%2f/x") === "" && w.iconName("about:blank") === "")
+            w.prefs.startChanged("showNote", false); w.prefs.startChanged("startBackground", "dots")
+            t.check("the start page follows the settings", !w.showNote && w.startBackground === "dots")
+            w.showNote = true; w.startBackground = "glow"
             // the welcome pages
             w.welcomed = false; w.welcome.open()
             t.check("the welcome starts at the first page", w.welcome.step === 0)

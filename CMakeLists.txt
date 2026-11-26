@@ -80,6 +80,8 @@ qt_add_qml_module(velum
         qml/TopBar.qml
         qml/Welcome.qml
         qml/ExtensionList.qml
+        qml/Backdrop.qml
+        qml/SiteIcon.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
