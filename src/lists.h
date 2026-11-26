@@ -21,6 +21,10 @@ QList<Source> sources();
 // True when `data` looks like what `file` should contain: not an error page, not cut short to nothing.
 bool plausible(const QString &file, const QByteArray &data);
 
+// A service that shows "are you a person?" boxes. It may keep a cookie inside other sites,
+// or it forgets you passed and asks again. Exact hosts only, never all of Google.
+bool isCaptchaService(const QString &host);
+
 // Whether a request to `url` over plain http should be sent over https instead.
 bool shouldUpgrade(const QUrl &url);
 

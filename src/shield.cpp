@@ -361,7 +361,7 @@ void Shield::attach(QObject *profile)
     // Cookies a page's helpers set about you on other people's sites are the classic way of
     // following someone around. A site the user switched protection off for may set them.
     quick->cookieStore()->setCookieFilter([this](const QWebEngineCookieStore::FilterRequest &request) {
-        if (!request.thirdParty || !m_blockCookies)
+        if (!request.thirdParty || !m_blockCookies || lists::isCaptchaService(request.origin.host()))
             return true;
         QReadLocker lock(&m_lock);
         const bool excepted = m_allowed.contains(request.firstPartyUrl.host());

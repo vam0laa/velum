@@ -35,6 +35,13 @@ bool plausible(const QString &file, const QByteArray &data)
     return data.size() > 200 && (start.startsWith('!') || start.startsWith("[Adblock"));
 }
 
+bool isCaptchaService(const QString &host)
+{
+    const QString h = host.startsWith(QLatin1Char('.')) ? host.mid(1).toLower() : host.toLower();
+    return h == QLatin1String("challenges.cloudflare.com") || h == QLatin1String("www.google.com")
+        || h == QLatin1String("www.recaptcha.net") || h == QLatin1String("hcaptcha.com") || h.endsWith(QLatin1String(".hcaptcha.com"));
+}
+
 bool shouldUpgrade(const QUrl &url)
 {
     if (url.scheme() != QLatin1String("http"))

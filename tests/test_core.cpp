@@ -497,6 +497,14 @@ private slots:
         QVERIFY(!scriptlets::plausible("[]") && !scriptlets::plausible("nonsense"));
     }
 
+    void captchaServices()
+    {
+        for (const char *yes : {"challenges.cloudflare.com", "www.google.com", "www.recaptcha.net", "hcaptcha.com", "newassets.hcaptcha.com"})
+            QVERIFY2(lists::isCaptchaService(yes), yes);
+        for (const char *no : {"google.com", "ads.google.com", "cloudflare.com", "evilhcaptcha.com", "www.google.com.evil.example", ""})
+            QVERIFY2(!lists::isCaptchaService(no), no);
+    }
+
     void iconAddresses()
     {
         const QByteArray html = "<head><link rel=\"stylesheet\" href=\"a.css\">"

@@ -115,7 +115,7 @@ Import in the bookmark manager takes bookmarks (with folders) and the last 90 da
 
 Ads and trackers are blocked with Brave's [adblock-rust](https://github.com/brave/adblock-rust) engine and the EasyList, EasyPrivacy and uBlock Origin filter lists. Plain `http` addresses of public sites are opened over `https`, and a Global Privacy Control header is sent. The shield button shows the count for the page and switches blocking off per site.
 
-Third party cookies are blocked (a site you switch protection off for may set them). Camera, microphone, location, notifications, clipboard and pointer lock are asked about, and the answer lasts until Velum closes. WebRTC does not reveal local network addresses. "Forget cookies on exit" and "Delete cookies and cache" are in the shield panel (Ctrl+Shift+Delete). Deleting covers cookies and the cache, not other site storage.
+Third party cookies are blocked, except those of the "are you a person?" services (hCaptcha, Cloudflare, Google reCAPTCHA on www.google.com), so that they remember you passed; a site you switch protection off for may set them too. Camera, microphone, location, notifications, clipboard and pointer lock are asked about, and the answer lasts until Velum closes. WebRTC does not reveal local network addresses. "Forget cookies on exit" and "Delete cookies and cache" are in the shield panel (Ctrl+Shift+Delete). Deleting covers cookies and the cache, not other site storage.
 
 History stays in an SQLite file on this computer (readable only by you), is kept for 90 days, and is cleared by "forget on exit" and by deleting browsing data. Downloads go to your downloads folder and are never opened automatically.
 
