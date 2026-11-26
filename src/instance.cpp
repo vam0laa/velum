@@ -1,6 +1,8 @@
 #include "instance.h"
 
+#include <QCoreApplication>
 #include <QCryptographicHash>
+#include <QElapsedTimer>
 #include <QLocalSocket>
 #include <QStandardPaths>
 #include <QTimer>
@@ -46,8 +48,15 @@ bool Instance::handOver(const QString &socket, const QStringList &urls)
     // an empty message still means "show your window"
     link.write(urls.join(QLatin1Char('\n')).toUtf8() + '\n');
     link.flush();
-    // on Windows a short message is often gone already, and then there is nothing to wait for
-    return link.bytesToWrite() == 0 || link.waitForBytesWritten(1000);
+    // A Windows pipe has sent nothing until the other side has read it, and a short message
+    // may also be gone already. So: wait until nothing is left, letting events through.
+    QElapsedTimer waiting;
+    waiting.start();
+    while (link.bytesToWrite() > 0 && waiting.elapsed() < 2000) {
+        link.waitForBytesWritten(20);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+    }
+    return link.bytesToWrite() == 0;
 }
 
 bool Instance::listen(const QString &socket)
