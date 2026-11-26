@@ -37,7 +37,10 @@ fi
 
 work=$(mktemp -d)
 trap 'rm -rf "${work:?}"' EXIT
-gh run download "$run" --repo "$code" --name velum-windows --dir "$work"
+# from the draft release the build left behind (the server of build artifacts is not
+# reachable from every network)
+gh release download "build-$run" --repo "$code" --pattern '*.exe' --dir "$work" \
+    || gh run download "$run" --repo "$code" --name velum-windows --dir "$work"
 setup="$work/Velum-$version-setup.exe"
 [ -f "$setup" ] || { echo "the build is not of version $version (run again with REBUILD=1)"; exit 1; }
 
