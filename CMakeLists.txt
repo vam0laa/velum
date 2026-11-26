@@ -45,6 +45,8 @@ qt_add_qml_module(velum
         qml/ClassicStart.qml
         qml/MonthCard.qml
         qml/Recommended.qml
+        qml/BrowserPreview.qml
+        qml/ChoiceCard.qml
         qml/WebStart.qml
         qml/Icon.qml
         qml/Hint.qml
@@ -76,7 +78,6 @@ qt_add_qml_module(velum
         qml/PasswordBar.qml
         qml/PasswordList.qml
         qml/ThemePicker.qml
-        qml/LayoutPicker.qml
         qml/Card.qml
         qml/ShieldButton.qml
         qml/DownloadButton.qml

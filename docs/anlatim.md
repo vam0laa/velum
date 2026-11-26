@@ -402,6 +402,10 @@ Gizli görünüm: adres ya da arama kutusuna `velum:webcore` yazılınca açıl�
 - Çalışma alanı düğmeleri ancak ikinci alan açılınca görünür.
 - `qml/Recommended.qml`: karşılamada işaretlemeli, ayarlarda tek tek "Kur". Karşılamada hiçbiri işaretli gelmez; seçilenler sırayla indirilir (`queueExtensions`).
 
+## Karşılama ekranı
+
+`qml/Welcome.qml` bütün pencereyi kaplar: solda başlık ve ilerleme, sağda seçimler. `BrowserPreview.qml` seçilen renk ve düzeni anında gösteren küçük bir Velum çizer; `ChoiceCard.qml` büyük seçim kartıdır. Dar pencerede iki sütun alt alta gelir; düğmeler tek yerde tanımlıdır, iki `LayoutItemProxy`'den görünen onları gösterir. Enter / sağ ok ilerler, sol ok geri döner.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.
