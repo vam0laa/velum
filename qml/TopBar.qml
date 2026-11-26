@@ -49,6 +49,10 @@ Item {
     property var downloadTools: null        // what the list can do: { past, canOpen, open, again, forget }
     signal backMenu(bool forward, Item at)
     signal muteToggled(int index)
+    property var groups: []
+    signal selected(int index, bool stretch)
+    signal groupToggled(int id)
+    signal groupMenu(int id, Item at)
 
     implicitHeight: strip.height + tools.height + (bookmarkRow ? Theme.dense(32) : 0)
 
@@ -139,6 +143,8 @@ Item {
             ListView {
                 id: list
                 Layout.fillWidth: true
+                // the tabs get all the room they need before the empty strip beside them does
+                Layout.preferredWidth: Math.max(48, contentWidth)
                 Layout.maximumWidth: Math.max(48, contentWidth)
                 Layout.fillHeight: true
                 orientation: ListView.Horizontal
@@ -148,6 +154,17 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 interactive: contentWidth > width
                 currentIndex: bar.current
+                // a tab that grows (a group's name appears) pushes to the left; when all of
+                // them fit, they start at the left edge again
+                function settle() {
+                    forceLayout()
+                    if (contentWidth <= width + 1)
+                        positionViewAtBeginning()
+                    else
+                        returnToBounds()
+                }
+                onContentWidthChanged: Qt.callLater(settle)
+                onWidthChanged: Qt.callLater(settle)
                 // tabs share the room, within limits
                 readonly property int shownCount: {
                     let n = 0
@@ -167,6 +184,10 @@ Item {
                     onPicked: i => bar.picked(i)
                     onClosed: i => bar.closed(i)
                     onMuteToggled: i => bar.muteToggled(i)
+                    groups: bar.groups
+                    onSelected: (i, stretch) => bar.selected(i, stretch)
+                    onGroupToggled: id => bar.groupToggled(id)
+                    onGroupMenu: (id, at) => bar.groupMenu(id, at)
                     onMenuRequested: i => bar.menuRequested(i)
                     lastPinned: index === bar.pinnedCount - 1 && index < list.count - 1
                     onDragged: (i, at) => {

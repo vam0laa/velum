@@ -391,6 +391,36 @@ Item {
                 w.popupSites = ["a.example"]; w.prefs.forgetPopup("a.example"); t.check("a window permission can be taken back", w.popupSites.length === 0)
                 w.closeTab(w.current)
             }
+            // ---- groups, selection, search, split ----
+            {
+                const wasSpace = w.space, wasTab = w.current
+                const base = w.tabCount
+                w.openTab(t.page("g1")); w.openTab(t.page("g2")); w.openTab(t.page("g3")); w.openTab(t.page("g4"))
+                const at = n => { for (let i = 0; i < w.tabCount; i++) if (w.tabs.get(i).pageUrl.endsWith(n)) return i; return -1 }
+                const id = w.newGroup([at("g1"), at("g3")], "İş")
+                t.check("tabs make a group and stand together", id > 0 && w.groups.length === 1 && at("g3") === at("g1") + 1 && w.tabs.get(at("g1")).lead && !w.tabs.get(at("g3")).lead)
+                w.addToGroup([at("g4")], id); t.check("another joins at its end", at("g4") === at("g3") + 1 && w.tabs.get(at("g4")).group === id)
+                w.current = at("g2"); w.toggleGroup(id); t.check("folding hides all but the name", w.tabs.get(at("g1")).folded && w.tabs.get(at("g4")).folded)
+                w.current = at("g3"); w.refreshGroups(); t.check("the tab being looked at stays in sight", !w.tabs.get(at("g3")).folded)
+                w.toggleGroup(id); w.changeGroup(id, { name: "Ev", colour: "green" }); t.check("it can be renamed and coloured", w.groups[0].name === "Ev" && w.groups[0].colour === "green")
+                w.ungroup([at("g1")]); t.check("a tab steps out behind the group", w.tabs.get(at("g1")).group === 0 && at("g1") > at("g4") && w.tabs.get(at("g3")).lead)
+                w.saveSession(); t.check("groups are saved with the session", JSON.parse(JSON.stringify(w.readSession(JSON.stringify({ tabs: [{ url: "u", group: 7 }] })))).tabs[0].group === 7)
+                w.clearSelection(); w.current = at("g2"); w.selectTab(at("g1"), false); t.check("Ctrl+click selects with the current one", w.selection().length === 2)
+                t.check("a menu on a selected tab means them all", w.targets(at("g1")).length === 2 && w.targets(at("g3")).length === 1)
+                w.closeMany(w.selection()); t.check("selected tabs close together", at("g1") < 0 && at("g2") < 0 && w.selection().length === 0)
+                w.openTabSearch(); const f = w.tabSearch
+                t.check("tab search lists open and closed tabs", f.rows.some(r => r.open) && f.rows.some(r => !r.open))
+                f.close()
+                w.closeGroup(id); t.check("closing a group closes its tabs and forgets it", at("g3") < 0 && at("g4") < 0 && w.groups.length === 0)
+                while (w.tabCount > base) w.closeTab(w.tabCount - 1)
+                w.openTab(t.page("l")); w.openTab(t.page("r"))
+                w.toggleSplit(); w.splitStacked = true
+                t.check("a split can be one above the other", w.splitShown && w.view.width > 0)
+                const first = w.splitLeft; w.swapSplit(); t.check("and its halves swapped", w.splitRight === first)
+                w.splitStacked = false; w.unsplit()
+                while (w.tabCount > base) w.closeTab(w.tabCount - 1)
+                w.space = wasSpace; w.current = Math.min(wasTab, w.tabCount - 1)
+            }
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")

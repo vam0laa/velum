@@ -6,6 +6,7 @@ AppMenu {
     id: mainMenu
     required property var app
     AppMenuItem { text: Lang.t("Yeni sekme", "New tab"); keys: Keymap.text("newTab"); onTriggered: app.newTab() }
+    AppMenuItem { text: Lang.t("Sekmelerde ara", "Search tabs"); keys: Keymap.text("tabSearch"); onTriggered: Qt.callLater(app.openTabSearch) }
     AppMenuItem { text: Lang.t("Yeni çalışma alanı", "New workspace"); onTriggered: app.spaceDialog.show(0, "", false) }
     AppMenuLine {}
     AppMenuItem { text: Lang.t("Yer imleri", "Bookmarks"); keys: Keymap.text("bookmarks"); onTriggered: app.openBookmarks() }

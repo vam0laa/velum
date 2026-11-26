@@ -52,11 +52,14 @@ WebEngineView {
     readonly property bool beside: app.splitShown && (web === app.splitLeft || web === app.splitRight)
     // "parent" is the small window while the video is out there
     readonly property real room: parent?.width ?? 0
-    readonly property real divide: Math.round(room * app.splitRatio)
+    readonly property real tall: parent?.height ?? 0
+    readonly property bool stacked: beside && app.splitStacked
+    readonly property real divide: Math.round((stacked ? tall : room) * app.splitRatio)
     visible: web === app.view || web === app.miniPage || beside
-    x: beside && web === app.splitRight ? divide + 4 : 0
-    width: !beside ? room : web === app.splitLeft ? divide - 4 : room - divide - 4
-    height: parent?.height ?? 0
+    x: beside && !stacked && web === app.splitRight ? divide + 4 : 0
+    y: stacked && web === app.splitRight ? divide + 4 : 0
+    width: !beside || stacked ? room : web === app.splitLeft ? divide - 4 : room - divide - 4
+    height: !stacked ? tall : web === app.splitLeft ? divide - 4 : tall - divide - 4
     // clicking into the other half makes that tab the current one
     onActiveFocusChanged: if (activeFocus && beside && web !== app.view) app.current = index
 

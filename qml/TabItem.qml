@@ -12,6 +12,24 @@ ItemDelegate {
     required property bool audible
     required property bool muted
     signal muteToggled(int index)
+    required property string pageUrl
+    required property int group          // 0: none
+    required property bool lead          // the first of its group carries the name
+    required property bool folded        // hidden in a folded group
+    required property bool chosen        // one of several selected
+    property var groups: []
+    readonly property var info: group > 0 ? groups.find(g => g.id === group) ?? null : null
+    readonly property color groupColour: info ? Theme[info.colour] : "transparent"
+    // a folded group shows only its name, on its first tab
+    readonly property bool onlyName: lead && folded
+    // the room the name takes, worked out from its letters alone
+    readonly property string chipLabel: info ? (info.collapsed ? "▸ " : "") + info.name : ""
+    readonly property real chipWidth: Math.min(130, Math.ceil(measure.advanceWidth) + 20)
+    property TextMetrics measure: TextMetrics { text: row.chipLabel; font.family: Theme.ui; font.pixelSize: 11 }
+    readonly property real chipRoom: lead && info && horizontal ? chipWidth + 6 : 0
+    signal selected(int index, bool stretch)
+    signal groupToggled(int id)
+    signal groupMenu(int id, Item at)
     required property bool pinned
     required property int asleep       // 0 awake, 1 frozen, 2 discarded
     required property int space        // the workspace it belongs to
@@ -30,8 +48,8 @@ ItemDelegate {
     // set by the list: the last pinned tab draws a divider under itself
     property bool lastPinned: false
 
-    width: !horizontal ? (ListView.view?.width ?? 0) : !shown ? 0 : compact ? 48 : wide
-    height: horizontal ? Theme.dense(36) : shown ? Theme.dense(40) : 0
+    width: !horizontal ? (ListView.view?.width ?? 0) : !shown || (folded && !lead) ? 0 : onlyName ? chipRoom + 4 : (compact ? 48 : wide) + chipRoom
+    height: horizontal ? Theme.dense(36) : !shown || (folded && !lead) ? 0 : Theme.dense(40) + (lead && info ? 24 : 0)
     // your style sheet: ".tab", and ".tab-active" over it for the current one
     function styled(property, fallback) {
         const usual = Theme.styled("tab", property, fallback)
@@ -40,8 +58,13 @@ ItemDelegate {
     readonly property real tabRadius: Theme.web ? 0 : Theme.tabShape === "pill" ? height / 2 : Theme.tabShape === "square" ? 0
         : Theme.tabShape === "line" ? 0 : Theme.round(9)
     readonly property bool lined: !Theme.web && Theme.tabShape === "line"
-    visible: shown
+    visible: shown && !(folded && !lead)
     padding: 0
+    leftPadding: chipRoom
+    leftInset: chipRoom
+    topPadding: !horizontal && lead && info ? 24 : 0
+    topInset: !horizontal && lead && info ? 24 : 0
+    clip: false
     bottomPadding: horizontal ? 0 : 4
     bottomInset: horizontal ? 0 : 4
     rightPadding: horizontal ? 4 : 0
@@ -94,7 +117,53 @@ ItemDelegate {
         }
     }
 
+    // the name of the group, before its first tab; press to fold it
+    AbstractButton {
+        id: chip
+        visible: row.lead && row.info !== null
+        x: row.horizontal ? 2 : 6
+        y: row.horizontal ? (row.height - height) / 2 : 2
+        height: 22
+        width: row.chipWidth
+        z: 2
+        onClicked: row.groupToggled(row.group)
+        Accessible.name: row.info?.name ?? ""
+        background: Rectangle { radius: Theme.round(8); color: row.groupColour }
+        contentItem: Text { id: chipText; text: row.chipLabel; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+        TapHandler { acceptedButtons: Qt.RightButton; onTapped: row.groupMenu(row.group, chip) }
+    }
+    // a line in the group's colour under each of its tabs
+    Rectangle {
+        visible: row.info !== null && !row.onlyName
+        x: row.horizontal ? row.chipRoom + 6 : 0
+        y: row.horizontal ? row.height - 3 : row.topPadding + 4
+        width: row.horizontal ? row.width - row.chipRoom - 16 : 3
+        height: row.horizontal ? 3 : row.height - row.topPadding - 12
+        radius: 1.5
+        color: row.groupColour
+        z: 2
+    }
+    // selected with others
+    Rectangle {
+        visible: row.chosen
+        anchors { fill: parent; leftMargin: row.chipRoom; topMargin: row.topPadding; rightMargin: row.horizontal ? 4 : 0; bottomMargin: row.horizontal ? 3 : 4 }
+        radius: Theme.round(9)
+        color: Qt.alpha(Theme.accent, 0.18)
+        border.color: Theme.accent
+        z: 1
+    }
+    // Ctrl+click and Shift+click select; a plain click goes on to the tab
+    MouseArea {
+        anchors.fill: parent
+        anchors.leftMargin: row.chipRoom
+        anchors.topMargin: row.topPadding
+        z: 3
+        onPressed: mouse => mouse.accepted = (mouse.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0
+        onClicked: mouse => row.selected(row.index, (mouse.modifiers & Qt.ShiftModifier) !== 0)
+    }
+
     contentItem: Item {
+        visible: !row.onlyName
         Item {
             id: mark
             width: 18
@@ -182,9 +251,11 @@ ItemDelegate {
         }
     }
 
+    // a small card about the tab: its name, where it is, whether it sleeps
     Hint {
-        text: row.label
-        shown: row.compact && row.hovered
+        text: row.label + (row.pageUrl !== "" && row.kind === "" ? "\n" + (row.pageUrl.length > 70 ? row.pageUrl.slice(0, 69) + "…" : row.pageUrl) : "")
+              + (row.asleep > 0 ? "\n" + Lang.t("Uyuyor", "Asleep") : "")
+        shown: row.hovered && !row.onlyName
         x: row.horizontal ? 0 : row.width + 8
         y: row.horizontal ? row.height + 6 : (row.height - height) / 2
     }

@@ -117,6 +117,29 @@ ApplicationWindow {
     property WebEngineView splitLeft: null
     property WebEngineView splitRight: null
     property real splitRatio: 0.5
+    property bool splitStacked: false     // one above the other instead of side by side
+    function swapSplit() {
+        const left = splitLeft
+        splitLeft = splitRight
+        splitRight = left
+    }
+    property var groups: []               // tab groups: [{ id, name, colour, collapsed }]
+    function refreshGroups() { tabLogic.refreshGroups() }
+    function newGroup(indices, name) { return tabLogic.newGroup(indices, name) }
+    function addToGroup(indices, id) { tabLogic.addToGroup(indices, id) }
+    function ungroup(indices) { tabLogic.ungroup(indices) }
+    function changeGroup(id, changes) { tabLogic.changeGroup(id, changes) }
+    function toggleGroup(id) { tabLogic.toggleGroup(id) }
+    function closeGroup(id) { tabLogic.closeGroup(id) }
+    function dissolveGroup(id) { tabLogic.dissolveGroup(id) }
+    function selectTab(index, stretch) { tabLogic.select(index, stretch) }
+    function selection() { return tabLogic.selection() }
+    function targets(index) { return tabLogic.targets(index) }
+    function clearSelection() { tabLogic.clearSelection() }
+    function closeMany(indices) { tabLogic.closeMany(indices) }
+    function openTabSearch() { tabSearch.open() }
+    property alias tabSearch: tabSearch
+    property alias groupMenu: groupMenu
     readonly property bool splitShown: moves >= 0 && !pageFullScreen && splitLeft !== null && splitRight !== null && view !== null
                                        && (view === splitLeft || view === splitRight) && inSpace(splitLeft.index) && inSpace(splitRight.index)
     property var downloads: []        // download requests of this run, newest first
@@ -180,6 +203,7 @@ ApplicationWindow {
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
         shortcuts = readList(saved.shortcuts)
         readHome()
+        tabLogic.readGroups()
         downloadLogic.readDownloads()
         toolLogic.readZoom()
         try {
@@ -211,8 +235,11 @@ ApplicationWindow {
         let chosen = -1
         if (restoreSession && !Shield.forgettingThisRun) {
             const session = readSession(saved.session)
-            for (const p of session.tabs)
+            for (const p of session.tabs) {
                 appendTab(p.url, p.title ?? "", true, spaces.some(s => s.id === p.space) ? p.space : spaces[0].id)
+                if (Number.isInteger(p.group))
+                    tabs.setProperty(tabs.count - 1, "group", p.group)
+            }
             if (session.tabs.length > 0 || session.current < pinnedCount)
                 chosen = Math.max(0, Math.min(session.current, tabs.count - 1))
         }
@@ -227,6 +254,7 @@ ApplicationWindow {
         }
         current = chosen
         restored = true
+        refreshGroups()
         followCurrent()
         refreshFrequent()
         // the chosen tab was already visible or hidden before "current" settled
@@ -260,7 +288,7 @@ ApplicationWindow {
             if (i === current)
                 at = pinnedCount + list.length
             if (!tab.pinned && tab.pageUrl !== "" && tab.pageUrl !== "about:blank")
-                list.push({ url: tab.pageUrl, title: tab.title, space: tab.space })
+                list.push({ url: tab.pageUrl, title: tab.title, space: tab.space, group: tab.group })
             if (i === current && tab.pinned)
                 at = i
         }
@@ -269,7 +297,7 @@ ApplicationWindow {
 
     Timer { id: sessionTimer; interval: 800; onTriggered: window.saveSession() }
     function touchSession() { sessionTimer.restart() }
-    onCurrentChanged: { followCurrent(); touchSession() }
+    onCurrentChanged: { followCurrent(); touchSession(); if (restored && groups.length > 0) Qt.callLater(refreshGroups) }
     onMovesChanged: touchSession()
     onClosing: { closeMini(); saveSession(); forgetNow() }
     // quitting goes the same way as closing the window
@@ -342,6 +370,8 @@ ApplicationWindow {
         property string pastDownloads: "[]"
         property string siteZoom: "{}"
         property string removedBookmarks: "[]"
+        property string groups: "[]"
+        property alias splitStacked: window.splitStacked
         property alias homeHeadline: window.homeHeadline
         property string homeWords: "[]"
         property string homeTasks: "[]"
@@ -372,6 +402,9 @@ ApplicationWindow {
     SiteLogic { id: siteLogic; app: window }
     AskLogic { id: askLogic; app: window }
     DemoLogic { id: demoLogic; app: window }
+    TabLogic { id: tabLogic; app: window }
+    TabSearch { id: tabSearch; app: window }
+    GroupMenu { id: groupMenu; app: window; parent: window.Overlay.overlay }
     BackupLogic { id: backupLogic; app: window }
     ToolLogic { id: toolLogic; app: window }
     HistoryMenu { id: historyMenu }
@@ -404,7 +437,7 @@ ApplicationWindow {
 
     // Adds a tab after the others, in this workspace unless another is named.
     function appendTab(url, title, lazy, inWorkspace) {
-        tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0, space: inWorkspace ?? space, kind: "", audible: false, muted: false })
+        tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0, space: inWorkspace ?? space, kind: "", audible: false, muted: false, group: 0, lead: false, folded: false, chosen: false })
         touchSession()
     }
 
@@ -446,6 +479,8 @@ ApplicationWindow {
         tabs.remove(index)
         current = next
         moves++
+        if (groups.length > 0)
+            Qt.callLater(refreshGroups)
         touchSession()
         if (wasPinned)
             savePinned()
@@ -480,6 +515,8 @@ ApplicationWindow {
         tabs.move(from, to, 1)
         current = next
         moves++
+        if (groups.length > 0)
+            Qt.callLater(refreshGroups)
         if (pinned)
             savePinned()
     }
@@ -833,7 +870,7 @@ ApplicationWindow {
                 view: window.view
                 tabModel: tabs
                 current: window.current
-                onPicked: i => window.current = i
+                onPicked: i => { window.clearSelection(); window.current = i }
                 onClosed: i => window.closeTab(i)
                 onNewTab: window.newTab()
                 pinnedCount: window.pinnedCount
@@ -847,6 +884,10 @@ ApplicationWindow {
                 onMoved: (from, to) => window.moveTab(from, to)
                 onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
                 onMuteToggled: i => window.toggleMute(i)
+                groups: window.groups
+                onSelected: (i, stretch) => window.selectTab(i, stretch)
+                onGroupToggled: id => window.toggleGroup(id)
+                onGroupMenu: (id, at) => groupMenu.showFor(id, at)
                 spaces: window.spaces
                 space: window.space
                 onSpaceChosen: id => window.switchSpace(id)
@@ -871,12 +912,16 @@ ApplicationWindow {
                 downloads: window.downloads
                 spaces: window.spaces
                 space: window.space
-                onPicked: i => window.current = i
+                onPicked: i => { window.clearSelection(); window.current = i }
                 onClosed: i => window.closeTab(i)
                 onNewTab: window.newTab()
                 onMoved: (from, to) => window.moveTab(from, to)
                 onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
                 onMuteToggled: i => window.toggleMute(i)
+                groups: window.groups
+                onSelected: (i, stretch) => window.selectTab(i, stretch)
+                onGroupToggled: id => window.toggleGroup(id)
+                onGroupMenu: (id, at) => groupMenu.showFor(id, at)
                 onReloadPage: window.view.reload()
                 onClearData: clearDialog.open()
                 onSettings: window.openSettings()
@@ -977,20 +1022,31 @@ ApplicationWindow {
                 Item {
                     id: splitter
                     visible: window.splitShown
-                    x: Math.round(parent.width * window.splitRatio) - 4
-                    width: 8
-                    height: parent.height
+                    readonly property bool flat: window.splitStacked
+                    x: flat ? 0 : Math.round(parent.width * window.splitRatio) - 4
+                    y: flat ? Math.round(parent.height * window.splitRatio) - 4 : 0
+                    width: flat ? parent.width : 8
+                    height: flat ? 8 : parent.height
                     z: 2
-                    Rectangle { anchors.centerIn: parent; width: handle.containsMouse || handle.pressed ? 4 : 2; height: parent.height; color: handle.containsMouse || handle.pressed ? Theme.accent : Theme.line }
+                    Rectangle {
+                        anchors.centerIn: parent
+                        readonly property int thick: handle.containsMouse || handle.pressed ? 4 : 2
+                        width: splitter.flat ? parent.width : thick
+                        height: splitter.flat ? thick : parent.height
+                        color: handle.containsMouse || handle.pressed ? Theme.accent : Theme.line
+                    }
                     MouseArea {
                         id: handle
                         anchors.fill: parent
                         hoverEnabled: true
-                        cursorShape: Qt.SplitHCursor
+                        cursorShape: splitter.flat ? Qt.SplitVCursor : Qt.SplitHCursor
                         preventStealing: true
                         onPositionChanged: mouse => {
-                            if (pressed)
-                                window.splitRatio = Math.max(0.2, Math.min(0.8, mapToItem(splitter.parent, mouse.x, 0).x / splitter.parent.width))
+                            if (!pressed)
+                                return
+                            const at = mapToItem(splitter.parent, mouse.x, mouse.y)
+                            const share = splitter.flat ? at.y / splitter.parent.height : at.x / splitter.parent.width
+                            window.splitRatio = Math.max(0.2, Math.min(0.8, share))
                         }
                         onDoubleClicked: window.splitRatio = 0.5
                     }
@@ -999,6 +1055,7 @@ ApplicationWindow {
                 Rectangle {
                     visible: window.splitShown
                     x: window.view?.x ?? 0
+                    y: window.view?.y ?? 0
                     width: window.view?.width ?? 0
                     height: 2
                     color: Theme.accent

@@ -38,6 +38,10 @@ Panel {
     property var downloadTools: null        // what the list can do: { past, canOpen, open, again, forget }
     signal backMenu(bool forward, Item at)
     signal muteToggled(int index)
+    property var groups: []
+    signal selected(int index, bool stretch)
+    signal groupToggled(int id)
+    signal groupMenu(int id, Item at)
 
     title: compact ? "" : "velum"
     implicitWidth: compact ? Theme.strip : Theme.sidebar
@@ -147,6 +151,10 @@ Panel {
                 onPicked: i => side.picked(i)
                 onClosed: i => side.closed(i)
                 onMuteToggled: i => side.muteToggled(i)
+                groups: side.groups
+                onSelected: (i, stretch) => side.selected(i, stretch)
+                onGroupToggled: id => side.groupToggled(id)
+                onGroupMenu: (id, at) => side.groupMenu(id, at)
                 onMenuRequested: i => side.menuRequested(i)
                 lastPinned: index === side.pinnedCount - 1 && index < ListView.view.count - 1
                 onDragged: (i, at) => {
