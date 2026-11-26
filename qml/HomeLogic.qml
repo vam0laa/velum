@@ -30,7 +30,17 @@ QtObject {
                 app.keepWidgets(JSON.parse(app.saved.homeWidgets))
             else
                 app.keepWidgets([])
-            app.saved.homeDesign = 2
+            // a style sheet or accent chosen for the old design would cover the new one;
+            // the sheet is put aside, not thrown away
+            if (app.saved.homeDesign < 3) {
+                if (app.homeCss !== "")
+                    app.saved.homeCssBefore = app.homeCss
+                app.homeCss = ""
+                Theme.accentChoice = ""
+                if (app.startBackground !== "image")
+                    app.startBackground = "glow"
+            }
+            app.saved.homeDesign = 3
         } catch (e) {
         }
         app.homeWords = app.readStrings(app.saved.homeWords)

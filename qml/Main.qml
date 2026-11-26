@@ -17,7 +17,7 @@ ApplicationWindow {
     property bool compactSidebar: false
     property bool horizontalTabs: true     // the tabs along the top instead of down the side
     // the start page, as you set it up
-    property string startBackground: "plain"
+    property string startBackground: "glow"
     property string startPicture: ""
     // the widgets of the home page, in order
     property var homeWidgets: []
@@ -408,6 +408,7 @@ ApplicationWindow {
         property alias startVisited: window.showFrequent
         property alias startRecent: window.showRecent
         property int homeDesign: 0
+        property string homeCssBefore: ""
         property alias note: window.note
         property string homeWidgets: ""
         property string pastDownloads: "[]"
@@ -1313,6 +1314,12 @@ ApplicationWindow {
                             showNote: window.showNote
                             showFrequent: window.showFrequent
                             showRecent: window.showRecent
+                            spaces: window.spaces
+                            space: window.space
+                            onSpaceChosen: id => window.switchSpace(id)
+                            onSpaceAdd: spaceDialog.show(0, "", false)
+                            onPrivateWindow: window.openWindow(true)
+                            onBackRequested: window.newTab()
                             showBookmarkBar: window.showBookmarkBar
                             onStartChanged: (name, value) => window.setStart(name, value)
                             onResetLook: window.resetLook()
@@ -1335,6 +1342,11 @@ ApplicationWindow {
                 StartPage {
                     id: start
                     branded: window.horizontalTabs
+                    spaces: window.spaces
+                    space: window.space
+                    onSpaceChosen: id => window.switchSpace(id)
+                    onSpaceAdd: spaceDialog.show(0, "", false)
+                    onPrivateWindow: window.openWindow(true)
                     x: window.splitShown ? window.view.x : 0
                     width: window.splitShown ? window.view.width : parent.width
                     height: parent.height

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Shapes
 
 // The everyday home page: a greeting, one wide search field, your sites and the pages
 // you saw last. Widgets, your own headline and your style sheet can be added in the
@@ -32,10 +33,10 @@ Item {
 
         ColumnLayout {
             id: column
-            width: Math.min(parent.width - 48, 640)
+            width: Math.min(parent.width - 48, 624)
             x: (parent.width - width) / 2
-            y: Math.max(88, (scroll.height - implicitHeight) * 0.4)
-            spacing: 44
+            y: Math.max(76, (scroll.height - implicitHeight) * 0.46)
+            spacing: 48
             opacity: root.arrived
             transform: Translate { y: (1 - root.arrived) * 16 }
 
@@ -51,7 +52,7 @@ Item {
                     visible: root.page.css(["headline"], "display", "block") !== "none"
                     readonly property string hello: root.page.greeting(root.page.now.getHours())
                     text: root.page.headline !== "" ? root.page.headline : hello.charAt(0).toLocaleUpperCase(Lang.turkish ? "tr_TR" : "en_US") + hello.slice(1)
-                    size: root.width < 640 ? 34 : 50
+                    size: root.width < 640 ? 32 : 52
                     weight: 500
                     font.letterSpacing: -1.4
                     fontSizeMode: Text.HorizontalFit
@@ -68,12 +69,13 @@ Item {
                 HomeBox {
                     Layout.fillWidth: true
                     Layout.topMargin: 16
+                    Rectangle { anchors { fill: parent; topMargin: 8; bottomMargin: -10; leftMargin: 10; rightMargin: 10 } z: -2; radius: height / 2; color: "#000000"; opacity: 0.22; visible: Theme.dark }
                     page: root.page
                     names: ["search"]
                     visible: root.page.css(["search"], "display", "block") !== "none"
                     implicitHeight: 56
                     corner: height / 2
-                    base: Qt.alpha(Theme.raised, 0.9)
+                    base: Theme.raised
                     border.width: root.page.css(["search"], "border-width", 1)
                     border.color: search.activeFocus ? Theme.accent : root.page.css(["search"], "border-color", Theme.line)
                     // a soft halo while you type
@@ -82,12 +84,13 @@ Item {
                         anchors { fill: parent; leftMargin: 8; rightMargin: 10 }
                         spacing: 8
                         Dropdown {
-                            implicitHeight: 38
-                            implicitWidth: engine.implicitWidth + 52
+                            chip: true
+                            implicitHeight: 32
+                            implicitWidth: engine.implicitWidth + 62
                             options: Address.engines
                             current: Address.engine
                             onChosen: key => Address.engine = key
-                            Text { id: engine; visible: false; text: Address.engineName; font.family: Theme.ui; font.pixelSize: Theme.size(17) }
+                            Text { id: engine; visible: false; text: Address.engineName; font.family: Theme.ui; font.pixelSize: 12; font.variableAxes: Theme.axes(550) }
                         }
                         AddressField {
                             id: search
@@ -95,7 +98,7 @@ Item {
                             implicitHeight: 44
                             bare: true
                             leftPadding: 8
-                            font.pixelSize: root.page.css(["search"], "font-size", 15)
+                            font.pixelSize: root.page.css(["search"], "font-size", 16)
                             color: root.page.css(["search"], "color", Theme.text)
                             placeholderText: Lang.t("Web'de ara ya da adres yaz", "Search the web or enter a URL")
                             background: null
@@ -106,11 +109,11 @@ Item {
                             implicitWidth: hint.implicitWidth + 18
                             implicitHeight: 24
                             radius: height / 2
-                            color: Theme.surface
-                            border.color: Theme.line
+                            color: Theme.window
+                            border.color: Qt.alpha(Theme.line, 0.7)
                             Text { id: hint; anchors.centerIn: parent; text: Keymap.text("address"); color: Theme.dim; font.family: "monospace"; font.pixelSize: 11 }
                         }
-                        IconButton { symbol: "search"; hint: Lang.t("Ara", "Search"); onClicked: if (search.text.trim() !== "") search.accepted() }
+                        IconButton { implicitWidth: 36; implicitHeight: 36; tone: Theme.dim; symbol: "search"; hint: Lang.t("Ara", "Search"); onClicked: if (search.text.trim() !== "") search.accepted() }
                     }
                 }
             }
@@ -118,17 +121,17 @@ Item {
             // ---- your sites ----
             Flow {
                 id: tiles
-                readonly property int count: Math.min(root.page.shortcuts.length + (plus.visible ? 1 : 0), Math.max(1, Math.floor((column.width + spacing) / (76 + spacing))))
+                readonly property int count: Math.min(root.page.shortcuts.length + (plus.visible ? 1 : 0), Math.max(1, Math.floor((column.width + spacing) / (70 + spacing))))
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: count * 76 + (count - 1) * spacing
+                Layout.preferredWidth: count * 70 + (count - 1) * spacing
                 visible: root.page.css(["tile"], "display", "block") !== "none"
-                spacing: 4
+                spacing: 8
                 component Face: Rectangle {
                     property bool lit
                     anchors { top: parent.top; topMargin: lit ? 2 : 4; horizontalCenter: parent.horizontalCenter }
                     width: 48; height: 48
                     radius: root.page.css(["tile"], "border-radius", Theme.round(16))
-                    color: root.page.css(["tile"], "background", lit ? Theme.title : Theme.raised)
+                    color: root.page.css(["tile"], "background", lit ? Theme.title : Qt.alpha(Theme.raised, 0.9))
                     border.width: 1
                     border.color: lit ? Qt.alpha(Theme.accent, 0.55) : root.page.css(["tile"], "border-color", Theme.line)
                     Behavior on anchors.topMargin { NumberAnimation { duration: Theme.quick; easing.type: Easing.OutCubic } }
@@ -139,7 +142,7 @@ Item {
                         id: tile
                         required property int index
                         required property var modelData
-                        implicitWidth: 76
+                        implicitWidth: 70
                         implicitHeight: 84
                         hoverEnabled: true
                         onClicked: root.page.go(modelData.url)
@@ -149,7 +152,7 @@ Item {
                                 lit: tile.hovered
                                 SiteIcon {
                                     anchors.centerIn: parent
-                                    width: 22; height: 22
+                                    width: 20; height: 20
                                     plain: true
                                     title: String(tile.modelData.title)
                                     file: root.page.iconFor(tile.modelData.url)
@@ -170,7 +173,7 @@ Item {
                 }
                 AbstractButton {
                     id: plus
-                    implicitWidth: 76
+                    implicitWidth: 70
                     implicitHeight: 84
                     hoverEnabled: true
                     visible: root.page.shortcuts.length < 10
@@ -179,7 +182,19 @@ Item {
                     contentItem: Item {
                         Face {
                             lit: plus.hovered
-                            color: plus.hovered ? Theme.title : "transparent"
+                            color: plus.hovered ? Theme.title : Qt.alpha(Theme.window, 0.6)
+                            border.width: plus.hovered ? 1 : 0
+                            // a dashed edge: this one is not a site yet
+                            Shape {
+                                anchors.fill: parent
+                                visible: !plus.hovered
+                                preferredRendererType: Shape.CurveRenderer
+                                ShapePath {
+                                    strokeColor: Theme.line; strokeWidth: 1; fillColor: "transparent"
+                                    strokeStyle: ShapePath.DashLine; dashPattern: [4, 3]
+                                    PathRectangle { x: 0.5; y: 0.5; width: 47; height: 47; radius: Theme.round(16) }
+                                }
+                            }
                             Icon { anchors.centerIn: parent; name: "plus"; size: 20; color: plus.hovered ? Theme.text : Theme.dim }
                         }
                         Words { anchors { bottom: parent.bottom; bottomMargin: 6; horizontalCenter: parent.horizontalCenter } text: Lang.t("Ekle", "Add"); base: plus.hovered ? Theme.text : Theme.dim; size: 12; weight: 500 }
@@ -208,7 +223,7 @@ Item {
             // ---- recently visited ----
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.maximumWidth: 580
+                Layout.maximumWidth: 576
                 Layout.alignment: Qt.AlignHCenter
                 visible: root.page.recent.length > 0
                 spacing: 4
@@ -282,13 +297,16 @@ Item {
         }
     }
 
-    Brand { x: 28; y: 20; visible: root.page.branded }
-    Row {
-        anchors { right: parent.right; top: parent.top; rightMargin: 24; topMargin: 16 }
+    PageHeader {
+        anchors { left: parent.left; right: parent.right; top: parent.top }
         visible: !panel.visible
-        spacing: 6
-        IconButton { symbol: "palette"; hint: Lang.t("Ana sayfayı düzenle", "Design the home page"); onClicked: panel.open() }
-        IconButton { symbol: "settings"; hint: Lang.t("Ayarlar", "Settings"); onClicked: root.page.customize() }
+        branded: root.page.branded
+        spaces: root.page.spaces
+        space: root.page.space
+        onSettings: root.page.customize()
+        onSpaceChosen: id => root.page.spaceChosen(id)
+        onSpaceAdd: root.page.spaceAdd()
+        onPrivateWindow: root.page.privateWindow()
     }
     HomeEditor {
         id: panel

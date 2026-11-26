@@ -12,6 +12,11 @@ Rectangle {
     property var recent: []             // [{ url, title, last }], newest first
     property bool showRecent: true
     property bool branded: true         // false: the side bar already shows the mark
+    property var spaces: []
+    property int space
+    signal spaceChosen(int id)
+    signal spaceAdd()
+    signal privateWindow()
     property double blocked: 0          // requests the shield has stopped so far
     property string note: ""
     property string background: "glow"

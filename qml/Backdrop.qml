@@ -1,11 +1,11 @@
 import QtQuick
-import QtQuick.Shapes
 
 // What lies behind the start page: Velum's sky, a plain sheet, a dot grid or your picture.
 Item {
     id: backdrop
     property string mode: "glow"       // "glow", "plain", "dots", "image", or webcore's "sky"
     property string picture: ""        // a file path, for "image"
+    property real middle: 0.32         // how far down the light of "glow" has its middle
 
     Image {
         anchors.fill: parent
@@ -25,51 +25,53 @@ Item {
         Sparkle { x: parent.width * 0.91; y: parent.height * 0.57; size: 20; delay: 2000 }
     }
 
-    // soft spots of the theme's colours
-    component Glow: Shape {
-        id: glow
-        property color tone
-        property real size: 600
-        width: size
-        height: size
-        ShapePath {
-            strokeColor: "transparent"
-            fillGradient: RadialGradient {
-                centerX: glow.size / 2; centerY: glow.size / 2; focalX: centerX; focalY: centerY
-                centerRadius: glow.size / 2
-                GradientStop { position: 0; color: Qt.alpha(glow.tone, 0.2) }
-                GradientStop { position: 0.6; color: Qt.alpha(glow.tone, 0.06) }
-                GradientStop { position: 1; color: Qt.alpha(glow.tone, 0) }
-            }
-            PathAngleArc { centerX: glow.size / 2; centerY: glow.size / 2; radiusX: glow.size / 2; radiusY: glow.size / 2; startAngle: 0; sweepAngle: 360 }
-        }
-    }
-    Item {
+    // one wide, quiet light behind the middle of the page, a fainter one from the top,
+    // and a grain of dots that fades out around the middle
+    Canvas {
+        id: light
         anchors.fill: parent
-        clip: true
         visible: backdrop.mode === "glow"
-        // one wide, quiet light behind the middle of the page, with a grain of dots in it
-        Glow { id: light; tone: Theme.accent; size: Math.max(backdrop.width, 500) * 0.75; x: (backdrop.width - size) / 2; y: backdrop.height * 0.3 - size / 2; transform: Scale { yScale: 0.7; origin.y: light.size / 2 } }
-        Canvas {
-            id: grain
-            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top }
-            width: Math.min(parent.width, 960); height: Math.min(parent.height, 720)
-            property color tone: Theme.text
-            onToneChanged: requestPaint()
-            onPaint: {
-                const c = getContext("2d")
-                c.reset()
-                c.fillStyle = tone
-                const cx = width / 2, cy = height * 0.4
-                for (let y = 12; y < height; y += 24)
-                    for (let x = 12; x < width; x += 24) {
-                        const far = Math.hypot((x - cx) / (width * 0.5), (y - cy) / (height * 0.5))
-                        if (far < 1) {
-                            c.globalAlpha = 0.05 * (1 - far)
-                            c.fillRect(x, y, 1.5, 1.5)
-                        }
+        property color tone: Theme.accent
+        property color soft: Theme.mauve
+        property color shade: Theme.raised
+        property color grain: Theme.text
+        property real middle: backdrop.middle
+        onToneChanged: requestPaint()
+        onShadeChanged: requestPaint()
+        onSoftChanged: requestPaint()
+        onGrainChanged: requestPaint()
+        onMiddleChanged: requestPaint()
+        onVisibleChanged: requestPaint()
+        function veil(c, colour, a) { return "rgba(" + Math.round(colour.r * 255) + "," + Math.round(colour.g * 255) + "," + Math.round(colour.b * 255) + "," + a + ")" }
+        function spot(c, x, y, rx, ry, stops) {
+            c.save()
+            c.translate(x, y)
+            c.scale(rx, ry)
+            const g = c.createRadialGradient(0, 0, 0, 0, 0, 1)
+            for (const s of stops)
+                g.addColorStop(s[0], veil(c, s[1], s[2]))
+            c.fillStyle = g
+            c.fillRect(-1, -1, 2, 2)
+            c.restore()
+        }
+        onPaint: {
+            const c = getContext("2d")
+            c.reset()
+            if (width <= 0 || height <= 0)
+                return
+            const far = Math.hypot(width / 2, height)
+            spot(c, width / 2, 0, far / 2, far / 2, [[0, soft, 0.04], [1, soft, 0]])
+            spot(c, width / 2, height * middle, width * 0.64, height * 0.4, [[0, tone, 0.11], [0.46, shade, 0.28], [0.76, shade, 0]])
+            c.fillStyle = grain
+            for (let y = 0; y < height; y += 24)
+                for (let x = 0; x < width; x += 24) {
+                    const d = Math.hypot((x - width / 2) / (width * 0.65), (y - height * 0.4) / (height * 0.6))
+                    const a = d <= 0.2 ? 1 : (0.78 - d) / 0.58
+                    if (a > 0) {
+                        c.globalAlpha = 0.045 * a
+                        c.fillRect(x, y, 1.5, 1.5)
                     }
-            }
+                }
         }
     }
 

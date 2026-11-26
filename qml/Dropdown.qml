@@ -8,6 +8,7 @@ AbstractButton {
     property var current
     readonly property var chosenOption: options.find(o => o.key === current) ?? null
     signal chosen(var key)
+    property bool chip: false        // small, dark, with a dot: the one in the search field
     implicitHeight: 34
     implicitWidth: 168
     hoverEnabled: true
@@ -15,10 +16,10 @@ AbstractButton {
     onClicked: list.open()
     Accessible.name: chosenOption?.label ?? ""
 
-    background: Rectangle { radius: Theme.round(height / 2); color: drop.hovered || list.opened ? Theme.title : Theme.raised; border.width: Theme.web ? 0 : 1; border.color: list.opened ? Theme.accent : Theme.line }
+    background: Rectangle { radius: Theme.round(height / 2); color: drop.hovered || list.opened ? Theme.title : drop.chip ? Theme.window : Theme.raised; border.width: Theme.web ? 0 : 1; border.color: list.opened ? Theme.accent : drop.chip ? Qt.alpha(Theme.line, 0.7) : Theme.line }
     contentItem: Item {
-        Rectangle { id: swatch; visible: drop.chosenOption?.color !== undefined; x: 14; anchors.verticalCenter: parent.verticalCenter; width: 12; height: 12; radius: Theme.radius; color: drop.chosenOption?.color ?? "transparent" }
-        Text { anchors { left: parent.left; leftMargin: swatch.visible ? 34 : 14; right: arrow.left; rightMargin: 6; verticalCenter: parent.verticalCenter } text: drop.chosenOption?.label ?? ""; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight }
+        Rectangle { id: swatch; visible: drop.chip || drop.chosenOption?.color !== undefined; x: drop.chip ? 12 : 14; anchors.verticalCenter: parent.verticalCenter; width: drop.chip ? 8 : 12; height: width; radius: drop.chip ? width / 2 : Theme.radius; color: drop.chip ? Theme.mauve : drop.chosenOption?.color ?? "transparent" }
+        Text { anchors { left: parent.left; leftMargin: drop.chip ? 28 : swatch.visible ? 34 : 14; right: arrow.left; rightMargin: 6; verticalCenter: parent.verticalCenter } text: drop.chosenOption?.label ?? ""; color: Theme.text; font.family: Theme.ui; font.pixelSize: drop.chip ? 12 : Theme.size(17); font.variableAxes: Theme.axes(drop.chip ? 550 : 400); elide: Text.ElideRight }
         Icon { id: arrow; anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter } name: "down"; size: 14; color: Theme.dim }
     }
 

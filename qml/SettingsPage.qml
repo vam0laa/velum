@@ -157,24 +157,52 @@ Rectangle {
         visible: wanted
     }
 
-    Backdrop { anchors.fill: parent; mode: "glow"; visible: !Theme.web && page.startBackground === "glow" }
-    Brand { x: 28; y: 20; visible: !Theme.web && page.horizontalTabs && page.width >= 1120 }
+    Backdrop { anchors.fill: parent; mode: "glow"; middle: 0.18; visible: !Theme.web && page.startBackground === "glow" }
+    property var spaces: []
+    property int space
+    signal spaceChosen(int id)
+    signal spaceAdd()
+    signal privateWindow()
+    signal backRequested()
+    PageHeader {
+        id: header
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        visible: !Theme.web
+        branded: page.horizontalTabs
+        spaces: page.spaces
+        space: page.space
+        onSpaceChosen: id => page.spaceChosen(id)
+        onSpaceAdd: page.spaceAdd()
+        onPrivateWindow: page.privateWindow()
+    }
 
     ColumnLayout {
         id: frame
-        anchors { top: parent.top; bottom: parent.bottom; topMargin: 28 }
-        width: Math.min(parent.width - 36, 920)
+        anchors { top: header.visible ? header.bottom : parent.top; bottom: parent.bottom; topMargin: header.visible ? 12 : 28 }
+        width: Math.min(parent.width - 48, 848)
         x: (parent.width - width) / 2
         spacing: 0
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.bottomMargin: 20
+            Layout.bottomMargin: 24
             spacing: 16
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 4
-                Text { text: Lang.t("Ayarlar", "Settings"); color: Theme.text; font.family: Theme.ui; font.pixelSize: 30; font.variableAxes: Theme.axes(550); font.letterSpacing: -0.7 }
+                AbstractButton {
+                    id: back
+                    visible: !Theme.web
+                    hoverEnabled: true
+                    Layout.bottomMargin: 6
+                    onClicked: page.backRequested()
+                    contentItem: Row {
+                        spacing: 6
+                        Icon { name: "back"; size: 14; color: back.hovered ? Theme.text : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                        Text { text: Lang.t("Yeni sekme", "New tab"); color: back.hovered ? Theme.text : Theme.dim; font.family: Theme.ui; font.pixelSize: 12; font.variableAxes: Theme.axes(500) }
+                    }
+                }
+                Text { text: Lang.t("Ayarlar", "Settings"); color: Theme.text; font.family: Theme.ui; font.pixelSize: 32; font.variableAxes: Theme.axes(500); font.letterSpacing: -0.75 }
                 Text { Layout.fillWidth: true; visible: !page.narrow; text: Lang.t("Velum'u, aramayı ve gizliliği kendine göre ayarla.", "Make Velum, search and privacy your own."); color: Theme.dim; font.family: Theme.ui; font.pixelSize: 14; elide: Text.ElideRight }
             }
             TextField {
@@ -207,10 +235,10 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: page.narrow ? 12 : 28
+            spacing: page.narrow ? 12 : 32
 
             Flickable {
-                Layout.preferredWidth: page.narrow ? 160 : 210
+                Layout.preferredWidth: page.narrow ? 160 : 188
                 Layout.fillHeight: true
                 contentHeight: menu.implicitHeight + 48
                 clip: true
@@ -266,8 +294,8 @@ Rectangle {
                         NumberAnimation { target: content; property: "opacity"; from: 0; to: 1; duration: Theme.smooth }
                         NumberAnimation { target: slide; property: "y"; from: 12; to: 0; duration: Theme.smooth; easing.type: Easing.OutCubic }
                     }
-                    width: parent.width - 10
-                    y: 24
+                    width: parent.width
+                    y: 32
                     spacing: 26
 
                 Note { visible: page.nothingFound; text: Lang.t("Bununla eşleşen bir ayar yok.", "No setting matches that.") }

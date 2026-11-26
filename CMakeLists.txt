@@ -69,6 +69,7 @@ qt_add_qml_module(velum
         qml/StartPage.qml
         qml/ClassicStart.qml
         qml/Brand.qml
+        qml/PageHeader.qml
         qml/MonthCard.qml
         qml/HomeCss.qml
         qml/HomeBox.qml

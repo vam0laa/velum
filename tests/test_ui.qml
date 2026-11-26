@@ -50,6 +50,7 @@ Item {
             t.check("the same shortcut is not added twice", !w.addShortcut("vamola.dev"))
             t.check("a search is not a shortcut", !w.addShortcut("some words"))
             w.removeShortcut(0); t.check("a shortcut is removed", w.shortcuts.length === 0)
+            t.check("no old style sheet paints over the new home page", w.homeCss === "")
             t.check("a bookmark takes the name given to it", w.saveBookmark(-1, "Videolar", "youtube.com", "") && w.shortcuts[0].title === "Videolar")
             w.removeShortcut(0)
             t.check("broken saved data gives an empty list", w.readList("{oops").length === 0 && w.readList('[{"url":5},null]').length === 0)
