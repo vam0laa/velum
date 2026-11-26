@@ -63,7 +63,8 @@ public:
                 if (signature->error() != QNetworkReply::NoError || !release)
                     return set(QStringLiteral("failed"));
                 // only ever forward: an old, properly signed release is not installed again
-                if (update::compare(release->version, QCoreApplication::applicationVersion()) <= 0)
+                const QString mine = QCoreApplication::applicationVersion();
+                if (update::compare(mine, QStringLiteral("0.0.0")) < 0 || update::compare(release->version, mine) <= 0)
                     return set(QStringLiteral("current"));
                 download(*release);
             });

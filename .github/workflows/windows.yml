@@ -61,8 +61,13 @@ jobs:
         shell: pwsh
         run: >
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DVELUM_RELEASE=${{ steps.version.outputs.value }}
-          -DOPENSSL_ROOT_DIR="$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
+          "-DVELUM_RELEASE=${{ steps.version.outputs.value }}"
+          "-DOPENSSL_ROOT_DIR=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
+
+      # the updater compares this number: a wrong one would reinstall for ever
+      - name: Check the version
+        shell: bash
+        run: grep -x "VELUM_RELEASE:STRING=${{ steps.version.outputs.value }}" build/CMakeCache.txt
 
       - name: Build
         run: cmake --build build -- -k 0
