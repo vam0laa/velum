@@ -237,7 +237,7 @@ Rectangle {
                     Toggle { label: Lang.t("Saat ve tarih", "Clock and date"); on: page.showClock; onClicked: page.startChanged("showClock", !page.showClock) }
                     Toggle { label: Lang.t("Kalkan uyarısı", "Shield notice"); on: page.showShield; onClicked: page.startChanged("showShield", !page.showShield) }
                     Toggle { label: Lang.t("Sık gidilenler", "Most visited"); on: page.showFrequent; onClicked: page.startChanged("showFrequent", !page.showFrequent) }
-                    Toggle { label: Lang.t("Not kâğıdı", "Note"); on: page.showNote; onClicked: page.startChanged("showNote", !page.showNote) }
+                    Toggle { label: Lang.t("Not defteri", "Note"); on: page.showNote; onClicked: page.startChanged("showNote", !page.showNote) }
                 }
 
                 // ---- general ----

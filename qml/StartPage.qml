@@ -81,16 +81,16 @@ Rectangle {
                     implicitWidth: face.implicitWidth
                     implicitHeight: face.implicitHeight
                     component Digits: Text { text: clock.time; font.pixelSize: 128; font.letterSpacing: 4 }
-                    Digits { y: 7; color: "#000a66" }
-                    Digits { x: -5; color: "#3ff5ff" }
-                    Digits { x: 5; color: "#ff3fd0" }
-                    Digits { id: face; color: "#ffffff" }
+                    Digits { y: 7; color: Theme.night ? "#00031c" : "#000a66" }
+                    Digits { x: -5; color: Theme.night ? "#3a9fb8" : "#3ff5ff" }
+                    Digits { x: 5; color: Theme.night ? "#b0479c" : "#ff3fd0" }
+                    Digits { id: face; color: Theme.night ? "#dfe8ff" : "#ffffff" }
                 }
                 Text {
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     text: "★ " + page.locale_.dayName(page.now.getDay()).toLocaleLowerCase() + " · " + page.now.getDate() + " " + page.locale_.monthName(page.now.getMonth()).toLocaleLowerCase() + " · " + page.greeting(page.now.getHours()) + " ★"
-                    color: page.onSky ? "#eef5ff" : Theme.text
+                    color: !page.onSky ? Theme.text : Theme.night ? "#b9c8ee" : "#eef5ff"
                     style: page.onSky ? Text.Raised : Text.Normal
                     styleColor: "#000a66"
                     font.pixelSize: 24
@@ -283,7 +283,7 @@ Rectangle {
     }
 
     // scan lines over the sky
-    Image { anchors.fill: parent; visible: page.background === "sky"; source: Qt.resolvedUrl("../data/scanline.png"); fillMode: Image.Tile; smooth: false }
+    Image { anchors.fill: parent; visible: page.background === "sky"; opacity: Theme.night ? 0.6 : 1; source: Qt.resolvedUrl("../data/scanline.png"); fillMode: Image.Tile; smooth: false }
 
     // corner buttons
     Row {

@@ -9,13 +9,14 @@ Item {
     Image {
         anchors.fill: parent
         visible: backdrop.mode === "sky"
-        source: Qt.resolvedUrl("../data/sky.jpg")
+        source: Qt.resolvedUrl(Theme.night ? "../data/sky-night.jpg" : "../data/sky.jpg")
         fillMode: Image.PreserveAspectCrop
         opacity: Theme.glass ? Theme.solidity : 1
     }
     Item {
         anchors.fill: parent
         visible: backdrop.mode === "sky"
+        opacity: Theme.night ? 0.75 : 1
         Sparkle { x: parent.width * 0.16; y: parent.height * 0.14; size: 38 }
         Sparkle { x: parent.width * 0.80; y: parent.height * 0.18; size: 26; delay: 700 }
         Sparkle { x: parent.width * 0.72; y: parent.height * 0.06; size: 16; tone: "#9ff5ff"; delay: 1500 }

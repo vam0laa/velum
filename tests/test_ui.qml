@@ -184,6 +184,11 @@ Item {
             w.prefs.startChanged("showNote", false); w.prefs.startChanged("startBackground", "dots")
             t.check("the start page follows the settings", !w.showNote && w.startBackground === "dots")
             w.showNote = true; w.startBackground = "glow"
+            Theme.palette = "auto"
+            const hourNow = Theme.hour
+            Theme.hour = 12; const day = Theme.shown; Theme.hour = 22; const late = Theme.shown; Theme.hour = 6; const early = Theme.shown
+            t.check("by the clock: bright by day, night blue after dark", day === "cybercore" && late === "night" && early === "night" && !Theme.dark === false)
+            Theme.hour = hourNow
             Theme.palette = "cybercore"
             t.check("text on blue is white", String(Theme.accentInk) === "#ffffff" && String(Theme.barInk) === "#ffffff")
             Theme.palette = "mocha"

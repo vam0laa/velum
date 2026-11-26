@@ -9,14 +9,15 @@ Item {
     property bool lifted: true
     width: 52
     height: 52
-    Rectangle { x: 4; y: 4; width: parent.width; height: parent.height; color: Theme.accent; visible: mark.lifted }
-    Rectangle { anchors.fill: parent; color: "#ffffff"; border.width: 2; border.color: Theme.accent }
+    Rectangle { x: 4; y: 4; width: parent.width; height: parent.height; color: Theme.bar; visible: mark.lifted }
+    // a site's own icon gets a pale backing, so dark ones show at night too
+    Rectangle { anchors.fill: parent; color: image.status === Image.Ready ? (Theme.night ? "#c3cdee" : "#ffffff") : Theme.raised; border.width: 2; border.color: Theme.accent }
     Text {
         anchors.centerIn: parent
         visible: image.status !== Image.Ready
         text: mark.title.charAt(0).toLocaleUpperCase()
         textFormat: Text.PlainText
-        color: Theme.palette === "cybercore" ? Theme.accent : "#0b17a8"
+        color: Theme.night ? Theme.text : Theme.accent
         font.pixelSize: 34
     }
     Image {

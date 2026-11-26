@@ -6,7 +6,12 @@ import QtQuick
 // blue title bars, pixel lettering and a sky behind the start page.
 QtObject {
     id: theme
-    property string palette: "cybercore"   // a key of "palettes", or "desktop"
+    property string palette: "auto"        // a key of "palettes", "desktop", or "auto"
+    // "auto" is the bright blue by day and the night blue from the evening on
+    property int hour: new Date().getHours()
+    readonly property string shown: palette !== "auto" ? palette : hour >= 7 && hour < 19 ? "cybercore" : "night"
+    readonly property bool night: shown === "night"
+    property Timer clock: Timer { interval: 30000; running: true; repeat: true; onTriggered: theme.hour = new Date().getHours() }
     property string accentChoice: ""       // "" keeps the palette's own accent
     property bool glass: false             // see-through windows; the desktop blurs behind them
     property real solidity: 0.72           // how opaque the glass is: 0.55, 0.72 or 0.88
@@ -14,7 +19,7 @@ QtObject {
 
     property Settings saved: Settings {
         category: "look"
-        property alias skin: theme.palette
+        property alias scheme: theme.palette
         property alias accent: theme.accentChoice
         property alias glass: theme.glass
         property alias solidity: theme.solidity
@@ -23,6 +28,7 @@ QtObject {
 
     // frame, window, card, raised, title, line, text, dim, accent, accentInk, mauve, pink, green, peach, danger
     readonly property var palettes: ({
+        night:      ["#0d1124", "#171c33", "#171c33", "#10142a", "#26306a", "#3a478c", "#c3cdee", "#8590ba", "#6473d6", "#f0f3ff", "#a58be0", "#d27cc4", "#5fbf9c", "#d9a066", "#e0708c"],
         cybercore:  ["#050a5c", "#c9d8ff", "#eef3ff", "#ffffff", "#b4c6ff", "#1a2cff", "#0b17a8", "#46549c", "#1a2cff", "#ffffff", "#6a22d6", "#c2188a", "#08765a", "#a84e00", "#c8102e"],
         mocha:      ["#11111b", "#181825", "#1e1e2e", "#313244", "#45475a", "#45475a", "#cdd6f4", "#a6adc8", "#89b4fa", "#11111b", "#cba6f7", "#f5c2e7", "#a6e3a1", "#fab387", "#f38ba8"],
         macchiato:  ["#181926", "#1e2030", "#24273a", "#363a4f", "#494d64", "#494d64", "#cad3f5", "#a5adcb", "#8aadf4", "#181926", "#c6a0f6", "#f5bde6", "#a6da95", "#f5a97f", "#ed8796"],
@@ -37,7 +43,7 @@ QtObject {
 
     // what the pickers offer, in order
     readonly property var themes: [
-        { key: "cybercore", label: "Cybercore" }, { key: "mocha", label: "Mocha" }, { key: "macchiato", label: "Macchiato" }, { key: "frappe", label: "Frappé" }, { key: "latte", label: "Latte" },
+        { key: "auto", label: Lang.t("Saate göre", "By the clock") }, { key: "night", label: Lang.t("Cybercore gece", "Cybercore night") }, { key: "cybercore", label: Lang.t("Cybercore gündüz", "Cybercore day") }, { key: "mocha", label: "Mocha" }, { key: "macchiato", label: "Macchiato" }, { key: "frappe", label: "Frappé" }, { key: "latte", label: "Latte" },
         { key: "rosepine", label: "Rosé Pine" }, { key: "everforest", label: "Everforest" }, { key: "gruvbox", label: "Gruvbox" }, { key: "nord", label: "Nord" },
         { key: "tokyo", label: "Tokyo Night" }, { key: "desktop", label: Lang.t("Masaüstü", "Desktop") }
     ]
@@ -48,12 +54,14 @@ QtObject {
 
     // colour i of any theme, used by the pickers to draw previews
     function colorOf(key, i) {
+        if (key === "auto")
+            key = shown
         const base = palettes[key] ?? palettes.cybercore
         if (key === "desktop")
             return DesktopColors.colors[desktopRoles[i]] ?? base[i]
         return base[i]
     }
-    function pick(i) { return colorOf(palette, i) }
+    function pick(i) { return colorOf(shown, i) }
 
     readonly property color frame: pick(0)       // behind everything
     readonly property color window: pick(1)      // the body of a window
@@ -72,9 +80,11 @@ QtObject {
     readonly property color danger: pick(14)
     readonly property bool dark: surface.hslLightness < 0.5
     // title bars, the tab strip and the few white lines drawn on them
-    readonly property color bar: accent
+    readonly property color bar: night ? "#2c3a9e" : accent
     readonly property color barInk: accentInk
-    readonly property color barDeep: Qt.darker(accent, 1.45)
+    readonly property color barDeep: night ? "#11162b" : Qt.darker(accent, 1.45)
+    readonly property color stripTop: night ? "#0d1124" : bar
+    readonly property color stripBottom: night ? "#0d1124" : barDeep
     readonly property color edge: dark ? line : "#ffffff"       // the bright outer line of a window
     readonly property color hardShadow: Qt.rgba(0, 0.015, 0.2, 0.45)
 

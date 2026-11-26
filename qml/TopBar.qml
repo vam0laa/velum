@@ -43,8 +43,8 @@ Item {
         width: parent.width
         height: 42
         gradient: Gradient {
-            GradientStop { position: 0; color: Theme.bar }
-            GradientStop { position: 1; color: Theme.barDeep }
+            GradientStop { position: 0; color: Theme.stripTop }
+            GradientStop { position: 1; color: Theme.stripBottom }
         }
         RowLayout {
             anchors { fill: parent; leftMargin: 10; rightMargin: 8; topMargin: 6 }
@@ -54,9 +54,9 @@ Item {
                 implicitWidth: logo.implicitWidth + 6
                 implicitHeight: 34
                 component Word: Text { text: "VELUM"; font.pixelSize: 30; y: 2 }
-                Word { x: -2; color: "#3ff5ff" }
-                Word { x: 2; color: "#ff3fd0" }
-                Word { id: logo; color: "#ffffff" }
+                Word { x: -2; color: Theme.night ? "#3a9fb8" : "#3ff5ff" }
+                Word { x: 2; color: Theme.night ? "#b0479c" : "#ff3fd0" }
+                Word { id: logo; color: Theme.night ? "#dfe8ff" : "#ffffff" }
             }
             SpaceBar {
                 Layout.preferredWidth: Math.min(300, naturalWidth)
