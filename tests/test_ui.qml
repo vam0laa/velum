@@ -305,12 +305,13 @@ Item {
             {
             // ---- fixes from the analysis ----
             const asked = []
-            const fetch_ = (name, extra) => Object.assign({ downloadFileName: name, downloadDirectory: "/tmp", url: "https://files.example/" + name, view: null, state: 0, receivedBytes: 0, totalBytes: 1,
+            const fetch_ = (name, extra) => Object.assign({ downloadFileName: name, downloadDirectory: "/tmp", url: "https://files.example/" + name, view: null, state: 0, receivedBytes: 0, totalBytes: 1, stateChanged: { connect: () => {} },
                 accept: () => asked.push("accept " + name), pause: () => asked.push("pause " + name), resume: () => asked.push("resume " + name), cancel: () => asked.push("cancel " + name) }, extra ?? {})
             const had = w.downloads.length
             t.check("programs are known as risky", w.risky("a.EXE") && w.risky("x.sh ") && w.risky("y.AppImage") && !w.risky("photo.jpg") && !w.risky("exe.pdf"))
-            w.startDownload(fetch_("setup.exe")); t.check("a risky download waits for an answer", w.waiting.length === 1 && asked.join() === "accept setup.exe,pause setup.exe" && w.downloads.length === had)
-            w.answerDownload(false); t.check("refusing cancels it", w.waiting.length === 0 && asked[2] === "cancel setup.exe" && w.downloads.length === had)
+            w.startDownload(fetch_("setup.exe")); t.check("a risky download waits for an answer", w.waiting.length === 1 && asked.join() === "accept setup.exe,pause setup.exe" && w.downloads.length === had && w.waiting[0].downloadFileName === "setup.exe.velum-hold")
+            Files.settled = []
+            w.answerDownload(false); t.check("refusing cancels it and removes the file", w.waiting.length === 0 && asked[2] === "cancel setup.exe" && w.downloads.length === had && Files.settled.join() === "discard setup.exe.velum-hold")
             w.startDownload(fetch_("doc.pdf")); t.check("an ordinary file downloads straight away", w.waiting.length === 0 && w.downloads.length === had + 1)
             w.askDownloads = true; w.startDownload(fetch_("doc2.pdf")); w.answerDownload(true); t.check("or is asked about, if you wish", asked[asked.length - 1] === "resume doc2.pdf" && w.downloads.length === had + 2)
             w.askDownloads = false; w.downloads = []
@@ -644,10 +645,13 @@ Item {
         }
     }
     Timer {
-        id: downStep; interval: 2500
+        id: downStep; interval: 500
+        property int tries: 0
         onTriggered: {
+            if (t.w.waiting.length === 0 && ++tries < 20) { restart(); return }     // wait for it, up to ten seconds
             const w = t.w, d = w.waiting[0]
-            t.check("a real risky download is held back", w.waiting.length === 1 && d.isPaused && w.downloads.length === 0 && d.state !== WebEngineDownloadRequest.DownloadCompleted)
+            t.check("a real risky download is held back under a name nothing opens", w.waiting.length === 1 && w.downloads.length === 0 && d.downloadFileName === "tool.sh.velum-hold")
+            Files.settled = []
             w.answerDownload(true)
             gotStep.start()
         }
@@ -657,6 +661,7 @@ Item {
         onTriggered: {
             const w = t.w
             t.check("and completes once you agree", w.downloads.length === 1 && w.downloads[0].state === WebEngineDownloadRequest.DownloadCompleted && w.downloads[0].receivedBytes > 300000)
+            t.check("then it gets its real name", Files.settled.join() === "release tool.sh.velum-hold")
             w.downloadFolder = ""; w.downloads = []
             w.closeTab(w.current)
             w.openTab("")

@@ -30,112 +30,26 @@ ApplicationWindow {
     property string homeCss: ""
     property int homeTimer: 25
     readonly property var widgetNames: ["clock", "date", "calendar", "shield", "tasks", "timer", "note"]
-    function keepWidgets(list) {
-        homeWidgets = Array.from(list).filter((w, i, a) => widgetNames.includes(w) && a.indexOf(w) === i)
-        saved.homeWidgets = JSON.stringify(homeWidgets)
-    }
-    function keepTasks(list) {
-        homeTasks = list.slice(0, 12)
-        saved.homeTasks = JSON.stringify(homeTasks)
-    }
-    function keepWords(headline, words) {
-        homeHeadline = String(headline).trim().slice(0, 40)
-        homeWords = String(words).split("\n").map(w => w.trim().slice(0, 40)).filter(w => w !== "").slice(0, 12)
-        saved.homeWords = JSON.stringify(homeWords)
-    }
-    function readHome() {
-        try {
-            if (saved.homeWidgets !== "") {
-                keepWidgets(JSON.parse(saved.homeWidgets))
-            } else {
-                // the three switches of earlier versions
-                const was = (key, usual) => String(saved.value(key, usual)) === "true"
-                const list = was("showClock", true) ? ["clock", "date", "calendar"] : []
-                if (was("startNotice", true))
-                    list.push("shield")
-                if (was("startNote", false))
-                    list.push("note")
-                keepWidgets(list)
-            }
-        } catch (e) {
-        }
-        homeWords = readStrings(saved.homeWords)
-        try {
-            const list = JSON.parse(saved.homeTasks)
-            homeTasks = Array.isArray(list) ? list.filter(t => t && typeof t.text === "string").slice(0, 12) : []
-        } catch (e) {
-        }
-    }
+    function keepWidgets(list) { return homeLogic.keepWidgets(list) }
+    function keepTasks(list) { return homeLogic.keepTasks(list) }
+    function keepWords(headline, words) { return homeLogic.keepWords(headline, words) }
+    function readHome() { return homeLogic.readHome() }
     // the theme studio, made when first opened
     property var studio: null
     Component { id: studioScreen; ThemeStudio {} }
-    function openStudio() {
-        if (!studio)
-            studio = studioScreen.createObject(scene)
-        studio.begin()
-    }
+    function openStudio() { return homeLogic.openStudio() }
 
-    // the way out of a look gone wrong
-    function resetLook() {
-        Theme.resetAll()
-        homeCss = ""
-        say(Lang.t("Görünüm sıfırlandı.", "The look was reset."))
-    }
+    function resetLook() { return homeLogic.resetLook() }
 
     // ---- sharing your look ----
-    function themeText() {
-        return JSON.stringify({ velumTheme: 1, look: Theme.bundle(),
-                                home: { widgets: homeWidgets, headline: homeHeadline, words: homeWords, css: homeCss, background: startBackground === "image" ? "" : startBackground } }, null, 1)
-    }
-    // true when `text` was a theme; only what is valid in it is taken over
-    function applyThemeText(text) {
-        let d = null
-        try {
-            d = JSON.parse(text)
-        } catch (e) {
-        }
-        if (!d || d.velumTheme !== 1)
-            return false
-        Theme.change(() => Theme.applyBundle(d.look))
-        const home = d.home ?? {}
-        if (Array.isArray(home.widgets))
-            keepWidgets(home.widgets)
-        if (typeof home.headline === "string" && Array.isArray(home.words))
-            keepWords(home.headline, home.words.map(String).join("\n"))
-        if (typeof home.css === "string")
-            homeCss = home.css.slice(0, 20000)
-        if (["dots", "glow", "plain"].includes(home.background))
-            startBackground = home.background
-        return true
-    }
-    function exportTheme(file) {
-        say(Files.write(file, themeText()) ? Lang.t("Tema kaydedildi.", "The theme was saved.") : Lang.t("Tema kaydedilemedi.", "The theme could not be saved."))
-    }
+    function themeText() { return homeLogic.themeText() }
+    function applyThemeText(text) { return homeLogic.applyThemeText(text) }
+    function exportTheme(file) { return homeLogic.exportTheme(file) }
     property string beforeImport: ""        // the look as it was before a file replaced it
-    function importTheme(file) {
-        const before = themeText()
-        if (!applyThemeText(Files.read(file))) {
-            say(Lang.t("Bu dosya bir Velum teması değil.", "This file is not a Velum theme."))
-            return
-        }
-        beforeImport = before
-        say(Lang.t("Tema yüklendi. Ayarlar → Görünüm'den geri alabilirsin.", "The theme was loaded. You can undo it in Settings → Appearance."))
-    }
-    function undoImport() {
-        if (beforeImport !== "" && applyThemeText(beforeImport))
-            beforeImport = ""
-    }
+    function importTheme(file) { return homeLogic.importTheme(file) }
+    function undoImport() { return homeLogic.undoImport() }
 
-    // a switch in the settings
-    function setStart(name, value) {
-        const widget = { showClock: "clock", showShield: "shield", showNote: "note" }[name]
-        if (!widget) {
-            window[name] = value
-            return
-        }
-        const list = homeWidgets.filter(w => w !== widget)
-        keepWidgets(value ? list.concat([widget]) : list)
-    }
+    function setStart(name, value) { return homeLogic.setStart(name, value) }
     property bool showFrequent: false
     property string note: ""
     property var frequentPages: []
@@ -191,46 +105,10 @@ ApplicationWindow {
     property int memoryLimit: 0           // megabytes Velum should stay under; 0: no limit
     property int memoryUsed: 0            // megabytes, as last measured for the limit
     Binding { target: Theme; property: "calm"; value: window.powerMode !== "balanced" }
-    function setPowerMode(mode) {
-        powerMode = ["game", "saver"].includes(mode) ? mode : "balanced"
-        say(powerMode === "game" ? Lang.t("Oyun modu: arka sekmeler birkaç saniyede donar.", "Game mode: background tabs freeze within seconds.")
-          : powerMode === "saver" ? Lang.t("Tasarruf modu: arka sekmeler çabuk uyur.", "Saver mode: background tabs sleep quickly.")
-          : Lang.t("Dengeli mod.", "Balanced mode."))
-    }
+    function setPowerMode(mode) { return powerLogic.setPowerMode(mode) }
 
-    // Which tabs to put away so that `used` comes down to `limit`: the ones unseen the
-    // longest first. `candidates`: [{ index, mb, since }].
-    function pickToSleep(candidates, used, limit) {
-        const chosen = []
-        for (const c of candidates.slice().sort((a, b) => a.since - b.since)) {
-            if (used <= limit)
-                break
-            chosen.push(c.index)
-            used -= c.mb
-        }
-        return chosen
-    }
-    function keepUnderLimit() {
-        const pages = []
-        for (let i = 0; i < tabs.count; i++)
-            pages.push(views.itemAt(i) as WebEngineView)
-        const pids = pages.map(p => p && p.lifecycleState !== WebEngineView.LifecycleState.Discarded ? p.renderProcessPid : 0)
-        const found = Resources.sample(pids)
-        memoryUsed = Math.round(found.total.memory)
-        if (memoryLimit <= 0 || memoryUsed <= memoryLimit)
-            return
-        const candidates = []
-        pages.forEach((page, i) => {
-            if (!page || page.visible || page === miniPage || page.hiddenSince === 0 || pids[i] <= 0 || tabs.get(i).pinned || page.recentlyAudible
-                    || page.loading || page.recommendedState === WebEngineView.LifecycleState.Active)
-                return
-            // tabs of one site may share a process: each counts its part
-            const sharing = pids.filter(p => p === pids[i]).length
-            candidates.push({ index: i, mb: (found[String(pids[i])]?.memory ?? 0) / sharing, since: page.hiddenSince })
-        })
-        for (const i of pickToSleep(candidates, memoryUsed, memoryLimit))
-            (views.itemAt(i) as WebEngineView).lifecycleState = WebEngineView.LifecycleState.Discarded
-    }
+    function pickToSleep(candidates, used, limit) { return powerLogic.pickToSleep(candidates, used, limit) }
+    function keepUnderLimit() { return powerLogic.keepUnderLimit() }
     Timer { interval: 20000; repeat: true; running: window.memoryLimit > 0; triggeredOnStart: true; onTriggered: window.keepUnderLimit() }
     property bool restoreSession: true
     property string downloadFolder: ""   // "" = the system downloads folder
@@ -449,6 +327,39 @@ ApplicationWindow {
 
     ListModel { id: tabs }
 
+    // what the window does, by subject; the functions above and below hand over to these
+    HomeLogic { id: homeLogic; app: window }
+    BookmarkLogic { id: bookmarkLogic; app: window }
+    DownloadLogic { id: downloadLogic; app: window }
+    SpaceLogic { id: spaceLogic; app: window }
+    PowerLogic { id: powerLogic; app: window }
+    PageLogic { id: pageLogic; app: window }
+    PasswordLogic { id: passwordLogic; app: window }
+    ExtensionLogic { id: extensionLogic; app: window }
+    SiteLogic { id: siteLogic; app: window }
+    AskLogic { id: askLogic; app: window }
+    DemoLogic { id: demoLogic; app: window }
+    property alias accountMenu: accountMenu
+    property alias clearDialog: clearDialog
+    property alias spaceDialog: spaceDialog
+    property alias extensionDialog: extensionDialog
+    property alias findBar: findBar
+    property alias iconGrabber: iconGrabber
+    property alias iconShelf: iconShelf
+    property alias login: login
+    property alias miniPlayer: miniPlayer
+    property alias pagesArea: pagesArea
+    property alias reader: reader
+    property alias resources: resources
+    property alias saved: saved
+    property alias scene: scene
+    property alias start: start
+    property alias studioScreen: studioScreen
+    property alias tabs: tabs
+    property alias themeWash: themeWash
+    property alias topBar: topBar
+    property alias views: views
+
     readonly property string currentHost: view ? hostOf(view.url) : ""
     function hostOf(url) {
         const match = String(url).match(/^https?:\/\/(?:[^\/@]*@)?([^\/:?#]+)/i)
@@ -569,66 +480,18 @@ ApplicationWindow {
         moves++
     }
 
-    function addShortcut(typed, title) {
-        const url = String(Address.resolve(typed))
-        if (url === "" || url === "about:blank" || Address.isSearch(typed) || shortcuts.some(s => s.url === url) || shortcuts.length >= maxBookmarks)
-            return false
-        const name = title || Address.display(url).replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0]
-        keepBookmarks(shortcuts.concat([{ title: name, url: url }]))
-        return true
-    }
+    function addShortcut(typed, title) { return bookmarkLogic.addShortcut(typed, title) }
 
     readonly property int maxBookmarks: 2000
-    function keepBookmarks(list) {
-        shortcuts = list
-        saved.shortcuts = JSON.stringify(list)
-    }
+    function keepBookmarks(list) { return bookmarkLogic.keepBookmarks(list) }
 
-    // From the manager: index -1 adds. False when the address cannot be used.
-    function saveBookmark(index, title, address, folder) {
-        const url = String(Address.resolve(address))
-        if (url === "" || url === "about:blank" || Address.isSearch(address) || shortcuts.some((s, i) => s.url === url && i !== index))
-            return false
-        if (index < 0 ? shortcuts.length >= maxBookmarks : index >= shortcuts.length)
-            return false
-        const item = { title: String(title).trim() || Address.display(url).replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0], url: url }
-        if (String(folder).trim() !== "")
-            item.folder = String(folder).trim()
-        const list = shortcuts.slice()
-        if (index < 0)
-            list.push(item)
-        else
-            list[index] = item
-        keepBookmarks(list)
-        return true
-    }
+    function saveBookmark(index, title, address, folder) { return bookmarkLogic.saveBookmark(index, title, address, folder) }
 
-    function restoreBookmark(item, index) {
-        if (shortcuts.some(s => s.url === item.url))
-            return
-        const list = shortcuts.slice()
-        list.splice(Math.max(0, Math.min(index, list.length)), 0, item)
-        keepBookmarks(list)
-    }
+    function restoreBookmark(item, index) { return bookmarkLogic.restoreBookmark(item, index) }
 
-    // the two change places
-    function moveBookmark(from, to) {
-        if (from === to || !shortcuts[from] || !shortcuts[to])
-            return
-        const list = shortcuts.slice()
-        list[from] = shortcuts[to]
-        list[to] = shortcuts[from]
-        keepBookmarks(list)
-    }
+    function moveBookmark(from, to) { return bookmarkLogic.moveBookmark(from, to) }
 
-    // an empty new name puts the bookmarks outside any folder
-    function renameFolder(from, to) {
-        keepBookmarks(shortcuts.map(s => {
-            if ((s.folder ?? "") !== from)
-                return s
-            return to.trim() === "" ? { title: s.title, url: s.url } : { title: s.title, url: s.url, folder: to.trim() }
-        }))
-    }
+    function renameFolder(from, to) { return bookmarkLogic.renameFolder(from, to) }
 
     // the home button: an empty tab becomes the start page again
     function goHome() {
@@ -646,228 +509,46 @@ ApplicationWindow {
     function openPasswords() { openSettings("passwords") }
     function openDownloads() { (horizontalTabs ? topBar : side).openDownloads() }
 
-    // Takes bookmarks (and history) of another browser. Returns the sentence to show.
-    function importFrom(path, withHistory) {
-        const data = Importer.read(path, withHistory)
-        const known = new Set(shortcuts.map(s => s.url))
-        const list = shortcuts.slice()
-        for (const b of data.bookmarks) {
-            const url = String(b.url)
-            if (list.length >= maxBookmarks || known.has(url))
-                continue
-            known.add(url)
-            const item = { title: b.title || hostOf(url) || url, url: url }
-            if (b.folder)
-                item.folder = b.folder
-            list.push(item)
-        }
-        const added = list.length - shortcuts.length
-        if (added > 0)
-            keepBookmarks(list)
-        const pages = data.visits.length > 0 ? History.merge(data.visits) : 0
-        let text = Lang.t(added + " yer imi eklendi", added + " bookmarks added")
-        if (withHistory)
-            text += Lang.t(", " + pages + " sayfa geçmişe alındı", ", " + pages + " pages taken into the history")
-        if (!data.ok)
-            text += Lang.t(". Bazı dosyalar okunamadı; o tarayıcı açıksa kapatıp yeniden dene.", ". Some files could not be read; if that browser is open, close it and try again.")
-        return text + (data.ok ? "." : "")
-    }
+    function importFrom(path, withHistory) { return bookmarkLogic.importFrom(path, withHistory) }
 
-    // Ctrl+D: bookmark the page, or remove the bookmark it already has
-    function toggleBookmark() {
-        if (onStartPage || onSettings)
-            return
-        const url = String(view.url)
-        const at = shortcuts.findIndex(s => s.url === url)
-        if (at >= 0)
-            removeShortcut(at)
-        else
-            addShortcut(url, view.title)
-    }
+    function toggleBookmark() { return bookmarkLogic.toggleBookmark() }
 
     property bool askDownloads: false       // ask before every download, not only risky ones
     property var waiting: []                // downloads waiting for your answer
-    // kinds that run when opened
-    function risky(name) {
-        return /\.(exe|msi|msix|bat|cmd|com|scr|ps1|vbs|vbe|js|jse|wsf|hta|lnk|reg|jar|apk|appimage|deb|rpm|sh|bash|run|desktop|dmg|pkg|iso)$/i.test(String(name).trim())
-    }
-    function startDownload(request) {
-        if (downloadFolder !== "")
-            request.downloadDirectory = downloadFolder
-        request.accept()            // saved into your downloads folder, never opened
-        if (askDownloads || risky(request.downloadFileName)) {
-            request.pause()         // nothing more arrives until you answer
-            waiting = waiting.concat([request])
-        } else {
-            keepDownload(request)
-        }
-        // a tab that a page opened only to fetch the file is closed again
-        const from = request.view
-        if (from && from.popup && from.url.toString() === "")
-            closeTab(tabIndexOf(from))
-    }
-    function keepDownload(request) {
-        downloads = [request].concat(downloads)
-        openDownloads()
-    }
-    function answerDownload(yes) {
-        const request = waiting[0]
-        if (!request)
-            return
-        waiting = waiting.slice(1)
-        if (yes) {
-            request.resume()
-            keepDownload(request)
-        } else {
-            request.cancel()
-        }
-    }
+    function risky(name) { return downloadLogic.risky(name) }
+    function startDownload(request) { return downloadLogic.startDownload(request) }
+    function keepDownload(request) { return downloadLogic.keepDownload(request) }
+    function answerDownload(yes) { return downloadLogic.answerDownload(yes) }
 
     // ---- workspaces ----
-    function inSpace(index) {
-        const tab = index >= 0 && index < tabs.count ? tabs.get(index) : null
-        const here = space
-        return tab !== null && (tab.pinned || tab.space === here)
-    }
+    function inSpace(index) { return spaceLogic.inSpace(index) }
 
-    // the tabs listed in the side bar, as numbers
-    function visibleTabs() {
-        const out = []
-        for (let i = 0; i < tabs.count; i++)
-            if (inSpace(i))
-                out.push(i)
-        return out
-    }
+    function visibleTabs() { return spaceLogic.visibleTabs() }
 
-    // the nearest other tab of this workspace: the one below, else the one above, else -1
-    function neighbourOf(index) {
-        const list = visibleTabs().filter(i => i !== index)
-        return list.find(i => i > index) ?? list[list.length - 1] ?? -1
-    }
+    function neighbourOf(index) { return spaceLogic.neighbourOf(index) }
 
-    // choosing a tab of another workspace (from the command box, say) goes there
-    function followCurrent() {
-        if (restored && current >= 0 && current < tabs.count && !inSpace(current))
-            space = tabs.get(current).space
-    }
+    function followCurrent() { return spaceLogic.followCurrent() }
 
-    function spaceName(item) { return item.name || Lang.t("Genel", "General") }
+    function spaceName(item) { return spaceLogic.spaceName(item) }
 
-    function readSpaces(text) {
-        const out = []
-        try {
-            for (const s of JSON.parse(text))
-                if (s && Number.isInteger(s.id) && s.id > 0 && typeof s.name === "string" && !out.some(o => o.id === s.id) && out.length < 6)
-                    out.push({ id: s.id, name: s.name.slice(0, 20) })
-        } catch (e) {
-        }
-        return out.length > 0 ? out : [{ id: 1, name: "" }]
-    }
+    function readSpaces(text) { return spaceLogic.readSpaces(text) }
 
-    function keepSpaces(list) {
-        spaces = list
-        saved.spaces = JSON.stringify(list)
-    }
+    function keepSpaces(list) { return spaceLogic.keepSpaces(list) }
 
-    function switchSpace(id) {
-        if (id === space || !spaces.some(s => s.id === id))
-            return
-        // a pinned tab is everywhere, so it is not what a workspace "was left on"
-        lastInSpace[space] = current >= pinnedCount ? view : null
-        const left = lastInSpace[id]
-        space = id
-        let target = -1
-        for (let i = 0; i < tabs.count; i++) {
-            if (left && views.itemAt(i) === left && inSpace(i)) {
-                target = i
-                break
-            }
-            if (target < 0 && !tabs.get(i).pinned && tabs.get(i).space === id)
-                target = i
-        }
-        if (target < 0)
-            openTab("")
-        else
-            current = target
-        touchSession()
-    }
+    function switchSpace(id) { return spaceLogic.switchSpace(id) }
 
-    function addSpace(name) {
-        name = String(name).trim().slice(0, 20)
-        if (name === "" || spaces.length >= 6)
-            return 0
-        const id = Math.max(...spaces.map(s => s.id)) + 1
-        keepSpaces(spaces.concat([{ id: id, name: name }]))
-        switchSpace(id)
-        return id
-    }
+    function addSpace(name) { return spaceLogic.addSpace(name) }
 
-    function renameSpace(id, name) {
-        name = String(name).trim().slice(0, 20)
-        if (name !== "")
-            keepSpaces(spaces.map(s => s.id === id ? { id: id, name: name } : s))
-    }
+    function renameSpace(id, name) { return spaceLogic.renameSpace(id, name) }
 
-    // Deleting a workspace keeps its pages: they move to another one.
-    function removeSpace(id) {
-        const home = spaces.find(s => s.id !== id)
-        if (!home || !spaces.some(s => s.id === id))
-            return
-        if (space === id)
-            switchSpace(home.id)
-        for (let i = tabs.count - 1; i >= 0; i--) {
-            const tab = tabs.get(i)
-            if (tab.space !== id)
-                continue
-            if (!tab.pinned && (tab.pageUrl === "" || tab.pageUrl === "about:blank"))
-                closeTab(i)
-            else
-                tabs.setProperty(i, "space", home.id)
-        }
-        keepSpaces(spaces.filter(s => s.id !== id))
-        moves++
-        touchSession()
-    }
+    function removeSpace(id) { return spaceLogic.removeSpace(id) }
 
-    function moveToSpace(index, id) {
-        if (index < 0 || index >= tabs.count || tabs.get(index).pinned || tabs.get(index).space === id || !spaces.some(s => s.id === id))
-            return
-        const page = views.itemAt(index) as WebEngineView
-        if (page === splitLeft || page === splitRight)
-            unsplit()
-        const wasCurrent = index === current
-        if (wasCurrent && neighbourOf(index) < 0)
-            openTab("")
-        const pick = wasCurrent ? neighbourOf(index) : current
-        tabs.setProperty(index, "space", id)
-        current = pick
-        moves++
-        touchSession()
-    }
+    function moveToSpace(index, id) { return spaceLogic.moveToSpace(index, id) }
 
     // ---- sleeping tabs ----
-    // How far a tab that has not been seen for `idle` ms may be put to sleep:
-    // `advice` is what the engine says is safe (it knows about sound, downloads, open connections).
-    function sleepTarget(idle, advice, pinned, audible, loading) {
-        if (pinned || audible || loading)
-            return WebEngineView.LifecycleState.Active
-        if (idle >= discardAfter && advice === WebEngineView.LifecycleState.Discarded)
-            return WebEngineView.LifecycleState.Discarded
-        if (idle >= freezeAfter && advice !== WebEngineView.LifecycleState.Active)
-            return WebEngineView.LifecycleState.Frozen
-        return WebEngineView.LifecycleState.Active
-    }
+    function sleepTarget(idle, advice, pinned, audible, loading) { return powerLogic.sleepTarget(idle, advice, pinned, audible, loading) }
 
-    function sleepIdleTabs(now) {
-        for (let i = 0; i < tabs.count; i++) {
-            const page = views.itemAt(i) as WebEngineView
-            if (!page || page === view || page.hiddenSince === 0)
-                continue
-            const target = sleepTarget(now - page.hiddenSince, page.recommendedState, tabs.get(i).pinned, page.recentlyAudible, page.loading)
-            if (target > page.lifecycleState)        // only ever deeper; looking at it wakes it
-                page.lifecycleState = target
-        }
-    }
+    function sleepIdleTabs(now) { return powerLogic.sleepIdleTabs(now) }
 
     function pageViewAt(index) { return views.itemAt(index) as WebEngineView }
     function tabIndexOf(page) {
@@ -878,115 +559,25 @@ ApplicationWindow {
     }
 
     // ---- split view ----
-    // Puts the tab at `index` beside the current one.
-    function splitWith(index) {
-        const other = views.itemAt(index) as WebEngineView
-        if (!other || !view || other === view || other === miniPage || view === miniPage)
-            return false
-        const here = view
-        splitLeft = here
-        splitRight = other
-        return true
-    }
+    function splitWith(index) { return pageLogic.splitWith(index) }
 
-    function unsplit() {
-        splitLeft = null
-        splitRight = null
-    }
+    function unsplit() { return pageLogic.unsplit() }
 
-    // Ctrl+\: splits with the neighbouring tab (or a new one), or ends the split.
-    function toggleSplit() {
-        if (splitShown) {
-            unsplit()
-            return
-        }
-        const here = current
-        const others = visibleTabs().filter(i => i !== here)
-        let other = others.filter(i => i < here).pop() ?? others[0]
-        if (other === undefined) {
-            openTab("")
-            other = current
-            current = here
-        }
-        splitWith(other)
-    }
+    function toggleSplit() { return pageLogic.toggleSplit() }
 
     // ---- the small video window ----
-    // Alt+P and the title bar button: take the video out, or bring it back.
-    function toggleMini() {
-        if (miniPage)
-            closeMini()
-        else
-            openMini(current)
-    }
+    function toggleMini() { return pageLogic.toggleMini() }
 
-    function openMini(index) {
-        const page = views.itemAt(index) as WebEngineView
-        if (!page || page === miniPage)
-            return
-        closeMini()
-        const missing = () => say(Lang.t("Bu sayfada küçük pencereye alınacak bir video yok.", "There is no video on this page to take out."))
-        if (page.url.toString() === "" || page.lifecycleState !== WebEngineView.LifecycleState.Active) {
-            missing()
-            return
-        }
-        page.runJavaScript(miniPlayer.enterScript, WebEngineScript.ApplicationWorld, found => {
-            if (!found) {
-                missing()
-                return
-            }
-            closeReader(page)
-            if (page === splitLeft || page === splitRight)
-                unsplit()
-            miniPlayer.paused = found.paused === true
-            miniPlayer.height = Math.max(135, Math.min(720, Math.round(miniPlayer.width * found.height / found.width)))
-            miniPlayer.page = page
-            page.parent = miniPlayer.stage
-            miniPlayer.show()
-        })
-    }
+    function openMini(index) { return pageLogic.openMini(index) }
 
-    function closeMini() {
-        const page = miniPlayer.page
-        if (!page)
-            return
-        page.runJavaScript(miniPlayer.leaveScript, WebEngineScript.ApplicationWorld)
-        page.parent = pagesArea
-        miniPlayer.page = null
-        miniPlayer.hide()
-    }
+    function closeMini() { return pageLogic.closeMini() }
 
     // ---- reading mode ----
-    function toggleReader() {
-        const page = view
-        if (!page || onStartPage || page === miniPage)
-            return
-        if (page.reading) {
-            closeReader(page)
-            return
-        }
-        const color = c => String(c)
-        const look = { size: readerSize, dark: Theme.dark, minutes: Lang.t("dk okuma", "min read"),
-                       colors: { back: color(Theme.surface), text: color(Theme.text), dim: color(Theme.dim), accent: color(Theme.accent), card: color(Theme.frame), line: color(Theme.line) } }
-        page.runJavaScript(reader.enter(look), WebEngineScript.ApplicationWorld, found => {
-            if (found === true)
-                page.reading = true
-            else
-                say(Lang.t("Bu sayfada okunacak bir yazı bulunamadı.", "There is no article to read on this page."))
-        })
-    }
+    function toggleReader() { return pageLogic.toggleReader() }
 
-    function closeReader(page) {
-        if (!page || !page.reading)
-            return
-        page.reading = false
-        page.runJavaScript(reader.leave, WebEngineScript.ApplicationWorld)
-    }
+    function closeReader(page) { return pageLogic.closeReader(page) }
 
-    function sizeReader(by) {
-        readerSize = Math.max(14, Math.min(28, readerSize + by))
-        view?.runJavaScript(reader.resize(readerSize), WebEngineScript.ApplicationWorld)
-    }
+    function sizeReader(by) { return pageLogic.sizeReader(by) }
 
     Reader { id: reader }
 
@@ -994,20 +585,7 @@ ApplicationWindow {
     LoginScript { id: login }
     property alias loginScript: login
 
-    // every page gets the watcher, in the separate world only Velum's code runs in
-    function watchLogins() {
-        const channel = WebEngine.script()
-        channel.name = "velum-channel"
-        channel.sourceUrl = "qrc:///qtwebchannel/qwebchannel.js"
-        channel.injectionPoint = WebEngineScript.DocumentCreation
-        channel.worldId = WebEngineScript.ApplicationWorld
-        const watch = WebEngine.script()
-        watch.name = "velum-login"
-        watch.sourceCode = login.watch
-        watch.injectionPoint = WebEngineScript.DocumentReady
-        watch.worldId = WebEngineScript.ApplicationWorld
-        profile.userScripts.collection = [channel, watch]
-    }
+    function watchLogins() { return passwordLogic.watchLogins() }
 
     function readStrings(text) {
         try {
@@ -1018,203 +596,44 @@ ApplicationWindow {
         }
     }
 
-    // a login was sent: ask whether to keep it
-    function offerPassword(origin, user, password) {
-        if (origin === "" || Passwords.origin(origin) !== origin || password === "" || neverSave.includes(origin))
-            return
-        Passwords.check(origin, user, password, state => {
-            if (state === "new" || state === "changed")
-                passwordOffer = { origin: origin, user: user, password: password, changed: state === "changed" }
-        })
-    }
+    function offerPassword(origin, user, password) { return passwordLogic.offerPassword(origin, user, password) }
 
-    function savePassword(user) {
-        const offer = passwordOffer
-        if (!offer)
-            return
-        passwordOffer = null
-        Passwords.save(offer.origin, user, offer.password, ok => {
-            say(ok ? Lang.t("Parola anahtarlığa kaydedildi.", "The password is in the keyring.")
-                   : Lang.t("Parola kaydedilemedi. Anahtarlığın kilidi açık mı?", "The password could not be saved. Is the keyring unlocked?"))
-            for (let i = 0; i < tabs.count; i++)
-                findAccounts(pageViewAt(i))
-        })
-    }
+    function savePassword(user) { return passwordLogic.savePassword(user) }
 
-    function neverFor(origin) {
-        passwordOffer = null
-        if (!neverSave.includes(origin)) {
-            neverSave = neverSave.concat([origin])
-            saved.neverSave = JSON.stringify(neverSave)
-        }
-    }
+    function neverFor(origin) { return passwordLogic.neverFor(origin) }
 
-    function askAgainFor(origin) {
-        neverSave = neverSave.filter(o => o !== origin)
-        saved.neverSave = JSON.stringify(neverSave)
-    }
+    function askAgainFor(origin) { return passwordLogic.askAgainFor(origin) }
 
-    // which saved logins fit the form on this page, if it has one
-    function findAccounts(page) {
-        if (!page || page.loginOrigin === "") {
-            if (page)
-                page.accounts = []
-            return
-        }
-        const origin = page.loginOrigin
-        Passwords.accounts(origin, found => {
-            if (page.loginOrigin === origin)
-                page.accounts = found ?? []
-        })
-    }
+    function findAccounts(page) { return passwordLogic.findAccounts(page) }
 
-    // Ctrl+Shift+L and the title bar button; with several accounts you pick one
-    function fillPassword() {
-        const page = view
-        if (!page || page.accounts.length === 0) {
-            say(Lang.t("Bu sayfa için kayıtlı parola ya da giriş formu yok.", "No saved password or login form for this page."))
-            return
-        }
-        if (page.accounts.length === 1)
-            fillAccount(page, page.accounts[0].user)
-        else
-            accountMenu.popup(window.width - accountMenu.width - 20, window.horizontalTabs ? topBar.height + 40 : 40)
-    }
+    function fillPassword() { return passwordLogic.fillPassword() }
 
-    function fillAccount(page, user) {
-        const origin = page.loginOrigin
-        // the address bar's page and the form's page must be the same site
-        if (origin === "" || Passwords.origin(page.url) !== origin)
-            return
-        Passwords.password(origin, user, secret => {
-            if (secret === null) {
-                say(Lang.t("Parola anahtarlıktan okunamadı.", "The password could not be read from the keyring."))
-                return
-            }
-            page.runJavaScript(login.fill(origin, user, secret), WebEngineScript.ApplicationWorld, done => {
-                if (done !== true)
-                    say(Lang.t("Doldurulacak giriş formu bulunamadı.", "No login form to fill was found."))
-            })
-        })
-    }
+    function fillAccount(page, user) { return passwordLogic.fillAccount(page, user) }
 
     // ---- extensions ----
-    function refreshExtensions() {
-        const all = profile.extensionManager.extensions
-        const out = []
-        for (let i = 0; i < all.length; i++)
-            if (all[i].isInstalled)          // the engine's own built-in ones are not listed
-                out.push(all[i])
-        extensions = out
-    }
+    function refreshExtensions() { return extensionLogic.refreshExtensions() }
 
-    // nothing is fetched or installed before you agree
-    function askExtension(text, file) {
-        if (!file && WebStore.idFrom(text) === "") {
-            say(Lang.t("Bu bir Web Store adresi ya da eklenti kimliği değil.", "That is not a Web Store address or an extension id."))
-            return
-        }
-        wantedExtension = { text: String(text), file: file === true }
-        extensionDialog.open()
-    }
+    function askExtension(text, file) { return extensionLogic.askExtension(text, file) }
 
-    function addExtension() {
-        const wanted = wantedExtension
-        wantedExtension = null
-        if (!wanted)
-            return
-        if (wanted.file) {
-            profile.extensionManager.installExtension(wanted.text)
-            return
-        }
-        fetchingExtension = true
-        say(Lang.t("Eklenti indiriliyor…", "Fetching the extension…"))
-        WebStore.fetch(wanted.text, (path, problem) => {
-            fetchingExtension = false
-            if (path !== "") {
-                fetched = path
-                profile.extensionManager.installExtension(path)
-            } else if (problem === "signature") {
-                say(Lang.t("Paketin imzası doğrulanamadı; kurulmadı.", "The package's signature did not check out; it was not installed."))
-            } else {
-                say(Lang.t("Eklenti indirilemedi.", "The extension could not be fetched."))
-            }
-            if (path === "")
-                Qt.callLater(installNext)
-        })
-    }
+    function addExtension() { return extensionLogic.addExtension() }
     property string fetched: ""       // the downloaded package being installed
     property var extensionQueue: []   // store ids you agreed to, still to be installed
 
-    // one after another; each one was ticked by you
-    function queueExtensions(ids) {
-        extensionQueue = extensionQueue.concat(Array.from(ids).filter(id => WebStore.idFrom(id) !== "" && !extensionQueue.includes(id)))
-        installNext()
-    }
-    function installNext() {
-        if (fetchingExtension || fetched !== "" || extensionQueue.length === 0)
-            return
-        const id = extensionQueue[0]
-        extensionQueue = extensionQueue.slice(1)
-        wantedExtension = { text: id, file: false }
-        addExtension()
-    }
+    function queueExtensions(ids) { return extensionLogic.queueExtensions(ids) }
+    function installNext() { return extensionLogic.installNext() }
 
-    function extensionInstalled(extension) {
-        if (fetched !== "") {
-            WebStore.discard(fetched)
-            fetched = ""
-        }
-        if (extension.error !== "") {
-            say(Lang.t("Eklenti kurulamadı: ", "The extension could not be installed: ") + extension.error)
-        } else {
-            profile.extensionManager.setExtensionEnabled(extension, true)
-            say(Lang.t(extension.name + " eklendi.", extension.name + " was added."))
-        }
-        Qt.callLater(refreshExtensions)
-        Qt.callLater(installNext)
-    }
+    function extensionInstalled(extension) { return extensionLogic.extensionInstalled(extension) }
 
-    function enableExtension(extension, on) {
-        profile.extensionManager.setExtensionEnabled(extension, on)
-        Qt.callLater(refreshExtensions)
-    }
-    function removeExtension(extension) { profile.extensionManager.uninstallExtension(extension) }
+    function enableExtension(extension, on) { return extensionLogic.enableExtension(extension, on) }
+    function removeExtension(extension) { return extensionLogic.removeExtension(extension) }
 
     // ---- the start page ----
-    // one page per site, the most visited first
-    function refreshFrequent() {
-        const seen = new Set(), out = []
-        for (const p of History.frequent(60)) {
-            const host = hostOf(p.url)
-            if (host === "" || seen.has(host))
-                continue
-            seen.add(host)
-            out.push({ url: p.url, title: p.title || host })
-            if (out.length === 6)
-                break
-        }
-        frequentPages = out
-    }
+    function refreshFrequent() { return siteLogic.refreshFrequent() }
     onOnStartPageChanged: if (onStartPage) refreshFrequent()
 
-    // Icons are kept only for sites you bookmarked, taken from pages you opened.
-    function iconName(url) {
-        const host = hostOf(url).replace(/^www\./, "")
-        return /^[a-z0-9.-]+$/.test(host) && host.indexOf("..") < 0 ? host : ""
-    }
-    function iconFor(url) {
-        const name = iconName(url)
-        return iconFolder === "" || !iconNames.includes(name) ? "" : String(Files.toUrl(iconFolder + "/" + name + ".png")) + "#" + iconRevision
-    }
-    function keepIcon(pageUrl, icon) {
-        const name = iconName(pageUrl)
-        if (iconFolder === "" || name === "" || String(icon) === "" || iconsSaved[name] === String(icon)
-                || !shortcuts.some(s => iconName(s.url) === name))
-            return
-        iconsSaved[name] = String(icon)
-        iconGrabber.createObject(iconShelf, { source: icon, name: name })
-    }
+    function iconName(url) { return siteLogic.iconName(url) }
+    function iconFor(url) { return siteLogic.iconFor(url) }
+    function keepIcon(pageUrl, icon) { return siteLogic.keepIcon(pageUrl, icon) }
     // draws an icon out of sight and writes the picture down
     Item { id: iconShelf; x: -200; width: 64; height: 64 }
     Component {
@@ -1243,16 +662,7 @@ ApplicationWindow {
         }
     }
 
-    // A site may answer with an error and still send a page: a check that you are a
-    // person, "not found" in its own words. That page is shown; only when there is
-    // nothing at all does Velum explain.
-    function explainIfBlank(page, url, status) {
-        page.runJavaScript("document.body === null || (document.body.innerText.trim() === '' && document.body.querySelector('img,iframe,canvas,video,svg,form') === null)",
-            WebEngineScript.ApplicationWorld, blank => {
-                if (blank !== false && String(page.url) === url)
-                    page.failure = { url: url, text: Lang.t("Sunucu boş bir hata yanıtı verdi (HTTP " + status + ").", "The server answered with an empty error (HTTP " + status + ")."), certificate: false }
-            })
-    }
+    function explainIfBlank(page, url, status) { return pageLogic.explainIfBlank(page, url, status) }
 
     function say(text) {
         notice = text
@@ -1260,54 +670,19 @@ ApplicationWindow {
     }
     Timer { id: noticeTimer; interval: 3500; onTriggered: window.notice = "" }
 
-    function sleepState(index) { return index >= 0 && index < tabs.count ? tabs.get(index).asleep : -1 }
+    function sleepState(index) { return powerLogic.sleepState(index) }
 
-    // asked for by hand: as deep as the engine allows
-    function sleepTab(index) {
-        const page = views.itemAt(index) as WebEngineView
-        if (page && page !== view && !page.visible && page.url.toString() !== "" && !page.loading)
-            page.lifecycleState = WebEngineView.LifecycleState.Discarded
-    }
+    function sleepTab(index) { return powerLogic.sleepTab(index) }
 
-    function wakeTab(index) {
-        const page = views.itemAt(index) as WebEngineView
-        if (page) {
-            page.lifecycleState = WebEngineView.LifecycleState.Active
-            page.hiddenSince = Date.now()
-        }
-    }
+    function wakeTab(index) { return powerLogic.wakeTab(index) }
 
-    function sleepOthers() {
-        for (let i = 0; i < tabs.count; i++)
-            if (!tabs.get(i).pinned)
-                sleepTab(i)
-    }
+    function sleepOthers() { return powerLogic.sleepOthers() }
 
     Timer { interval: window.powerMode === "balanced" ? 30000 : 5000; repeat: true; running: window.autoSleep; onTriggered: window.sleepIdleTabs(Date.now()) }
 
-    function measure() {
-        const pages = []
-        for (let i = 0; i < tabs.count; i++)
-            pages.push(views.itemAt(i) as WebEngineView)
-        const found = Resources.sample(pages.map(p => p ? p.renderProcessPid : 0))
-        const users = {}
-        for (const p of pages)
-            if (p && p.renderProcessPid > 0)
-                users[p.renderProcessPid] = (users[p.renderProcessPid] ?? 0) + 1
-        resources.rows = pages.map((p, i) => {
-            const use = p ? found[String(p.renderProcessPid)] : undefined
-            return { index: i, title: tabs.get(i).title || Lang.t("Yeni sekme", "New tab"), memory: use?.memory ?? 0, cpu: use?.cpu ?? 0,
-                     state: tabs.get(i).asleep, shared: p ? users[p.renderProcessPid] > 1 : false, current: p === view }
-        }).sort((a, b) => b.memory - a.memory)
-        resources.total = found.total
-    }
+    function measure() { return powerLogic.measure() }
 
-    function findInPage() {
-        if (!onStartPage && !onSettings) {
-            findPage = view
-            findBar.open()
-        }
-    }
+    function findInPage() { return pageLogic.findInPage() }
     // the box belongs to the page it was opened on, and so do its marks
     property WebEngineView findPage: null
     onViewChanged: {
@@ -1322,24 +697,7 @@ ApplicationWindow {
 
     // sites you let open windows by themselves, until Velum is closed
     property var popupSites: []
-    // A page asks for a new window: it becomes a tab. Without a click of yours you are
-    // asked first. `fill` puts the request's page into the new tab.
-    function newWindowFrom(from, clicked, background, fill) {
-        const site = hostOf(from.url)
-        if (!clicked && !popupSites.includes(site)) {
-            if (!asks.some(a => a.page === from && a.popup))
-                asks = asks.concat([{ page: from, popup: true, site: site, wish: Lang.t("Açılır pencere açmak istedi. İzin verirsen bir daha dene.", "tried to open a window. If you allow it, try again."),
-                                      permission: { grant: () => popupSites = popupSites.concat([site]), deny: () => {} } }])
-            return null
-        }
-        const here = view
-        const page = openTab("")
-        page.popup = true       // an empty address here is its content, not the home page
-        fill(page)
-        if (background && here)
-            current = tabIndexOf(here)
-        return page
-    }
+    function newWindowFrom(from, clicked, background, fill) { return askLogic.newWindowFrom(from, clicked, background, fill) }
 
     // Goes to the settings tab of this workspace, making one if there is none.
     function openSettings(section) {
@@ -1364,9 +722,7 @@ ApplicationWindow {
         commandBar.show(false, "", true)
     }
 
-    function removeShortcut(index) {
-        keepBookmarks(shortcuts.filter((s, i) => i !== index))
-    }
+    function removeShortcut(index) { return bookmarkLogic.removeShortcut(index) }
 
     function navigate(target, inNewTab) {
         if (inNewTab && !onStartPage)
@@ -1381,95 +737,13 @@ ApplicationWindow {
         current = list[(list.indexOf(current) + by + list.length) % list.length]
     }
 
-    // what a permission means, in words; empty for the ones Velum always refuses
-    function wishFor(type) {
-        switch (type) {
-        case WebEnginePermission.PermissionType.MediaAudioCapture: return Lang.t("Mikrofonunu kullanmak istiyor.", "wants to use your microphone.")
-        case WebEnginePermission.PermissionType.MediaVideoCapture: return Lang.t("Kameranı kullanmak istiyor.", "wants to use your camera.")
-        case WebEnginePermission.PermissionType.MediaAudioVideoCapture: return Lang.t("Kameranı ve mikrofonunu kullanmak istiyor.", "wants to use your camera and microphone.")
-        case WebEnginePermission.PermissionType.Geolocation: return Lang.t("Konumunu öğrenmek istiyor.", "wants to know your location.")
-        case WebEnginePermission.PermissionType.ClipboardReadWrite: return Lang.t("Panonu okumak ve değiştirmek istiyor.", "wants to read and change your clipboard.")
-        case WebEnginePermission.PermissionType.Notifications: return Qt.platform.os === "windows" ? "" : Lang.t("Sana bildirim göndermek istiyor.", "wants to send you notifications.")     // not shown on Windows yet
-        case WebEnginePermission.PermissionType.MouseLock: return Lang.t("Fare imlecini kilitlemek istiyor.", "wants to lock the mouse pointer.")
-        }
-        return ""
-    }
+    function wishFor(type) { return askLogic.wishFor(type) }
 
-    function answer(item, allow) {
-        asks = asks.filter(a => a !== item)
-        if (allow)
-            item.permission.grant()
-        else
-            item.permission.deny()
-    }
+    function answer(item, allow) { return askLogic.answer(item, allow) }
 
-    // a page that is leaving or closing takes its questions with it
-    function dropAsks(page) {
-        for (const item of asks.filter(a => a.page === page))
-            answer(item, false)
-    }
+    function dropAsks(page) { return askLogic.dropAsks(page) }
 
-    function demo(action) {
-        if (action === "resources")
-            resources.open()
-        else if (action.startsWith("settings:"))
-            openSettings(action.slice(9))
-        else if (action.startsWith("welcome:")) {
-            showWelcome()
-            welcome.step = Number(action.slice(8))
-        }
-        else if (action === "horizontal")
-            horizontalTabs = true
-        else if (action.startsWith("menu:")) {
-            const kind = action.slice(5)
-            pageMenu.view = view
-            pageMenu.describe(kind === "link" ? { linkUrl: "https://vamola.dev/", selectedText: "vamola" } : kind === "edit" ? { isContentEditable: true, selectedText: "x" } : {})
-            pageMenu.popup(520, 220)
-        }
-        else if (action === "allow" && ask)
-            answer(ask, true)
-        else if (action.startsWith("wash:")) {
-            themeWash.duration = 12000          // slow enough to be photographed
-            Theme.change(() => Theme.palette = action.slice(5))
-        }
-        else if (action.startsWith("studio")) {
-            openStudio()
-            studio.tab = Number(action.split(":")[1] ?? 0)
-            if (action.endsWith(":pick"))
-                studio.picking = 8
-        }
-        else if (action.startsWith("design"))
-            start.editor?.open(Number(action.split(":")[1] ?? 0))
-        else if (action === "menu")
-            mainMenu.popup(width - mainMenu.width - 12, 90)
-        else if (action === "passwords")
-            openPasswords()
-        else if (action === "offer")
-            passwordOffer = { origin: "https://ornek.example", user: "vamola", password: "deneme", changed: false }
-        else if (action.startsWith("fetch:"))
-            WebStore.fetch(action.slice(6), (path, problem) => {
-                console.warn("fetch result: " + (path !== "" ? "checked package" : problem))
-                WebStore.discard(path)
-            })
-        else if (action === "reader")
-            toggleReader()
-        else if (action === "import")
-            openImport()
-        else if (action === "bookmarks")
-            openBookmarks()
-        else if (action === "mini")
-            toggleMini()
-        else if (action.startsWith("space:"))
-            addSpace(action.slice(6))
-        else if (action === "split")
-            toggleSplit()
-        else if (action === "sleep")
-            sleepOthers()
-        else if (action.startsWith("find:")) {
-            findBar.text = action.slice(5)
-            findInPage()
-        }
-    }
+    function demo(action) { return demoLogic.demo(action) }
 
     function showCommandBox(text) {
         commandBar.show(true, text)
@@ -1618,207 +892,7 @@ ApplicationWindow {
                         id: views
                         model: tabs
 
-                        WebEngineView {
-                            id: web
-                            required property int index
-                            required property string startUrl
-                            required property bool lazy
-                            required property string kind
-                            property bool started: false
-                            property bool popup: false          // opened by a page
-                            property bool crashed: false
-                            property string loginOrigin: ""     // set while a login form is shown
-                            property var accounts: []           // saved logins that fit it
-                            // how the watcher inside the page talks to Velum
-                            property QtObject loginBridge: QtObject {
-                                WebChannel.id: "velum"
-                                function offer(origin, user, password) { window.offerPassword(String(origin), String(user), String(password)) }
-                                function form(origin, present) {
-                                    web.loginOrigin = present ? String(origin) : ""
-                                    window.findAccounts(web)
-                                }
-                            }
-                            webChannel: WebChannel { registeredObjects: [web.loginBridge] }
-                            webChannelWorld: WebEngineScript.ApplicationWorld
-                            property bool readable: false       // there is an article here
-                            property bool reading: false        // and it is shown in reading mode
-                            property var failure: null          // { url, text, certificate }
-                            // loads the address a restored tab was waiting with
-                            function load_() {
-                                if (!started && startUrl !== "") {
-                                    started = true
-                                    url = startUrl
-                                }
-                            }
-                            property double hiddenSince: 0     // when it was last looked at; 0 while shown
-                            // a tab being looked at is always awake
-                            onVisibleChanged: {
-                                if (visible) {
-                                    if (lazy)
-                                        load_()
-                                    lifecycleState = WebEngineView.LifecycleState.Active
-                                    hiddenSince = 0
-                                } else {
-                                    hiddenSince = Date.now()
-                                }
-                            }
-                            onLifecycleStateChanged: tabs.setProperty(index, "asleep", lifecycleState)
-                            readonly property bool beside: window.splitShown && (web === window.splitLeft || web === window.splitRight)
-                            // "parent" is the small window while the video is out there
-                            readonly property real room: parent?.width ?? 0
-                            readonly property real divide: Math.round(room * window.splitRatio)
-                            visible: web === window.view || web === window.miniPage || beside
-                            x: beside && web === window.splitRight ? divide + 4 : 0
-                            width: !beside ? room : web === window.splitLeft ? divide - 4 : room - divide - 4
-                            height: parent?.height ?? 0
-                            // clicking into the other half makes that tab the current one
-                            onActiveFocusChanged: if (activeFocus && beside && web !== window.view) window.current = index
-
-                            profile: window.profile
-                            // an empty tab lets the glass through; a web page gets a solid sheet
-                            backgroundColor: Theme.seeThrough && (url.toString() === "" || url.toString() === "about:blank") ? "transparent" : Theme.surface
-                            settings.fullScreenSupportEnabled: true      // video full screen
-                            settings.errorPageEnabled: false             // Velum explains problems itself
-                            // saving power: nothing starts playing by itself
-                            settings.playbackRequiresUserGesture: window.powerMode === "saver"
-                            // a bad certificate is never accepted, only explained
-                            onCertificateError: error => {
-                                if (error.isMainFrame)
-                                    failure = { url: String(error.url), text: error.description, certificate: true }
-                                error.rejectCertificate()
-                            }
-                            onRenderProcessTerminated: (status, code) => {
-                                if (web === window.miniPage)
-                                    window.closeMini()
-                                // putting a tab to sleep ends its process too; that is not a crash
-                                if (status !== WebEngineView.NormalTerminationStatus && lifecycleState === WebEngineView.LifecycleState.Active)
-                                    crashed = true
-                            }
-                            onContextMenuRequested: request => {
-                                request.accepted = true          // Velum draws its own menu
-                                pageMenu.view = web
-                                pageMenu.describe(request)
-                                const at = web.mapToItem(null, request.position.x, request.position.y)
-                                pageMenu.popup(at.x, at.y - (window.header?.height ?? 0))
-                            }
-                            onFindTextFinished: result => {
-                                if (web === window.view) {
-                                    findBar.matches = result.numberOfMatches
-                                    findBar.current = result.activeMatch
-                                }
-                            }
-                            settings.dnsPrefetchEnabled: false           // no lookups for links you did not click
-                            settings.hyperlinkAuditingEnabled: false     // no "ping" tracking on links
-                            settings.pluginsEnabled: true
-                            settings.pdfViewerEnabled: true
-
-                            Component.onCompleted: {
-                                if (!lazy)
-                                    load_()
-                                if (web !== window.view)
-                                    hiddenSince = Date.now()
-                            }
-                            Component.onDestruction: window.dropAsks(web)
-
-                            // before a page loads: restart its counter and give it the shield's script
-                            onNavigationRequested: request => {
-                                if (!request.isMainFrame)
-                                    return
-                                window.dropAsks(web)
-                                Shield.resetCount(window.hostOf(request.url))
-                                const source = Shield.pageScript(request.url)
-                                if (source === "") {
-                                    userScripts.collection = []
-                                    return
-                                }
-                                const script = WebEngine.script()
-                                script.name = "velum-shield"
-                                script.sourceCode = source
-                                script.injectionPoint = WebEngineScript.DocumentCreation
-                                script.worldId = WebEngineScript.MainWorld
-                                userScripts.collection = [script]
-                            }
-
-                            // keep the tab list in step with the page
-                            onTitleChanged: {
-                                if (lazy && !started)
-                                    return
-                                tabs.setProperty(index, "title", url.toString() === "about:blank" ? "" : title)
-                                window.touchSession()
-                                History.setTitle(String(url), title)
-                            }
-                            onIconChanged: {
-                                tabs.setProperty(index, "siteIcon", String(icon))
-                                window.keepIcon(url, icon)
-                            }
-                            onLoadingChanged: info => {
-                                tabs.setProperty(index, "loading", loading)
-                                if (info.status === WebEngineView.LoadStartedStatus) {
-                                    if (web === window.miniPage)      // another page: the video is gone
-                                        window.closeMini()
-                                    readable = false
-                                    reading = false
-                                    loginOrigin = ""
-                                    accounts = []
-                                    crashed = false
-                                    failure = null
-                                }
-                                if (info.status === WebEngineView.LoadSucceededStatus) {
-                                    History.add(String(url), title)
-                                    web.runJavaScript(reader.probe, WebEngineScript.ApplicationWorld, found => web.readable = found === true)
-                                }
-                                // -3 means "stopped": by you, or because another page was asked for
-                                if (info.status === WebEngineView.LoadFailedStatus && info.errorCode !== -3 && !failure) {
-                                    if (info.errorDomain === WebEngineLoadingInfo.HttpStatusCodeDomain)
-                                        window.explainIfBlank(web, String(info.url), info.errorCode)
-                                    else
-                                        failure = { url: String(info.url), text: info.errorString, certificate: false }
-                                }
-                            }
-                            onUrlChanged: {
-                                window.closeReader(web)      // sites that change page without loading
-                                // going somewhere turns the settings tab into an ordinary one
-                                if (kind !== "" && url.toString() !== "" && url.toString() !== "about:blank")
-                                    tabs.setProperty(index, "kind", "")
-                                if (lazy && !started)
-                                    return
-                                tabs.setProperty(index, "pageUrl", String(url))
-                                window.touchSession()
-                                if (tabs.get(index).pinned)
-                                    window.savePinned()
-                            }
-
-                            // links that ask for a new window become tabs
-                            onNewWindowRequested: request => window.newWindowFrom(web, request.userInitiated,
-                                request.destination === WebEngineNewWindowRequest.InNewBackgroundTab, page => request.openIn(page))
-                            onWindowCloseRequested: window.closeTab(index)
-
-                            onFullScreenRequested: request => {
-                                if (web === window.miniPage) {
-                                    request.reject()
-                                    return
-                                }
-                                request.accept()
-                                if (request.toggleOn)
-                                    window.enterPageFull(web)
-                                else if (window.fullPage === web)
-                                    window.leavePageFull()
-                            }
-
-                            // Camera, microphone, location and the like: you are asked.
-                            // Kinds Velum cannot honour yet (such as notifications) are refused.
-                            onPermissionRequested: permission => {
-                                const wish = window.wishFor(permission.permissionType)
-                                if (wish === "") {
-                                    permission.deny()
-                                    return
-                                }
-                                window.asks = window.asks.concat([{ page: web, permission: permission, wish: wish,
-                                                                    site: window.hostOf(permission.origin) || String(permission.origin) }])
-                            }
-                            // do not tell pages your computer's addresses on the local network
-                            settings.webRTCPublicInterfacesOnly: true
-                        }
+                        PageView { app: window }
                     }
                 }
 
@@ -2121,8 +1195,8 @@ ApplicationWindow {
     ConfirmDialog {
         id: downloadDialog
         readonly property var item: window.waiting[0] ?? null
-        heading: item && window.risky(item.downloadFileName) ? Lang.t("Bu dosya program çalıştırabilir. İndirilsin mi?", "This file can run programs. Download it?") : Lang.t("Dosya indirilsin mi?", "Download this file?")
-        detail: item ? item.downloadFileName + "\n" + window.hostOf(item.url) + Lang.t("\nYalnızca güvendiğin yerden gelen dosyaları indir.", "\nOnly download files from places you trust.") : ""
+        heading: item && window.risky(String(item.downloadFileName).replace(/\.velum-hold$/, "")) ? Lang.t("Bu dosya program çalıştırabilir. İndirilsin mi?", "This file can run programs. Download it?") : Lang.t("Dosya indirilsin mi?", "Download this file?")
+        detail: item ? String(item.downloadFileName).replace(/\.velum-hold$/, "") + "\n" + window.hostOf(item.url) + Lang.t("\nYalnızca güvendiğin yerden gelen dosyaları indir.", "\nOnly download files from places you trust.") : ""
         action: Lang.t("İndir", "Download")
         // answered by a button, or closed another way: then the file is not fetched
         property bool yes: false
@@ -2168,40 +1242,15 @@ ApplicationWindow {
         onRemoved: id => window.removeSpace(id)
     }
 
+    CommandList { id: commandList; app: window }
+
     CommandBar {
         id: commandBar
         anchors.fill: parent
         tabModel: tabs
         shortcuts: window.shortcuts
         history: History
-        commands: [
-            { name: Lang.t("Sekmeyi sabitle ya da çöz", "Pin or unpin the tab"), keys: Keymap.text("pin"), run: () => window.togglePin(window.current) },
-            { name: Lang.t("Kapatılan sekmeyi geri aç", "Reopen the closed tab"), keys: Keymap.text("reopen"), run: () => window.reopenClosed() },
-            { name: Lang.t("Yer imi ekle ya da kaldır", "Add or remove a bookmark"), keys: Keymap.text("bookmark"), run: () => window.toggleBookmark() },
-            { name: Lang.t("Yer imleri: düzenle, klasörle", "Bookmarks: edit and sort"), keys: Keymap.text("bookmarks"), run: () => Qt.callLater(window.openBookmarks) },
-            { name: Lang.t("Başka tarayıcıdan aktar", "Import from another browser"), keys: "", run: () => Qt.callLater(window.openImport) },
-            { name: Lang.t("Eklentiler", "Extensions"), keys: "", run: () => window.openSettings("extensions") },
-            { name: Lang.t("Geçmiş", "History"), keys: Keymap.text("history"), run: () => Qt.callLater(window.showCommandHistory) },
-            { name: Lang.t("İndirmeler", "Downloads"), keys: Keymap.text("downloads"), run: () => window.openDownloads() },
-            { name: window.horizontalTabs ? Lang.t("Dikey sekmelere geç", "Move the tabs to the side") : Lang.t("Yatay sekmelere geç", "Move the tabs to the top"), keys: "", run: () => window.horizontalTabs = !window.horizontalTabs },
-            { name: Lang.t("Kaynaklar: hangi sekme ne kadar yiyor", "Resources: what each tab uses"), keys: Keymap.text("resources"), run: () => resources.open() },
-            { name: Lang.t("Diğer sekmeleri uyut", "Put other tabs to sleep"), keys: "", run: () => window.sleepOthers() },
-            { name: Lang.t("Yan paneli daralt ya da genişlet", "Narrow or widen the side bar"), keys: Keymap.text("sidebar"), run: () => window.compactSidebar = !window.compactSidebar },
-            { name: Lang.t("Sekmeyi kapat", "Close the tab"), keys: Keymap.text("closeTab"), run: () => window.closeTab(window.current) },
-            { name: Lang.t("Diğer sekmeleri kapat", "Close other tabs"), keys: "", run: () => window.closeOthers(window.current) },
-            { name: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"), keys: Keymap.text("split"), run: () => window.toggleSplit() },
-            { name: Lang.t("Videoyu küçük pencereye al ya da geri getir", "Video in a small window, or back"), keys: Keymap.text("mini"), run: () => window.toggleMini() },
-            { name: Lang.t("Parolayı doldur", "Fill in the password"), keys: Keymap.text("fill"), run: () => window.fillPassword() },
-            { name: Lang.t("Kayıtlı parolalar", "Saved passwords"), keys: "", run: () => Qt.callLater(window.openPasswords) },
-            { name: Lang.t("Okuma modu", "Reading mode"), keys: Keymap.text("reader"), run: () => window.toggleReader() },
-            { name: Lang.t("Yeni çalışma alanı", "New workspace"), keys: "", run: () => spaceDialog.show(0, "", false) },
-            { name: Lang.t("Sayfada ara", "Find in page"), keys: Keymap.text("find"), run: () => Qt.callLater(window.findInPage) },
-            { name: window.restoreSession ? Lang.t("Açılışta sekmeleri geri getirme", "Do not reopen tabs at start") : Lang.t("Açılışta sekmeleri geri getir", "Reopen tabs at start"), keys: "", run: () => window.restoreSession = !window.restoreSession },
-            { name: Lang.t("Gezinme verilerini sil", "Delete browsing data"), keys: Keymap.text("clear"), run: () => clearDialog.open() },
-            { name: Lang.t("Ayarlar", "Settings"), keys: Keymap.text("settings"), run: () => Qt.callLater(window.openSettings) },
-            { name: Lang.t("Tam ekran", "Full screen"), keys: Keymap.text("fullScreen"), run: () => window.toggleWindowFullScreen() },
-            { name: Lang.t("Velum'dan çık", "Quit Velum"), keys: Keymap.text("quit"), run: () => window.quit() }
-        ].concat(window.spaces.map((s, i) => ({ name: Lang.t("Çalışma alanı: ", "Workspace: ") + window.spaceName(s), keys: "Alt+" + (i + 1), run: () => window.switchSpace(s.id) })))
+        commands: commandList.list
         onOpened: (target, inNewTab) => window.navigate(target, inNewTab)
         onTabChosen: i => window.current = i
         onDismissed: if (window.view && !window.onStartPage) window.view.forceActiveFocus()
@@ -2211,33 +1260,9 @@ ApplicationWindow {
     property int beforeFull: Window.Windowed
     property int beforePageFull: Window.Windowed
     property WebEngineView fullPage: null       // the page filling the screen, if one does
-    function toggleWindowFullScreen() {
-        if (visibility === Window.FullScreen) {
-            visibility = beforeFull
-        } else {
-            beforeFull = visibility
-            showFullScreen()
-        }
-    }
-    function enterPageFull(page) {
-        if (!pageFullScreen)
-            beforePageFull = visibility
-        fullPage = page
-        pageFullScreen = true
-        showFullScreen()
-        // said by the browser, with the real address, so a page cannot pretend to be it
-        say(hostOf(page.url) + Lang.t(" tam ekranda · çıkmak için Esc", " is full screen · Esc to leave"))
-    }
-    function leavePageFull() {
-        if (!pageFullScreen)
-            return
-        const page = fullPage
-        fullPage = null
-        pageFullScreen = false
-        visibility = beforePageFull
-        if (page)
-            page.triggerWebAction(WebEngineView.ExitFullScreen)
-    }
+    function toggleWindowFullScreen() { return pageLogic.toggleWindowFullScreen() }
+    function enterPageFull(page) { return pageLogic.enterPageFull(page) }
+    function leavePageFull() { return pageLogic.leavePageFull() }
 
     PageMenu {
         id: pageMenu
@@ -2261,30 +1286,7 @@ ApplicationWindow {
     }
 
     // the menu behind the three lines
-    AppMenu {
-        id: mainMenu
-        AppMenuItem { text: Lang.t("Yeni sekme", "New tab"); keys: Keymap.text("newTab"); onTriggered: window.newTab() }
-        AppMenuItem { text: Lang.t("Yeni çalışma alanı", "New workspace"); onTriggered: spaceDialog.show(0, "", false) }
-        AppMenuLine {}
-        AppMenuItem { text: Lang.t("Yer imleri", "Bookmarks"); keys: Keymap.text("bookmarks"); onTriggered: window.openBookmarks() }
-        AppMenuItem { text: Lang.t("Geçmiş", "History"); keys: Keymap.text("history"); onTriggered: Qt.callLater(window.showCommandHistory) }
-        AppMenuItem { text: Lang.t("İndirilenler", "Downloads"); keys: Keymap.text("downloads"); onTriggered: Qt.callLater(window.openDownloads) }
-        AppMenuItem { text: Lang.t("Parolalar", "Passwords"); onTriggered: window.openPasswords() }
-        AppMenuItem { text: Lang.t("Eklentiler", "Extensions"); onTriggered: window.openSettings("extensions") }
-        AppMenuLine {}
-        AppMenuItem { text: Lang.t("Sayfada ara", "Find in page"); keys: Keymap.text("find"); enabled: !window.onStartPage && !window.onSettings; onTriggered: window.findInPage() }
-        AppMenuItem { text: Lang.t("Yakınlaştır", "Zoom in"); keys: Keymap.text("zoomIn"); onTriggered: window.view.zoomFactor = Math.min(3, window.view.zoomFactor + 0.1) }
-        AppMenuItem { text: Lang.t("Uzaklaştır", "Zoom out"); keys: Keymap.text("zoomOut"); onTriggered: window.view.zoomFactor = Math.max(0.5, window.view.zoomFactor - 0.1) }
-        AppMenuItem { text: Lang.t("Okuma modu", "Reading mode"); keys: Keymap.text("reader"); enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleReader() }
-        AppMenuItem { text: Lang.t("Küçük video penceresi", "Mini video window"); keys: Keymap.text("mini"); enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleMini() }
-        AppMenuItem { text: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"); keys: Keymap.text("split"); onTriggered: window.toggleSplit() }
-        AppMenuLine {}
-        AppMenuItem { keys: Keymap.text("gameMode"); text: (window.powerMode === "game" ? "✓  " : "") + Lang.t("Oyun modu", "Game mode"); onTriggered: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game") }
-        AppMenuItem { text: (window.powerMode === "saver" ? "✓  " : "") + Lang.t("Tasarruf modu", "Saver mode"); onTriggered: window.setPowerMode(window.powerMode === "saver" ? "balanced" : "saver") }
-        AppMenuLine {}
-        AppMenuItem { text: Lang.t("Ayarlar", "Settings"); keys: Keymap.text("settings"); onTriggered: window.openSettings() }
-        AppMenuItem { text: Lang.t("Velum'dan çık", "Quit Velum"); keys: Keymap.text("quit"); onTriggered: window.quit() }
-    }
+    MainMenu { id: mainMenu; app: window }
 
     // choosing between several saved accounts; five are offered
     AppMenu {
@@ -2296,69 +1298,8 @@ ApplicationWindow {
         AppMenuItem { readonly property var account: window.view?.accounts[4]; shown: account !== undefined; text: account ? account.user || Lang.t("(adsız)", "(no name)") : ""; onTriggered: window.fillAccount(window.view, account.user) }
     }
 
-    AppMenu {
-        id: tabMenu
-        property int index: 0
-        readonly property bool pinned: index < window.pinnedCount
-        readonly property bool movable: !pinned
-        AppMenuItem { text: tabMenu.pinned ? Lang.t("Sabitlemeyi kaldır", "Unpin") : Lang.t("Sabitle", "Pin"); onTriggered: window.togglePin(tabMenu.index) }
-        AppMenuItem { text: Lang.t("Çoğalt", "Duplicate"); onTriggered: window.openTab(tabs.get(tabMenu.index).pageUrl) }
-        AppMenuItem { text: Lang.t("Yenile", "Reload"); onTriggered: (views.itemAt(tabMenu.index) as WebEngineView).reload() }
-        AppMenuItem { text: Lang.t("Uyut", "Sleep"); enabled: tabMenu.index !== window.current; onTriggered: window.sleepTab(tabMenu.index) }
-        AppMenuItem { text: Lang.t("Yer imlerine ekle", "Bookmark"); onTriggered: window.addShortcut(tabs.get(tabMenu.index).pageUrl, tabs.get(tabMenu.index).title) }
-        AppMenuItem { text: Lang.t("Videoyu küçük pencereye al", "Video in a small window"); onTriggered: window.openMini(tabMenu.index) }
-        AppMenuItem { text: Lang.t("Yan yana aç", "Open side by side"); shown: tabMenu.index !== window.current; onTriggered: window.splitWith(tabMenu.index) }
-        AppMenuItem { text: Lang.t("Bölünmeyi kapat", "End split view"); shown: window.splitShown; onTriggered: window.unsplit() }
-        // moving a tab to another workspace; there are at most six
-        AppMenuItem { readonly property var to: window.spaces[0]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
-        AppMenuItem { readonly property var to: window.spaces[1]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
-        AppMenuItem { readonly property var to: window.spaces[2]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
-        AppMenuItem { readonly property var to: window.spaces[3]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
-        AppMenuItem { readonly property var to: window.spaces[4]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
-        AppMenuItem { readonly property var to: window.spaces[5]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
-        AppMenuLine {}
-        AppMenuItem { text: Lang.t("Kapat", "Close"); onTriggered: window.closeTab(tabMenu.index) }
-        AppMenuItem { text: Lang.t("Diğerlerini kapat", "Close others"); onTriggered: window.closeOthers(tabMenu.index) }
-        AppMenuItem { text: Lang.t("Kapatılanı geri aç", "Reopen closed tab"); enabled: window.closedTabs.length > 0; onTriggered: window.reopenClosed() }
-    }
+    TabMenu { id: tabMenu; app: window }
 
-    // keyboard
-    Shortcut { sequences: Keymap.sequences("newTab"); onActivated: window.newTab() }
-    Shortcut { sequences: Keymap.sequences("reopen"); onActivated: window.reopenClosed() }
-    Shortcut { sequences: Keymap.sequences("pin"); onActivated: window.togglePin(window.current) }
-    Shortcut { sequences: Keymap.sequences("bookmark"); onActivated: window.toggleBookmark() }
-    Shortcut { sequences: Keymap.sequences("find"); onActivated: window.findInPage() }
-    Shortcut { sequences: Keymap.sequences("bookmarks"); onActivated: window.openBookmarks() }
-    Shortcut { sequences: Keymap.sequences("fill"); onActivated: window.fillPassword() }
-    Shortcut { sequences: Keymap.sequences("reader"); onActivated: window.toggleReader() }
-    Shortcut { sequences: Keymap.sequences("mini"); onActivated: window.toggleMini() }
-    Shortcut { sequence: "Alt+1"; onActivated: window.switchSpace(window.spaces[0]?.id) }
-    Shortcut { sequence: "Alt+2"; onActivated: window.switchSpace(window.spaces[1]?.id ?? 0) }
-    Shortcut { sequence: "Alt+3"; onActivated: window.switchSpace(window.spaces[2]?.id ?? 0) }
-    Shortcut { sequence: "Alt+4"; onActivated: window.switchSpace(window.spaces[3]?.id ?? 0) }
-    Shortcut { sequence: "Alt+5"; onActivated: window.switchSpace(window.spaces[4]?.id ?? 0) }
-    Shortcut { sequence: "Alt+6"; onActivated: window.switchSpace(window.spaces[5]?.id ?? 0) }
-    Shortcut { sequences: Keymap.sequences("split"); onActivated: window.toggleSplit() }
-    Shortcut { sequences: Keymap.sequences("settings"); onActivated: window.openSettings() }
-    Shortcut { sequences: Keymap.sequences("resources"); onActivated: resources.open() }
-    Shortcut { sequences: Keymap.sequences("history"); onActivated: window.showCommandHistory() }
-    Shortcut { sequences: Keymap.sequences("downloads"); onActivated: window.openDownloads() }
-    Shortcut { sequences: Keymap.sequences("clear"); onActivated: clearDialog.open() }
-    Shortcut { sequences: Keymap.sequences("commandBox"); onActivated: commandBar.show(false, "") }
-    Shortcut { sequences: Keymap.sequences("closeTab"); onActivated: window.closeTab(window.current) }
-    Shortcut { sequences: Keymap.sequences("address"); onActivated: window.editAddress() }
-    Shortcut { sequences: Keymap.sequences("nextTab"); onActivated: window.step(1) }
-    Shortcut { sequences: Keymap.sequences("previousTab"); onActivated: window.step(-1) }
-    Shortcut { sequences: Keymap.sequences("reload"); onActivated: window.view.reload() }
-    Shortcut { sequences: Keymap.sequences("back"); onActivated: window.view.goBack() }
-    Shortcut { sequences: Keymap.sequences("forward"); onActivated: window.view.goForward() }
-    Shortcut { sequences: Keymap.sequences("sidebar"); onActivated: window.compactSidebar = !window.compactSidebar }
-    Shortcut { sequences: Keymap.sequences("zoomIn"); onActivated: window.view.zoomFactor = Math.min(3, window.view.zoomFactor + 0.1) }
-    Shortcut { sequences: Keymap.sequences("zoomOut"); onActivated: window.view.zoomFactor = Math.max(0.5, window.view.zoomFactor - 0.1) }
-    Shortcut { sequences: Keymap.sequences("zoomReset"); onActivated: window.view.zoomFactor = 1 }
-    Shortcut { sequence: "Escape"; enabled: window.pageFullScreen; onActivated: window.leavePageFull() }
-    Shortcut { sequences: Keymap.sequences("fullScreen"); onActivated: window.toggleWindowFullScreen() }
-    Shortcut { sequences: Keymap.sequences("quit"); onActivated: window.quit() }
-    Shortcut { sequences: Keymap.sequences("resetLook"); onActivated: window.resetLook() }
-    Shortcut { sequences: Keymap.sequences("gameMode"); onActivated: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game") }
+    Shortcuts { app: window }
+
 }

@@ -441,6 +441,20 @@ scripts/release.sh    derlemeyi indirir, burada imzalar, yayınlar
 - `ShapeEditor.qml`, `CssEditor.qml`: ayarlardaki düzenleyiciler.
 - `src/files.h`: arayüz yalnızca `.velumtheme` dosyalarını okuyup yazabilir.
 
+## Ana pencerenin parçaları
+
+`qml/Main.qml` pencerenin durumunu ve görünümünü tutar. İşler konusuna göre ayrı dosyalarda; hepsi pencereyi `app` adıyla tanır:
+
+| Dosya | İşi |
+|---|---|
+| `PageView.qml` | bir sekmenin web sayfası |
+| `SpaceLogic`, `PowerLogic`, `PageLogic` | çalışma alanları; uyutma ve modlar; bölme, küçük video, okuma, tam ekran |
+| `DownloadLogic`, `BookmarkLogic`, `PasswordLogic`, `ExtensionLogic` | indirme, yer imi, parola, eklenti |
+| `AskLogic`, `SiteLogic`, `HomeLogic`, `DemoLogic` | sayfa istekleri; simgeler; ana sayfa ve tema dosyaları; geliştirme komutları |
+| `MainMenu`, `TabMenu`, `Shortcuts`, `CommandList` | menüler, kısayollar, komut kutusunun komutları |
+
+`src/held.cpp`: onaylanmamış indirme `.velum-hold` adıyla durur; onayda gerçek adını alır, redde silinir.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

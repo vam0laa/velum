@@ -19,6 +19,7 @@
 #include "notice.h"
 #include "procinfo.h"
 #include "graphics.h"
+#include "held.h"
 #include "historystore.h"
 #include "importer.h"
 #include "instance.h"
@@ -383,6 +384,24 @@ private slots:
         QVERIFY(index.readAll().contains("\nInherits=Bibata\n"));
         QVERIFY(!graphics::writePointerFolder(icons.filePath("own"), "a\nInherits=b"));
         QCOMPARE(graphics::cursorPixels("uint32 x", 2), 0);
+    }
+
+    void heldDownloads()
+    {
+        QTemporaryDir dir;
+        const auto make = [&](const QString &name) { QFile f(dir.filePath(name)); QVERIFY(f.open(QIODevice::WriteOnly)); f.write(name.toUtf8()); };
+        make("tool.sh");
+        make("tool.sh.velum-hold");
+        QCOMPARE(held::release(dir.path(), "tool.sh.velum-hold"), "tool (1).sh");      // the old one stays
+        QVERIFY(QFile::exists(dir.filePath("tool.sh")) && !QFile::exists(dir.filePath("tool.sh.velum-hold")));
+        make("x.exe.velum-hold");
+        QVERIFY(held::discard(dir.path(), "x.exe.velum-hold"));
+        QVERIFY(!QFile::exists(dir.filePath("x.exe.velum-hold")));
+        // nothing but held files, and nothing outside the folder
+        QVERIFY(!held::discard(dir.path(), "tool.sh") && QFile::exists(dir.filePath("tool.sh")));
+        QVERIFY(held::release(dir.path(), "../a.velum-hold").isEmpty());
+        QVERIFY(held::release(dir.path(), ".velum-hold").isEmpty());
+        QVERIFY(!held::discard(dir.path(), "sub/a.velum-hold"));
     }
 
     void argumentsThatAreFiles()

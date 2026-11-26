@@ -60,7 +60,7 @@ Popup {
                     anchors { fill: parent; leftMargin: 10; rightMargin: 6 }
                     spacing: 2
                     RowLayout {
-                        Text { Layout.fillWidth: true; text: row.modelData.downloadFileName; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(16) }
+                        Text { Layout.fillWidth: true; text: String(row.modelData.downloadFileName).replace(/\.velum-hold$/, ""); textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(16) }
                         IconButton { implicitWidth: 26; implicitHeight: 26; iconSize: 14; symbol: "folder"; hint: Lang.t("Klasörde göster", "Show in folder"); onClicked: panel.showFolder(row.modelData.downloadDirectory) }
                         IconButton { implicitWidth: 26; implicitHeight: 26; iconSize: 13; symbol: "close"; hint: Lang.t("İptal", "Cancel"); visible: row.running; onClicked: row.modelData.cancel() }
                     }
