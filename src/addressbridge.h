@@ -39,6 +39,7 @@ public:
     }
 
     Q_INVOKABLE QUrl resolve(const QString &typed) const { return address::resolve(typed); }
+    Q_INVOKABLE QUrl search(const QString &text) const { return address::searchFor(text); }
     Q_INVOKABLE bool isSearch(const QString &typed) const { return address::isSearch(typed); }
     Q_INVOKABLE QString display(const QUrl &url) const { return address::display(url); }
 

@@ -100,6 +100,11 @@ QUrl resolve(const QString &typed)
     return search(text);
 }
 
+QUrl searchFor(const QString &text)
+{
+    return search(text.simplified().left(500));
+}
+
 bool isSearch(const QString &typed)
 {
     const QUrl url = resolve(typed);

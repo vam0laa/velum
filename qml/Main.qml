@@ -9,6 +9,7 @@ ApplicationWindow {
 
     property list<string> startUrls
     property alias commandBar: commandBar
+    property alias pageMenu: pageMenu
     property bool hasWidevine
     property string profileName: "velum"   // the folder logins are kept in; tests use their own
     property int current: 0
@@ -52,6 +53,8 @@ ApplicationWindow {
         profile = prototype.instance()
         Shield.attach(profile)          // every request now passes through the shield
         profile.downloadRequested.connect(startDownload)
+        profile.presentNotification.connect(n => Notifier.show(n))
+        Notifier.activated.connect(() => { window.show(); window.raise(); window.requestActivate() })
         // Present Velum as the Chrome engine it is. Some sites refuse names they do not know.
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
         shortcuts = readList(saved.shortcuts)
@@ -415,6 +418,7 @@ ApplicationWindow {
         case WebEnginePermission.PermissionType.MediaAudioVideoCapture: return Lang.t("Kameranı ve mikrofonunu kullanmak istiyor.", "wants to use your camera and microphone.")
         case WebEnginePermission.PermissionType.Geolocation: return Lang.t("Konumunu öğrenmek istiyor.", "wants to know your location.")
         case WebEnginePermission.PermissionType.ClipboardReadWrite: return Lang.t("Panonu okumak ve değiştirmek istiyor.", "wants to read and change your clipboard.")
+        case WebEnginePermission.PermissionType.Notifications: return Lang.t("Sana bildirim göndermek istiyor.", "wants to send you notifications.")
         case WebEnginePermission.PermissionType.MouseLock: return Lang.t("Fare imlecini kilitlemek istiyor.", "wants to lock the mouse pointer.")
         }
         return ""
@@ -441,6 +445,14 @@ ApplicationWindow {
             settings.section = Number(action.slice(9))
             settings.open()
         }
+        else if (action.startsWith("menu:")) {
+            const kind = action.slice(5)
+            pageMenu.view = view
+            pageMenu.describe(kind === "link" ? { linkUrl: "https://vamola.dev/", selectedText: "vamola" } : kind === "edit" ? { isContentEditable: true, selectedText: "x" } : {})
+            pageMenu.popup(520, 220)
+        }
+        else if (action === "allow" && ask)
+            answer(ask, true)
         else if (action === "sleep")
             sleepOthers()
         else if (action.startsWith("find:")) {
@@ -552,6 +564,13 @@ ApplicationWindow {
                             // putting a tab to sleep ends its process too; that is not a crash
                             if (status !== WebEngineView.NormalTerminationStatus && lifecycleState === WebEngineView.LifecycleState.Active)
                                 crashed = true
+                        }
+                        onContextMenuRequested: request => {
+                            request.accepted = true          // Velum draws its own menu
+                            pageMenu.view = web
+                            pageMenu.describe(request)
+                            const at = web.mapToItem(null, request.position.x, request.position.y)
+                            pageMenu.popup(at.x, at.y - (window.header?.height ?? 0))
                         }
                         onFindTextFinished: result => {
                             if (web === window.view) {
@@ -772,19 +791,26 @@ ApplicationWindow {
         visibility === Window.FullScreen ? showNormal() : showFullScreen()
     }
 
+    PageMenu {
+        id: pageMenu
+        onOpenInTab: url => window.openTab(url)
+        onSearchFor: text => window.openTab(String(Address.search(text)))
+        onFind: window.findInPage()
+    }
+
     AppMenu {
         id: tabMenu
         property int index: 0
         readonly property bool pinned: index < window.pinnedCount
-        MenuItem { text: tabMenu.pinned ? Lang.t("Sabitlemeyi kaldır", "Unpin") : Lang.t("Sabitle", "Pin"); onTriggered: window.togglePin(tabMenu.index) }
-        MenuItem { text: Lang.t("Çoğalt", "Duplicate"); onTriggered: window.openTab(tabs.get(tabMenu.index).pageUrl) }
-        MenuItem { text: Lang.t("Yenile", "Reload"); onTriggered: (views.itemAt(tabMenu.index) as WebEngineView).reload() }
-        MenuItem { text: Lang.t("Uyut", "Sleep"); enabled: tabMenu.index !== window.current; onTriggered: window.sleepTab(tabMenu.index) }
-        MenuItem { text: Lang.t("Yer imlerine ekle", "Bookmark"); onTriggered: window.addShortcut(tabs.get(tabMenu.index).pageUrl, tabs.get(tabMenu.index).title) }
-        MenuSeparator {}
-        MenuItem { text: Lang.t("Kapat", "Close"); onTriggered: window.closeTab(tabMenu.index) }
-        MenuItem { text: Lang.t("Diğerlerini kapat", "Close others"); onTriggered: window.closeOthers(tabMenu.index) }
-        MenuItem { text: Lang.t("Kapatılanı geri aç", "Reopen closed tab"); enabled: window.closedTabs.length > 0; onTriggered: window.reopenClosed() }
+        AppMenuItem { text: tabMenu.pinned ? Lang.t("Sabitlemeyi kaldır", "Unpin") : Lang.t("Sabitle", "Pin"); onTriggered: window.togglePin(tabMenu.index) }
+        AppMenuItem { text: Lang.t("Çoğalt", "Duplicate"); onTriggered: window.openTab(tabs.get(tabMenu.index).pageUrl) }
+        AppMenuItem { text: Lang.t("Yenile", "Reload"); onTriggered: (views.itemAt(tabMenu.index) as WebEngineView).reload() }
+        AppMenuItem { text: Lang.t("Uyut", "Sleep"); enabled: tabMenu.index !== window.current; onTriggered: window.sleepTab(tabMenu.index) }
+        AppMenuItem { text: Lang.t("Yer imlerine ekle", "Bookmark"); onTriggered: window.addShortcut(tabs.get(tabMenu.index).pageUrl, tabs.get(tabMenu.index).title) }
+        AppMenuLine {}
+        AppMenuItem { text: Lang.t("Kapat", "Close"); onTriggered: window.closeTab(tabMenu.index) }
+        AppMenuItem { text: Lang.t("Diğerlerini kapat", "Close others"); onTriggered: window.closeOthers(tabMenu.index) }
+        AppMenuItem { text: Lang.t("Kapatılanı geri aç", "Reopen closed tab"); enabled: window.closedTabs.length > 0; onTriggered: window.reopenClosed() }
     }
 
     // keyboard

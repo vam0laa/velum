@@ -19,6 +19,9 @@ const QList<Engine> &engines();
 void setEngine(const QString &key);
 Engine engine();
 
+// The search address for `text`, even when the text looks like an address.
+QUrl searchFor(const QString &text);
+
 // True when resolve() would search for the text instead of opening it.
 bool isSearch(const QString &typed);
 

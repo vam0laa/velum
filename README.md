@@ -46,13 +46,13 @@ Install for your user: `cmake --install build --prefix ~/.local`
 
 - **Video ads on YouTube are not blocked yet** (see below).
 - The download list lasts until Velum closes. Interrupted downloads cannot be resumed.
-- Notifications and screen sharing are refused.
+- Screen sharing is refused.
 
 ## Protection
 
 Ads and trackers are blocked with Brave's [adblock-rust](https://github.com/brave/adblock-rust) engine and the EasyList, EasyPrivacy and uBlock Origin filter lists. Plain `http` addresses of public sites are opened over `https`, and a Global Privacy Control header is sent. The shield button shows the count for the page and switches blocking off per site.
 
-Third party cookies are blocked (a site you switch protection off for may set them). Camera, microphone, location, clipboard and pointer lock are asked about, and the answer lasts until Velum closes. WebRTC does not reveal local network addresses. "Forget cookies on exit" and "Delete cookies and cache" are in the shield panel (Ctrl+Shift+Delete). Deleting covers cookies and the cache, not other site storage.
+Third party cookies are blocked (a site you switch protection off for may set them). Camera, microphone, location, notifications, clipboard and pointer lock are asked about, and the answer lasts until Velum closes. WebRTC does not reveal local network addresses. "Forget cookies on exit" and "Delete cookies and cache" are in the shield panel (Ctrl+Shift+Delete). Deleting covers cookies and the cache, not other site storage.
 
 History stays in an SQLite file on this computer (readable only by you), is kept for 90 days, and is cleared by "forget on exit" and by deleting browsing data. Downloads go to your downloads folder and are never opened automatically.
 
@@ -63,6 +63,8 @@ Limit: filters that need uBlock Origin's page scripts (among them the ones for Y
 ## Tabs, links and problems
 
 Open tabs come back at the next start and load when first looked at (a command turns this off; "forget on exit" turns it off too). There is one Velum at a time: starting it again with an address opens a tab in the running window. To make it the default browser: `xdg-settings set default-web-browser velum.desktop`. A site that cannot be opened, a bad certificate (which cannot be skipped) and a crashed tab each show an explanation with a retry button.
+
+Allowed notifications are shown by the desktop, with the real site name under the message. Frozen or discarded tabs cannot notify; pin a tab to keep it awake. The right click menu offers what applies to the link, image, text or field clicked.
 
 ## Sleeping tabs
 

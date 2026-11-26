@@ -91,6 +91,12 @@ Item {
             Lang.choice = "tr"
             w.openSettings(); t.check("the settings page opens", true)
             w.downloadFolder = "/tmp/somewhere"; t.check("a download folder can be chosen", w.downloadFolder === "/tmp/somewhere"); w.downloadFolder = ""
+            const menu = w.pageMenu
+            menu.describe({ linkUrl: "https://a.example/", selectedText: "  word  " })
+            t.check("a link click is described", menu.link === "https://a.example/" && menu.selection === "word" && !menu.plain && !menu.image)
+            menu.describe({}); t.check("a click on nothing gives the page menu", menu.plain && menu.link === "")
+            menu.describe({ isContentEditable: true }); t.check("a click in a field offers editing", menu.editable && !menu.plain)
+            t.check("notifications are asked about", w.wishFor(WebEnginePermission.PermissionType.Notifications) !== "")
             w.addShortcut("velum.example"); t.check("shortcuts are found", bar.find("velum.ex").some(r => r.kind === "shortcut"))
             w.removeShortcut(0)
 

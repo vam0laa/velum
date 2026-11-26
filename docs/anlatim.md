@@ -256,6 +256,12 @@ text: Lang.t("Yeni sekme", "New tab")
 
 Arama motoru listesi C++ tarafında (`address::engines`), çünkü "bu yazı arama mı" kararını orası veriyor. Ayarlar sayfası yalnızca anahtarı değiştirir.
 
+## 7m. Bildirimler ve sağ tık
+
+**Bildirim** (`notifier.h`): site bildirim göstermek isterse (ve sen izin verdiysen) Velum bunu masaüstünün bildirim servisine D-Bus ile iletir. Sitenin yazısı `notice::plain` ile temizlenir; altında her zaman **gerçek site adı** yazar, sayfa bunu değiştiremez.
+
+**Sağ tık** (`PageMenu.qml`): `request.accepted = true` motorun kendi menüsünü kapatır, biz tıklanan şeye göre (bağlantı, resim, seçili yazı, yazı kutusu) kendi menümüzü gösteririz.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

@@ -9,7 +9,7 @@ cp "$here"/../qml/*.qml "$here"/ui/*.qml "$work/ui/"
 cp "$here/test_ui.qml" "$work/"
 mkdir -p "$work/data" && cp "$here/../data/velum.svg" "$work/data/"
 {
-    for f in Theme Lang Address DesktopColors Shield History Resources; do echo "singleton $f $f.qml"; done
+    for f in Theme Lang Address DesktopColors Shield History Resources Notifier; do echo "singleton $f $f.qml"; done
     for f in "$here"/../qml/*.qml; do n=$(basename "$f" .qml); [ "$n" = Theme ] || [ "$n" = Lang ] || echo "$n $n.qml"; done
 } > "$work/ui/qmldir"
 XDG_CONFIG_HOME="$work/config" XDG_DATA_HOME="$work/data" QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \

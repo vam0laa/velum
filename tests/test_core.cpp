@@ -7,6 +7,7 @@
 #include "address.h"
 #include "blocker.h"
 #include "lists.h"
+#include "notice.h"
 #include "procinfo.h"
 #include "graphics.h"
 #include "historystore.h"
@@ -200,6 +201,15 @@ private slots:
         QVERIFY(Instance::handOver(socket, {"https://a.example/"}));
         QVERIFY(spy.wait(4000));
         QCOMPARE(spy.first().first().toStringList(), QStringList{"https://a.example/"});
+    }
+
+    void notificationText()
+    {
+        QCOMPARE(notice::plain("a\n<b>hi</b>  &", 80), "a &lt;b&gt;hi&lt;/b&gt; &amp;");
+        QCOMPARE(notice::plain(QString::fromUtf8("ok\x07\xe2\x80\xae!"), 80), "ok!");   // bell and right-to-left override
+        QCOMPARE(notice::plain(QString(200, 'a'), 10).size(), 10);
+        QCOMPARE(notice::body("", "x.example"), "x.example");
+        QCOMPARE(notice::body("hello", "x.example"), "hello\nx.example");
     }
 
     void newestWidevineWins()

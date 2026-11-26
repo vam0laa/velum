@@ -1,21 +1,9 @@
 import QtQuick
 import QtQuick.Controls
 
-// A context menu in Velum's colours.
+// A context menu in Velum's colours; its entries are AppMenuItem and AppMenuLine.
 Menu {
-    id: menu
+    margins: 8
     padding: 6
-    background: Rectangle { implicitWidth: 230; radius: 12; color: Theme.surface; border.color: Theme.line }
-    delegate: MenuItem {
-        id: item
-        implicitHeight: 32
-        contentItem: Text {
-            text: item.text
-            color: item.enabled ? Theme.text : Theme.line
-            font.pixelSize: 13
-            leftPadding: 8
-            verticalAlignment: Text.AlignVCenter
-        }
-        background: Rectangle { radius: 8; color: item.highlighted ? Theme.raised : "transparent" }
-    }
+    background: Rectangle { implicitWidth: 250; radius: 12; color: Theme.surface; border.color: Theme.line }
 }
