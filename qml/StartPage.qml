@@ -37,7 +37,7 @@ Rectangle {
         return Lang.t("İyi akşamlar", "Good evening")
     }
 
-    color: Theme.surface
+    color: Theme.sheetBack
 
     Timer { interval: 1000; repeat: true; running: page.visible; triggeredOnStart: true; onTriggered: page.now = new Date() }
 

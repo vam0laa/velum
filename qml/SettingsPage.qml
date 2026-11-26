@@ -59,7 +59,7 @@ Rectangle {
     ]
     readonly property var current: sections.find(s => s.key === section) ?? sections[0]
 
-    color: Theme.surface
+    color: Theme.sheetBack
 
     function refresh() {
         if (visible && section === "passwords")
@@ -173,6 +173,23 @@ Rectangle {
                     visible: page.section === "look"
                     heading: Lang.t("tema", "theme")
                     ThemePicker { Layout.fillWidth: true }
+                }
+                Card {
+                    visible: page.section === "look"
+                    heading: Lang.t("cam", "glass")
+                    tone: Theme.green
+                    Toggle {
+                        label: Lang.t("Cam görünüm", "Glass look")
+                        note: Lang.t("Pencereler saydamlaşır; arkadaki bulanıklığı masaüstün sağlar", "See-through windows; your desktop does the blurring")
+                        on: Theme.glass
+                        onClicked: Theme.glass = !Theme.glass
+                    }
+                    Segments {
+                        visible: Theme.glass
+                        options: [{ key: 0.55, label: Lang.t("Çok saydam", "Clear") }, { key: 0.72, label: Lang.t("Orta", "Medium") }, { key: 0.88, label: Lang.t("Az saydam", "Misty") }]
+                        current: Theme.solidity
+                        onChosen: key => Theme.solidity = key
+                    }
                 }
                 Card {
                     visible: page.section === "look"

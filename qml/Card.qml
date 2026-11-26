@@ -11,7 +11,7 @@ Rectangle {
     Layout.fillWidth: true
     implicitHeight: column.implicitHeight + 32
     radius: Theme.corner
-    color: Theme.window
+    color: Theme.paneBack
     border.color: Theme.line
 
     ColumnLayout {

@@ -79,7 +79,7 @@ ApplicationWindow {
     width: 1280
     height: 800
     visible: true
-    color: Theme.frame
+    color: Theme.frameBack
     font.family: Theme.ui
     title: view && view.title !== "" && !onStartPage ? view.title + " - Velum" : "Velum"
 
@@ -1234,7 +1234,6 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.fillHeight: true
             chrome: !window.pageFullScreen
-            fill: Theme.window
             title: window.onSettings ? Lang.t("ayarlar", "settings") : window.onStartPage ? Lang.t("başlangıç", "start") : window.view && window.view.title !== "" ? window.view.title : window.currentHost
             stripe: Theme.rainbow[Math.max(0, window.current) % Theme.rainbow.length]
             minimizable: !window.horizontalTabs
@@ -1318,7 +1317,8 @@ ApplicationWindow {
                         onActiveFocusChanged: if (activeFocus && beside && web !== window.view) window.current = index
 
                         profile: window.profile
-                        backgroundColor: Theme.surface
+                        // an empty tab lets the glass through; a web page gets a solid sheet
+                        backgroundColor: Theme.glass && (url.toString() === "" || url.toString() === "about:blank") ? "transparent" : Theme.surface
                         settings.fullScreenSupportEnabled: true      // video full screen
                         settings.errorPageEnabled: false             // Velum explains problems itself
                         // a bad certificate is never accepted, only explained

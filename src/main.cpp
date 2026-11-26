@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
         instance.listen(socket);
     }
 
+    QQuickWindow::setDefaultAlphaBuffer(true);     // needed for the glass look
     QQmlApplicationEngine engine;
     // the welcome pages are not shown to development runs
     const bool greet = !args.isSet(shot) && !args.isSet(demo) && !args.isSet(box);

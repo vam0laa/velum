@@ -8,11 +8,15 @@ QtObject {
     id: theme
     property string palette: "mocha"       // a key of "palettes", or "desktop"
     property string accentChoice: ""       // "" keeps the palette's own accent
+    property bool glass: false             // see-through windows; the desktop blurs behind them
+    property real solidity: 0.72           // how opaque the glass is: 0.55, 0.72 or 0.88
 
     property Settings saved: Settings {
         category: "look"
         property alias palette: theme.palette
         property alias accent: theme.accentChoice
+        property alias glass: theme.glass
+        property alias solidity: theme.solidity
     }
 
     // frame, window, card, raised, title, line, text, dim, accent, onAccent, mauve, pink, green, peach, danger
@@ -64,6 +68,12 @@ QtObject {
     readonly property color peach: pick(13)
     readonly property color danger: pick(14)
     readonly property bool dark: surface.hslLightness < 0.5
+
+    // The backgrounds of the window itself. Popups and menus stay solid, to be readable.
+    // The layers lie on each other, so each one is thinner than the whole should look.
+    readonly property color frameBack: glass ? Qt.alpha(frame, solidity * 0.6) : frame
+    readonly property color paneBack: glass ? Qt.alpha(window, solidity * 0.65) : window
+    readonly property color sheetBack: glass ? Qt.alpha(surface, solidity * 0.35) : surface
     readonly property var rainbow: [accent, mauve, pink, green, peach]
 
     property FontLoader pixelFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/VT323-Regular.ttf") }

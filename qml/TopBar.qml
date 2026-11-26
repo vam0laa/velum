@@ -33,7 +33,7 @@ Rectangle {
 
     implicitHeight: column.implicitHeight + 2 * Theme.gap
     radius: Theme.corner
-    color: Theme.window
+    color: Theme.paneBack
     border.color: Theme.line
 
     ColumnLayout {

@@ -8,7 +8,7 @@ Item {
     property alias minimizable: bar.minimizable
     property alias maximizable: bar.maximizable
     property alias closable: bar.closable
-    property color fill: Theme.window
+    property color fill: Theme.paneBack
     property bool chrome: true            // false hides the frame (page full screen)
     default property alias content: body.data
     signal minimize()
