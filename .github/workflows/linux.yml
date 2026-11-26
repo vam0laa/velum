@@ -92,7 +92,12 @@ jobs:
           nss=()
           for so in /usr/lib/x86_64-linux-gnu/nss/*.so; do nss+=(--library "$so"); done
           [ ${#nss[@]} -gt 0 ]
-          linuxdeploy --appdir AppDir "${nss[@]}" --plugin qt --output appimage
+          linuxdeploy --appdir AppDir "${nss[@]}" --plugin qt
+          # The Qt plugin leaves out what draws with the graphics card on Wayland; without
+          # it Velum cannot open a window there.
+          cp -r "$plugins/wayland-graphics-integration-client" AppDir/usr/plugins/
+          test -f AppDir/usr/plugins/wayland-graphics-integration-client/libqt-plugin-wayland-egl.so
+          linuxdeploy --appdir AppDir --deploy-deps-only AppDir/usr/plugins/wayland-graphics-integration-client --output appimage
 
       - name: Smoke test
         env:
@@ -123,12 +128,30 @@ jobs:
         with:
           name: velum-linux
           path: files
-      - name: Start on Arch Linux
+      - name: Start on Arch Linux, without a screen and under Wayland
         run: |
           chmod +x files/*.AppImage
+          cat > files/try.sh <<'EOS'
+          set -eu
+          app=$(ls /files/*.AppImage)
+          export APPIMAGE_EXTRACT_AND_RUN=1 VELUM_NO_UPDATES=1 QT_FORCE_STDERR_LOGGING=1 QTWEBENGINE_CHROMIUM_FLAGS=--no-sandbox
+          cd /tmp
+          QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software timeout 90 "$app" --screenshot /tmp/plain.png https://example.com
+          test -s /tmp/plain.png
+          # a real Wayland compositor, drawing in memory: the window must come up with OpenGL
+          export XDG_RUNTIME_DIR=/tmp/run LIBGL_ALWAYS_SOFTWARE=1
+          mkdir -m 700 "$XDG_RUNTIME_DIR"
+          weston --backend=headless --renderer=gl --socket=wl-test --idle-time=0 > weston.log 2>&1 &
+          for i in $(seq 40); do [ -S "$XDG_RUNTIME_DIR/wl-test" ] && break; sleep 0.5; done
+          [ -S "$XDG_RUNTIME_DIR/wl-test" ] || { cat weston.log; exit 1; }
+          WAYLAND_DISPLAY=wl-test QT_QPA_PLATFORM=wayland timeout 90 "$app" --screenshot /tmp/wayland.png 2> velum.log || { cat velum.log weston.log; exit 1; }
+          cat velum.log
+          test -s /tmp/wayland.png
+          ! grep -E "Failed to initialize graphics|Failed to create RHI|Could not load the Qt platform plugin" velum.log
+          EOS
           docker run --rm -v "$PWD/files:/files:ro" archlinux:latest bash -c '
-              pacman -Syu --noconfirm --needed nss alsa-lib libxkbcommon-x11 libxcomposite libxdamage libxrandr libxtst libxkbfile fontconfig mesa libglvnd dbus >/dev/null &&
-              useradd -m u && su u -c "cd /tmp && APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software VELUM_NO_UPDATES=1 QT_FORCE_STDERR_LOGGING=1 QTWEBENGINE_CHROMIUM_FLAGS=--no-sandbox timeout 90 /files/*.AppImage --screenshot /tmp/s.png https://example.com && test -s /tmp/s.png"'
+              pacman -Syu --noconfirm --needed nss alsa-lib libxkbcommon-x11 libxcomposite libxdamage libxrandr libxtst libxkbfile fontconfig mesa libglvnd dbus wayland weston >/dev/null &&
+              useradd -m u && su u -c "bash /files/try.sh"'
 
   # The AppImage is also put into a draft release of this (private) repository, which only
   # the maintainer sees: scripts/release.sh fetches it from there.
