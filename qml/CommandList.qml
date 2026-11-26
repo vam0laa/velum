@@ -10,7 +10,7 @@ QtObject {
         { name: Lang.t("Yer imleri: düzenle, klasörle", "Bookmarks: edit and sort"), keys: Keymap.text("bookmarks"), run: () => Qt.callLater(app.openBookmarks) },
         { name: Lang.t("Başka tarayıcıdan aktar", "Import from another browser"), keys: "", run: () => Qt.callLater(app.openImport) },
         { name: Lang.t("Eklentiler", "Extensions"), keys: "", run: () => app.openSettings("extensions") },
-        { name: Lang.t("Geçmiş", "History"), keys: Keymap.text("history"), run: () => Qt.callLater(app.showCommandHistory) },
+        { name: Lang.t("Geçmiş", "History"), keys: Keymap.text("history"), run: () => Qt.callLater(app.openHistory) },
         { name: Lang.t("İndirmeler", "Downloads"), keys: Keymap.text("downloads"), run: () => app.openDownloads() },
         { name: app.horizontalTabs ? Lang.t("Dikey sekmelere geç", "Move the tabs to the side") : Lang.t("Yatay sekmelere geç", "Move the tabs to the top"), keys: "", run: () => app.horizontalTabs = !app.horizontalTabs },
         { name: Lang.t("Kaynaklar: hangi sekme ne kadar yiyor", "Resources: what each tab uses"), keys: Keymap.text("resources"), run: () => app.resources.open() },

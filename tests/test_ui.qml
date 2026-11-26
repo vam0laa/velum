@@ -357,6 +357,33 @@ Item {
                 w.clearDownloadList(); t.check("and all of them", w.pastDownloads.length === 0)
                 w.closeTab(w.current)
             }
+            // ---- the library ----
+            {
+                const keep = w.shortcuts, gone = w.removedBookmarks, b = w.backup
+                w.keepBookmarks([]); w.keepRemoved([])
+                w.saveBookmark(-1, "Alet", "https://tool.example", " İş / Araçlar /"); w.saveBookmark(-1, "Posta", "https://mail.example", "İş")
+                t.check("folders nest", w.shortcuts[0].folder === "İş/Araçlar" && w.bookmarks.folders.join() === "İş,İş/Araçlar" && w.shortcuts[0].added > 0)
+                t.check("an outer folder shows what is inside", w.bookmarks.filtered(w.shortcuts, "İş", "").length === 2 && w.bookmarks.filtered(w.shortcuts, "İş/Araçlar", "").length === 1)
+                w.renameFolder("İş", "Work"); t.check("renaming moves inner folders too", w.shortcuts[0].folder === "Work/Araçlar" && w.shortcuts[1].folder === "Work")
+                w.renameFolder("Work", ""); t.check("dissolving keeps the inner ones", w.shortcuts[0].folder === "Araçlar" && w.shortcuts[1].folder === undefined)
+                const file = "file:///tmp/b.html"
+                w.exportBookmarks(file); w.keepBookmarks([]); w.importBookmarks(file); t.check("bookmarks go out and come back", w.shortcuts.length === 2)
+                const locked = "file:///tmp/b.velumbackup"
+                t.check("a short password is refused", !Library.files[locked] && b.save(locked, "kisa") !== "" && !Library.files[locked])
+                b.save(locked, "uzun parola"); w.removeShortcut(0)
+                t.check("removals are remembered", w.removedBookmarks.length === 1 && w.shortcuts.length === 1)
+                t.check("a wrong password changes nothing", b.restore(locked, "yanlis parola") !== "" && w.shortcuts.length === 1)
+                b.restore(locked, "uzun parola"); t.check("restoring does not revive what was removed later", w.shortcuts.length === 1)
+                const merged = b.mergeBookmarks([{ url: "https://x/", title: "x", added: 500 }], [{ url: "https://y/", title: "y", added: 100 }, { url: "https://z/", title: "z", added: 900 }, { url: "https://x/", title: "iki" }], [{ url: "https://y/", when: 200 }, { url: "https://z/", when: 200 }])
+                t.check("merging: both kept, removed stay removed, added again returns", merged.map(m => m.title).join() === "x,z")
+                t.check("other files are not backups", !b.apply("{}", true) && !b.apply("x", true))
+                w.keepBookmarks(keep); w.keepRemoved(gone)
+                History.pages = [{ url: "https://h1.example/", title: "bir", last: Math.floor(Date.now() / 1000) }, { url: "https://h2.example/", title: "iki", last: 1000 }]
+                w.openHistory(); const h = w.historyPage
+                t.check("the history opens by day", h.visible && h.rows.length === 2 && h.dayOf(h.rows[0].last) !== h.dayOf(h.rows[1].last))
+                h.removeSince(3600); t.check("recent pages can be removed", h.rows.length === 1)
+                h.close()
+            }
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")

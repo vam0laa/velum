@@ -149,6 +149,30 @@ QVariantList HistoryStore::frequent(int limit) const
     return out;
 }
 
+QVariantList HistoryStore::browse(const QString &text, int limit) const
+{
+    QString like = searchFold(text.trimmed());
+    like.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('%'), QStringLiteral("\\%")).replace(QLatin1Char('_'), QStringLiteral("\\_"));
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT url, title, last FROM pages WHERE fold LIKE ? ESCAPE '\\' ORDER BY last DESC, rowid DESC LIMIT ?"));
+    q.addBindValue(QString(QLatin1Char('%') + like + QLatin1Char('%')));
+    q.addBindValue(limit);
+    QVariantList out;
+    if (!q.exec())
+        return out;
+    while (q.next())
+        out.append(QVariantMap{{QStringLiteral("url"), q.value(0)}, {QStringLiteral("title"), q.value(1)}, {QStringLiteral("last"), q.value(2)}});
+    return out;
+}
+
+void HistoryStore::removeSince(qint64 when)
+{
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("DELETE FROM pages WHERE last >= ?"));
+    q.addBindValue(when);
+    q.exec();
+}
+
 void HistoryStore::remove(const QString &url)
 {
     QSqlQuery q(m_db);

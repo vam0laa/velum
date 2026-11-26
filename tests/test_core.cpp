@@ -23,6 +23,7 @@
 #include "historystore.h"
 #include "importer.h"
 #include "instance.h"
+#include "library.h"
 #include "palette.h"
 #include "passwords.h"
 #include "update.h"
@@ -384,6 +385,58 @@ private slots:
         QVERIFY(index.readAll().contains("\nInherits=Bibata\n"));
         QVERIFY(!graphics::writePointerFolder(icons.filePath("own"), "a\nInherits=b"));
         QCOMPARE(graphics::cursorSize("uint32 x"), 0);
+    }
+
+    void bookmarkFiles()
+    {
+        const QVariantList list{QVariantMap{{"title", "A & <b>"}, {"url", "https://a.example/?x=1&y=2"}},
+                                QVariantMap{{"title", "Tool"}, {"url", "https://t.example/"}, {"folder", "Work/Tools"}},
+                                QVariantMap{{"title", "Mail"}, {"url", "https://m.example/"}, {"folder", "Work"}}};
+        const QString html = library::toHtml(list);
+        QVERIFY(html.contains("A &amp; &lt;b&gt;"));
+        const QVariantList back = library::fromHtml(html);
+        QCOMPARE(back.size(), 3);
+        QStringList seen;
+        for (const QVariant &v : back)
+            seen << v.toMap().value("title").toString() + "|" + v.toMap().value("folder").toString() + "|" + v.toMap().value("url").toString();
+        seen.sort();
+        QCOMPARE(seen, (QStringList{"A & <b>||https://a.example/?x=1&y=2", "Mail|Work|https://m.example/", "Tool|Work/Tools|https://t.example/"}));
+        // as other browsers write it, and with things that must not come in
+        const QVariantList other = library::fromHtml("<DL><p><DT><H3 ADD_DATE=\"1\">&#199;ay</H3><DL><p><DT><A HREF=\"https://c.example/\" ICON=\"x\">C</A>"
+                                                     "<DT><A HREF=\"javascript:alert(1)\">bad</A><DT><A HREF=\"data:text/html,x\">bad</A></DL><p><DT><A href=\"http://d.example/\">D</A></DL>");
+        QCOMPARE(other.size(), 2);
+        QCOMPARE(other[0].toMap().value("folder").toString(), QString::fromUtf8("Çay"));
+        QVERIFY(!other[1].toMap().contains("folder"));
+        QVERIFY(library::fromHtml("<<<>>> </DL></DL>").isEmpty());
+    }
+
+    void lockedFiles()
+    {
+        const QByteArray sealed = library::seal("secret bookmarks", "dogru parola");
+        QVERIFY(!sealed.isEmpty() && !sealed.contains("secret"));
+        QCOMPARE(library::unseal(sealed, "dogru parola").value_or(""), QByteArray("secret bookmarks"));
+        QVERIFY(!library::unseal(sealed, "yanlis parola"));
+        QByteArray bent = sealed;
+        bent[bent.size() - 1] = char(bent[bent.size() - 1] ^ 1);
+        QVERIFY(!library::unseal(bent, "dogru parola"));
+        QVERIFY(!library::unseal(sealed.left(20), "dogru parola") && !library::unseal("nonsense", "x"));
+        QVERIFY(library::seal("a", "").isEmpty());
+        QVERIFY(library::seal("a", "p") != library::seal("a", "p"));      // salted: never the same twice
+    }
+
+    void historyByTime()
+    {
+        HistoryStore store(":memory:");
+        store.add("https://old.example/", "old", 100);
+        store.add("https://new.example/", "new", 200);
+        QCOMPARE(store.browse("", 10).size(), 2);
+        QCOMPARE(store.browse("", 10).first().toMap().value("title").toString(), "new");
+        QCOMPARE(store.browse("old", 10).size(), 1);
+        QCOMPARE(store.browse("%", 10).size(), 0);
+        store.removeSince(150);
+        QCOMPARE(store.browse("", 10).size(), 1);
+        store.removeSince(0);
+        QCOMPARE(store.browse("", 10).size(), 0);
     }
 
     void heldDownloads()

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 
 // The bookmark manager (Ctrl+Shift+O): folders on the left, bookmarks on the right.
@@ -23,7 +24,19 @@ Popup {
     signal chosen(url target)
     signal importRequested()
 
-    readonly property var folders: [...new Set(items.map(b => b.folder ?? "").filter(f => f !== ""))].sort((a, b) => a.localeCompare(b))
+    signal exportRequested(url file)
+    signal htmlRequested(url file)
+
+    // every folder and the folders around it, so "Work/Tools" also lists "Work"
+    readonly property var folders: {
+        const all = new Set()
+        for (const b of items) {
+            const parts = (b.folder ?? "").split("/").filter(p => p !== "")
+            for (let i = 0; i < parts.length; i++)
+                all.add(parts.slice(0, i + 1).join("/"))
+        }
+        return [...all].sort((a, b) => a.localeCompare(b))
+    }
     readonly property var rows: filtered(items, folder, query)
 
     function filtered(list, inFolder, text) {
@@ -31,7 +44,7 @@ Popup {
         const out = []
         for (let i = 0; i < list.length; i++) {
             const b = list[i]
-            if (inFolder !== "*" && (b.folder ?? "") !== inFolder)
+            if (inFolder !== "*" && (b.folder ?? "") !== inFolder && !(inFolder !== "" && (b.folder ?? "").startsWith(inFolder + "/")))
                 continue
             if (q !== "" && (b.title + " " + b.url).toLocaleLowerCase().indexOf(q) < 0)
                 continue
@@ -78,6 +91,10 @@ Popup {
     exit: PopOut {}
     background: WindowBackground { title: Lang.t("yer imleri", "bookmarks"); stripe: Theme.peach }
 
+    // the bookmark file every browser can read
+    FileDialog { id: htmlIn; nameFilters: ["HTML (*.html *.htm)"]; onAccepted: page.htmlRequested(selectedFile) }
+    FileDialog { id: htmlOut; fileMode: FileDialog.SaveFile; defaultSuffix: "html"; nameFilters: ["HTML (*.html *.htm)"]; onAccepted: page.exportRequested(selectedFile) }
+
     component Field: TextField {
         id: field
         implicitHeight: 34
@@ -123,7 +140,8 @@ Popup {
                     model: page.folders
                     Entry {
                         required property string modelData
-                        text: modelData
+                        // a folder inside a folder is set in under it
+                        text: "    ".repeat(modelData.split("/").length - 1) + modelData.split("/").pop()
                         current: page.folder === modelData
                         onClicked: page.folder = modelData
                     }
@@ -152,7 +170,9 @@ Popup {
                         placeholderText: Lang.t("Yer imlerinde ara", "Search bookmarks")
                         onTextEdited: page.query = text
                     }
-                    TextButton { text: Lang.t("İçe aktar", "Import"); onClicked: page.importRequested() }
+                    TextButton { text: Lang.t("Tarayıcıdan", "From a browser"); onClicked: page.importRequested() }
+                    TextButton { text: Lang.t("HTML al", "Read HTML"); onClicked: htmlIn.open() }
+                    TextButton { text: Lang.t("HTML ver", "Write HTML"); enabled: page.items.length > 0; onClicked: htmlOut.open() }
                     TextButton { text: Lang.t("Yeni ekle", "Add new"); strong: true; onClicked: page.edit(-1) }
                 }
 
@@ -161,7 +181,7 @@ Popup {
                     Layout.fillWidth: true
                     visible: page.folder !== "*" && page.folder !== ""
                     spacing: 8
-                    Field { id: folderName; Layout.fillWidth: true; visible: page.renaming; maximumLength: 40; onAccepted: { page.renaming = false; const to = text.trim(); if (to !== "") { const from = page.folder; page.folderRenamed(from, to); page.folder = to } } }
+                    Field { id: folderName; Layout.fillWidth: true; visible: page.renaming; maximumLength: 120; onAccepted: { page.renaming = false; const to = text.trim(); if (to !== "") { const from = page.folder; page.folderRenamed(from, to); page.folder = to } } }
                     Item { Layout.fillWidth: true; visible: !page.renaming }
                     TextButton { visible: !page.renaming; text: Lang.t("Klasörün adını değiştir", "Rename folder"); onClicked: { folderName.text = page.folder; page.renaming = true; folderName.forceActiveFocus(); folderName.selectAll() } }
                     TextButton { visible: !page.renaming; text: Lang.t("Klasörü dağıt", "Dissolve folder"); onClicked: page.folderRenamed(page.folder, "") }
@@ -181,7 +201,7 @@ Popup {
                         spacing: 6
                         Field { id: nameField; Layout.fillWidth: true; placeholderText: Lang.t("Ad", "Name"); maximumLength: 120; onAccepted: page.commit(); Keys.onEscapePressed: page.editing = -2 }
                         Field { id: addressField; Layout.fillWidth: true; placeholderText: Lang.t("Adres", "Address"); onAccepted: page.commit(); Keys.onEscapePressed: page.editing = -2 }
-                        Field { id: folderField; Layout.fillWidth: true; placeholderText: Lang.t("Klasör (boş kalabilir, yeni ad yazabilirsin)", "Folder (optional; type a new name to make one)"); maximumLength: 40; onAccepted: page.commit(); Keys.onEscapePressed: page.editing = -2 }
+                        Field { id: folderField; Layout.fillWidth: true; placeholderText: Lang.t("Klasör (boş kalabilir; iç içe: İş/Araçlar)", "Folder (optional; nested: Work/Tools)"); maximumLength: 120; onAccepted: page.commit(); Keys.onEscapePressed: page.editing = -2 }
                         Flow {
                             Layout.fillWidth: true
                             spacing: 6

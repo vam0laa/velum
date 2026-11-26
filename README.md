@@ -39,6 +39,10 @@ A site cannot open a window without a click unless you allow it, and files that 
 
 Downloads can be paused, resumed, opened (never files that can run programs) and are remembered between starts. A page can be saved as PDF (also its own print button; there is no direct printing), saved whole (Ctrl+S), its source read (Ctrl+U) and inspected with the developer tools (F12). Tabs playing sound show a speaker (Ctrl+M mutes), Ctrl+1…9 go to a tab, the address under the pointer is shown, a right click on back or forward lists pages, and zoom is remembered for each site.
 
+## Library
+
+Ctrl+H opens the history by day, with search and removal by age. Bookmarks have folders inside folders ("Work/Tools"), are read from and written to the HTML file every browser knows, and show as menus on the bookmarks bar. Settings → General backs bookmarks and your look up into one file locked with a password (AES-256, scrypt).
+
 ## Speed
 
 Three modes in the menu and in Settings → Performance: balanced, game (background tabs freeze within seconds, no animations) and saver. A memory limit puts the longest unseen tabs to sleep. Graphics acceleration is one switch (on unless you switch it off), also asked on the welcome pages. Shortcuts can be changed in Settings → Shortcuts.

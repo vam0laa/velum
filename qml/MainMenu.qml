@@ -9,7 +9,7 @@ AppMenu {
     AppMenuItem { text: Lang.t("Yeni çalışma alanı", "New workspace"); onTriggered: app.spaceDialog.show(0, "", false) }
     AppMenuLine {}
     AppMenuItem { text: Lang.t("Yer imleri", "Bookmarks"); keys: Keymap.text("bookmarks"); onTriggered: app.openBookmarks() }
-    AppMenuItem { text: Lang.t("Geçmiş", "History"); keys: Keymap.text("history"); onTriggered: Qt.callLater(app.showCommandHistory) }
+    AppMenuItem { text: Lang.t("Geçmiş", "History"); keys: Keymap.text("history"); onTriggered: Qt.callLater(app.openHistory) }
     AppMenuItem { text: Lang.t("İndirilenler", "Downloads"); keys: Keymap.text("downloads"); onTriggered: Qt.callLater(app.openDownloads) }
     AppMenuItem { text: Lang.t("Parolalar", "Passwords"); onTriggered: app.openPasswords() }
     AppMenuItem { text: Lang.t("Eklentiler", "Extensions"); onTriggered: app.openSettings("extensions") }

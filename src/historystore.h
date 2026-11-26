@@ -32,6 +32,10 @@ public:
     QVariantList search(const QString &text, int limit) const;
     // pages visited more than once, most visited first
     QVariantList frequent(int limit) const;
+    // Newest first, with the time of the last visit; `text` narrows it like search().
+    QVariantList browse(const QString &text, int limit) const;
+    // forgets what was last visited at `when` or later
+    void removeSince(qint64 when);
     void remove(const QString &url);
     void clear();
     void forgetBefore(qint64 when);

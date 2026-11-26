@@ -51,6 +51,9 @@ Rectangle {
     property bool showBookmarkBar
     signal startChanged(string name, var value)      // a property of the window and its new value
     signal designRequested()
+    property string backupResult
+    signal backupRequested(url file, string password)
+    signal restoreRequested(url file, string password)
     property bool askDownloads
     signal askDownloadsChosen(bool on)
     property bool canUndoImport
@@ -86,7 +89,7 @@ Rectangle {
         const q = query.trim().toLocaleLowerCase()
         return q === "" ? section === key : String(words).toLocaleLowerCase().indexOf(q) >= 0
     }
-    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
+    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, backup1, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
 
     color: Theme.styled("settings", "background", Theme.sheetBack)
 
@@ -349,6 +352,14 @@ Rectangle {
                             onChosen: key => Address.engine = key
                         }
                     }
+                }
+
+                Group {
+                    id: backup1
+                    wanted: page.shows("general", "yedek geri yükle şifreli backup restore")
+                    heading: Lang.t("Yedekleme", "Backup")
+                    symbol: "download"
+                    BackupCard { Layout.fillWidth: true; result: page.backupResult; onBackup: (file, password) => page.backupRequested(file, password); onRestore: (file, password) => page.restoreRequested(file, password) }
                 }
 
                 // ---- appearance ----

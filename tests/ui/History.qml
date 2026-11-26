@@ -11,4 +11,6 @@ QtObject {
     function frequent(limit) { return pages.slice(0, limit) }
     function remove(u) { pages = pages.filter(p => p.url !== u) }
     function clear() { pages = [] }
+    function browse(text, limit) { return pages.filter(p => (p.url + " " + p.title).toLowerCase().indexOf(String(text).toLowerCase()) >= 0).slice(0, limit).map(p => ({ url: p.url, title: p.title, last: p.last ?? 1795600000 })) }
+    function removeSince(when) { pages = pages.filter(p => (p.last ?? 1795600000) < when) }
 }

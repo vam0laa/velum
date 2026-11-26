@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQml
 import QtQuick.Layouts
 import QtWebEngine
 
@@ -83,6 +84,23 @@ Item {
                                [extensionsButton, "extensions"], [bookmarksButton, "bookmarks"], [historyButton, "history"], [gameButton, "game"], [settingsButton, "settings"], [menuButton, "menu"]])
         toolRow.ensurePolished()
         return Array.from(toolRow.children).filter(i => i.visible).sort((a, b) => a.x - b.x).map(i => names.get(i))
+    }
+
+    AppMenu {
+        id: folderMenu
+        property var inside: []
+        function showFor(list, button) { inside = list; popup(button, 0, button.height + 2) }
+        Instantiator {
+            model: folderMenu.inside.slice(0, 40)
+            delegate: AppMenuItem {
+                required property var modelData
+                readonly property string sub: modelData.folder.split("/").slice(1).join(" / ")
+                text: (sub !== "" ? sub + " › " : "") + modelData.title
+                onTriggered: bar.openBookmark(modelData.url)
+            }
+            onObjectAdded: (index, item) => folderMenu.insertItem(index, item)
+            onObjectRemoved: (index, item) => folderMenu.removeItem(item)
+        }
     }
 
     // the strip with the tabs
@@ -265,7 +283,21 @@ Item {
             clip: true
             spacing: 2
             boundsBehavior: Flickable.StopAtBounds
-            model: bar.bookmarks.slice(0, 40)
+            // loose bookmarks first as they are, then one entry for each outer folder
+            model: {
+                const loose = [], folders = new Map()
+                for (const b of bar.bookmarks) {
+                    if (!b.folder) {
+                        loose.push(b)
+                        continue
+                    }
+                    const name = b.folder.split("/")[0]
+                    if (!folders.has(name))
+                        folders.set(name, [])
+                    folders.get(name).push(b)
+                }
+                return Array.from(folders, ([name, inside]) => ({ title: name, url: "", inside: inside })).concat(loose.slice(0, 40))
+            }
             delegate: AbstractButton {
                 id: mark
                 required property var modelData
@@ -274,11 +306,12 @@ Item {
                 width: Math.min(180, caption.implicitWidth + 38)
                 hoverEnabled: true
                 focusPolicy: Qt.NoFocus
-                onClicked: bar.openBookmark(modelData.url)
+                onClicked: modelData.inside ? folderMenu.showFor(modelData.inside, mark) : bar.openBookmark(modelData.url)
                 background: Rectangle { radius: Theme.styled("bookmark", "border-radius", Theme.round(7)); color: mark.hovered ? Theme.raised : Theme.styled("bookmark", "background", "transparent"); border.width: Theme.styled("bookmark", "border-width", Theme.styled("bookmark", "border-color", "") !== "" ? 1 : 0); border.color: Theme.styled("bookmark", "border-color", Theme.line) }
                 contentItem: Item {
-                    Image { id: icon; x: 8; anchors.verticalCenter: parent.verticalCenter; width: 15; height: 15; source: bar.iconFor(mark.modelData.url); cache: false; sourceSize: Qt.size(32, 32) }
-                    Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; visible: icon.status !== Image.Ready; width: 15; height: 15; radius: 4; color: Theme.rainbow[mark.index % Theme.rainbow.length]
+                    Icon { x: 8; anchors.verticalCenter: parent.verticalCenter; visible: mark.modelData.inside !== undefined; name: "folder"; size: 15; color: Theme.dim }
+                    Image { id: icon; x: 8; anchors.verticalCenter: parent.verticalCenter; width: 15; height: 15; source: mark.modelData.inside ? "" : bar.iconFor(mark.modelData.url); cache: false; sourceSize: Qt.size(32, 32) }
+                    Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; visible: icon.status !== Image.Ready && mark.modelData.inside === undefined; width: 15; height: 15; radius: 4; color: Theme.rainbow[mark.index % Theme.rainbow.length]
                         Text { anchors.centerIn: parent; text: String(mark.modelData.title).charAt(0).toLocaleUpperCase(); textFormat: Text.PlainText; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: 10 } }
                     Text { id: caption; x: 29; width: Math.min(implicitWidth, 144); anchors.verticalCenter: parent.verticalCenter; text: mark.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.styled("bookmark", "color", Theme.styled("bookmarks", "color", Theme.text)); font.family: Theme.styled("bookmark", "font-family", Theme.ui); font.pixelSize: Theme.styled("bookmark", "font-size", 12) }
                 }

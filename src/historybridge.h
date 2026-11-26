@@ -39,6 +39,8 @@ public:
     }
     Q_INVOKABLE QVariantList frequent(int limit) const { return m_store.frequent(limit); }
     Q_INVOKABLE void remove(const QString &url) { m_store.remove(url); }
+    Q_INVOKABLE QVariantList browse(const QString &text, int limit) const { return m_store.browse(text, limit); }
+    Q_INVOKABLE void removeSince(double when) { m_store.removeSince(qint64(when)); }
     Q_INVOKABLE void clear() { m_store.clear(); }
 
 private:

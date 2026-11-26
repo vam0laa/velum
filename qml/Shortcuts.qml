@@ -22,7 +22,7 @@ Item {
     Shortcut { sequences: Keymap.sequences("split"); onActivated: app.toggleSplit() }
     Shortcut { sequences: Keymap.sequences("settings"); onActivated: app.openSettings() }
     Shortcut { sequences: Keymap.sequences("resources"); onActivated: app.resources.open() }
-    Shortcut { sequences: Keymap.sequences("history"); onActivated: app.showCommandHistory() }
+    Shortcut { sequences: Keymap.sequences("history"); onActivated: app.openHistory() }
     Shortcut { sequences: Keymap.sequences("downloads"); onActivated: app.openDownloads() }
     Shortcut { sequences: Keymap.sequences("clear"); onActivated: app.clearDialog.open() }
     Shortcut { sequences: Keymap.sequences("commandBox"); onActivated: app.commandBar.show(false, "") }

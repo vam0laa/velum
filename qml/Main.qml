@@ -182,6 +182,12 @@ ApplicationWindow {
         readHome()
         downloadLogic.readDownloads()
         toolLogic.readZoom()
+        try {
+            const gone = JSON.parse(saved.removedBookmarks)
+            if (Array.isArray(gone))
+                removedBookmarks = gone
+        } catch (e) {
+        }
         neverSave = readStrings(saved.neverSave)
         iconNames = readStrings(saved.iconNames)
         watchLogins()
@@ -335,6 +341,7 @@ ApplicationWindow {
         property string homeWidgets: ""
         property string pastDownloads: "[]"
         property string siteZoom: "{}"
+        property string removedBookmarks: "[]"
         property alias homeHeadline: window.homeHeadline
         property string homeWords: "[]"
         property string homeTasks: "[]"
@@ -365,6 +372,7 @@ ApplicationWindow {
     SiteLogic { id: siteLogic; app: window }
     AskLogic { id: askLogic; app: window }
     DemoLogic { id: demoLogic; app: window }
+    BackupLogic { id: backupLogic; app: window }
     ToolLogic { id: toolLogic; app: window }
     HistoryMenu { id: historyMenu }
     property alias accountMenu: accountMenu
@@ -536,6 +544,14 @@ ApplicationWindow {
 
     function openBookmarks() { bookmarksPage.open() }
     function openImport() { importPanel.open() }
+    function openHistory() { historyPage.open() }
+    property alias historyPage: historyPage
+    property var removedBookmarks: []     // [{ url, when }], so synchronising does not revive them
+    function keepRemoved(list) { bookmarkLogic.keepRemoved(list) }
+    function exportBookmarks(file) { bookmarkLogic.exportBookmarks(file) }
+    function importBookmarks(file) { bookmarkLogic.importBookmarks(file) }
+    property alias backup: backupLogic
+    property string backupResult: ""
     function openPasswords() { openSettings("passwords") }
     function openDownloads() { (horizontalTabs ? topBar : side).openDownloads() }
 
@@ -878,7 +894,7 @@ ApplicationWindow {
             gaming: window.powerMode === "game"
             onGameRequested: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game")
             onOpenBookmarksRequested: window.openBookmarks()
-            onHistoryRequested: window.showCommandHistory()
+            onHistoryRequested: window.openHistory()
                 pageButtons.storeButton: card.storeButton
                 pageButtons.keyButton: card.keyButton
                 pageButtons.readerButton: card.readerButton
@@ -1103,6 +1119,9 @@ ApplicationWindow {
                             sleepMode: window.sleepMode
                     askDownloads: window.askDownloads
                     onAskDownloadsChosen: on => window.askDownloads = on
+                    backupResult: window.backupResult
+                    onBackupRequested: (file, password) => window.backupResult = window.backup.save(file, password)
+                    onRestoreRequested: (file, password) => window.backupResult = window.backup.restore(file, password)
                     canUndoImport: window.beforeImport !== ""
                     onUndoImport: window.undoImport()
                             powerMode: window.powerMode
@@ -1253,6 +1272,11 @@ ApplicationWindow {
         onConfirmed: window.addExtension()
     }
 
+    HistoryPage {
+        id: historyPage
+        onChosen: target => window.navigate(target, false)
+    }
+
     BookmarksPage {
         id: bookmarksPage
         items: window.shortcuts
@@ -1263,6 +1287,8 @@ ApplicationWindow {
         onFolderRenamed: (from, to) => window.renameFolder(from, to)
         onChosen: target => window.navigate(target, true)
         onImportRequested: importPanel.open()
+        onExportRequested: file => window.exportBookmarks(file)
+        onHtmlRequested: file => window.importBookmarks(file)
     }
 
     ImportPanel {
