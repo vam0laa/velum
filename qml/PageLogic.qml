@@ -154,6 +154,27 @@ QtObject {
     // A site may answer with an error and still send a page: a check that you are a
     // person, "not found" in its own words. That page is shown; only when there is
     // nothing at all does Velum explain.
+    // A secure connection that broke while being set up often works on another try, or
+    // once the address is asked for in private. True: the page is being tried again.
+    function mendConnection(page, url, error) {
+        if (String(error).indexOf("ERR_SSL_PROTOCOL_ERROR") < 0)
+            return false
+        if (page.mendUrl !== url) {
+            page.mendUrl = url
+            page.mendTries = 0
+        }
+        page.mendTries++
+        if (page.mendTries === 2) {
+            if (!Shield.encryptDnsForNow())
+                return false
+            app.say(Lang.t("Güvenli bağlantı kurulamadı. Velum bu açılışta adresleri şifreli olarak (Cloudflare) soruyor.", "The secure connection failed. Until you quit, Velum asks for addresses over an encrypted line (Cloudflare)."))
+        } else if (page.mendTries > 2) {
+            return false
+        }
+        page.tryAgain()
+        return true
+    }
+
     function explainIfBlank(page, url, status) {
         page.runJavaScript("document.body === null || (document.body.innerText.trim() === '' && document.body.querySelector('img,iframe,canvas,video,svg,form') === null)",
             WebEngineScript.ApplicationWorld, blank => {

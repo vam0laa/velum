@@ -447,6 +447,16 @@ void Shield::setSecureDns(const QString &provider)
     emit changed();
 }
 
+bool Shield::encryptDnsForNow()
+{
+    if (m_dnsForNow || m_dns != QLatin1String("off"))
+        return false;
+    m_dnsForNow = true;
+    using namespace QWebEngineGlobalSettings;
+    setDnsMode({SecureDnsMode::SecureWithFallback, {QStringLiteral("https://cloudflare-dns.com/dns-query")}});
+    return true;
+}
+
 void Shield::applyDns()
 {
     using namespace QWebEngineGlobalSettings;

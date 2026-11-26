@@ -51,6 +51,15 @@ Item {
             t.check("a search is not a shortcut", !w.addShortcut("some words"))
             w.removeShortcut(0); t.check("a shortcut is removed", w.shortcuts.length === 0)
             t.check("no old style sheet paints over the new home page", w.homeCss === "")
+            {
+                const page = { mendUrl: "", mendTries: 0, tries: 0, tryAgain: function() { this.tries++ } }
+                const broken = "net::ERR_SSL_PROTOCOL_ERROR"
+                t.check("another failure is not retried", !w.mendConnection(page, "https://a.example/", "net::ERR_NAME_NOT_RESOLVED") && page.tries === 0)
+                t.check("a broken secure connection is tried again", w.mendConnection(page, "https://a.example/", broken) && page.tries === 1 && Shield.dnsAsked === 0)
+                t.check("then once more with private name lookups", w.mendConnection(page, "https://a.example/", broken) && page.tries === 2 && Shield.dnsAsked === 1)
+                t.check("and then it is explained", !w.mendConnection(page, "https://a.example/", broken) && page.tries === 2)
+                t.check("another page starts again", w.mendConnection(page, "https://b.example/", broken) && !w.mendConnection(page, "https://b.example/", broken))
+            }
             t.check("a bookmark takes the name given to it", w.saveBookmark(-1, "Videolar", "youtube.com", "") && w.shortcuts[0].title === "Videolar")
             w.removeShortcut(0)
             t.check("broken saved data gives an empty list", w.readList("{oops").length === 0 && w.readList('[{"url":5},null]').length === 0)

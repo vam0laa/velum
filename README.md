@@ -125,6 +125,8 @@ Filters that need page scripts (among them the ones for YouTube video ads) use u
 
 ## Tabs, links and problems
 
+If a secure connection breaks while being set up, Velum tries the page again by itself; if it fails once more, it asks for addresses over an encrypted line (Cloudflare) until you quit, says so, and tries a last time.
+
 Open tabs come back at the next start and load when first looked at (a command turns this off; "forget on exit" turns it off too). There is one Velum at a time: starting it again with an address opens a tab in the running window. To make it the default browser: `xdg-settings set default-web-browser velum.desktop`. A site that cannot be opened, a bad certificate (which cannot be skipped) and a crashed tab each show an explanation with a retry button.
 
 Allowed notifications are shown by the desktop, with the real site name under the message. Frozen or discarded tabs cannot notify; pin a tab to keep it awake. The right click menu offers what applies to the link, image, text or field clicked.

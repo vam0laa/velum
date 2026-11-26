@@ -143,9 +143,18 @@ WebEngineView {
         if (!app.isPrivate)
             app.keepIcon(url, icon)
     }
+    // the page whose secure connection is being tried again, and how often
+    property string mendUrl: ""
+    property int mendTries: 0
+    function tryAgain() { again.restart() }
+    property Timer again: Timer {
+        interval: 700
+        onTriggered: String(web.url) === web.mendUrl ? web.reload() : web.url = web.mendUrl
+    }
     onLoadingChanged: info => {
         app.tabs.setProperty(index, "loading", loading)
         if (info.status === WebEngineView.LoadStartedStatus) {
+            again.stop()          // going somewhere else gives up the other try
             if (web === app.miniPage)      // another page: the video is gone
                 app.closeMini()
             readable = false
@@ -156,6 +165,7 @@ WebEngineView {
             failure = null
         }
         if (info.status === WebEngineView.LoadSucceededStatus) {
+            mendUrl = ""
             zoomFactor = app.zoomOf(url)
             if (!app.isPrivate)
                 History.add(String(url), title)
@@ -165,7 +175,7 @@ WebEngineView {
         if (info.status === WebEngineView.LoadFailedStatus && info.errorCode !== -3 && !failure) {
             if (info.errorDomain === WebEngineLoadingInfo.HttpStatusCodeDomain)
                 app.explainIfBlank(web, String(info.url), info.errorCode)
-            else
+            else if (!app.mendConnection(web, String(info.url), info.errorString))
                 failure = { url: String(info.url), text: Shield.harmful(app.hostOf(info.url))
                     ? Lang.t("Velum bu siteyi açmadı: zararlı yazılım dağıttığı bildirilen siteler listesinde (URLhaus). Ayarlar → Gizlilik'ten kapatılabilir.", "Velum did not open this site: it is listed as handing out harmful software (URLhaus). This can be switched off in Settings → Privacy.")
                     : info.errorString, certificate: false }

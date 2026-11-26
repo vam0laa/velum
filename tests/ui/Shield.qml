@@ -19,6 +19,8 @@ QtObject {
     function allowed(h) { return false }
     function setAllowed(h, a) {}
     function pageScript(u) { return "" }
+    property int dnsAsked: 0
+    function encryptDnsForNow() { return ++dnsAsked === 1 }
     function earlySites() { return [] }
     function earlyScript(h) { return "" }
     property string converter: ""

@@ -825,6 +825,7 @@ ApplicationWindow {
     }
 
     function explainIfBlank(page, url, status) { return pageLogic.explainIfBlank(page, url, status) }
+    function mendConnection(page, url, error) { return pageLogic.mendConnection(page, url, error) }
 
     function say(text) {
         notice = text

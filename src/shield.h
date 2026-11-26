@@ -81,6 +81,9 @@ public:
     bool isHarmful(const QString &host) const { return m_safe && m_bad.contains(host.toLower()); }
     Q_INVOKABLE bool harmful(const QString &host) const { return isHarmful(host); }
     QString secureDns() const { return m_dns; }
+    // For this run only, when connections keep failing: names are asked over an encrypted
+    // line (Cloudflare), the system's way if that fails. False if there is nothing to change.
+    Q_INVOKABLE bool encryptDnsForNow();
     void setSecureDns(const QString &provider);
     // [{ host, count }] of what was refused on `site`, most first
     Q_INVOKABLE QVariantList blockedHosts(const QString &site, int /*revision*/ = 0) const;
@@ -136,5 +139,6 @@ private:
     bool m_enabled = true;
     bool m_httpsFirst = true;
     bool m_loading = false;
+    bool m_dnsForNow = false;
     bool m_again = false;        // something changed while the engine was being built
 };
