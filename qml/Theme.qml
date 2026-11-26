@@ -19,6 +19,8 @@ QtObject {
     property Timer clock: Timer { interval: 30000; running: true; repeat: true; onTriggered: theme.hour = new Date().getHours() }
     property string accentChoice: ""       // "" keeps the palette's own accent
     property bool glass: false             // see-through windows; the desktop blurs behind them
+    property bool darkSites: true          // with a dark theme, light web pages are darkened too
+    readonly property bool darkening: darkSites && !web && dark
     property real solidity: 0.72           // how opaque the glass is: 0.55, 0.72 or 0.88
     property bool motion: true             // false: nothing slides or grows
     property bool calm: false              // set by the game and saver modes: rest both of these
@@ -213,6 +215,7 @@ QtObject {
         property alias style: theme.style
         property alias accent: theme.accentChoice
         property alias glass: theme.glass
+        property alias darkSites: theme.darkSites
         property alias solidity: theme.solidity
         property alias motion: theme.motion
     }

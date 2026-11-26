@@ -415,10 +415,11 @@ Rectangle {
                 // ---- appearance ----
                 Group {
                     id: look1
-                    wanted: page.shows("look", "tema renk theme colour accent vurgu koyu açık dark light")
+                    wanted: page.shows("look", "tema renk theme colour accent vurgu koyu açık dark light site karanlık reader")
                     heading: Lang.t("Tema", "Theme")
                     ThemePicker { visible: !Theme.web; Layout.fillWidth: true }
                     Note { visible: Theme.web; text: "velum:webcore" }
+                    Toggle { visible: !Theme.web && Theme.dark; label: Lang.t("Siteleri de koyu göster", "Darken websites too"); note: Lang.t("Koyu temada açık renkli sayfalar koyulaştırılır. Bir site bozuk görünürse kapat.", "With a dark theme, light pages are darkened. Switch it off if a site looks wrong."); on: Theme.darkSites; onClicked: Theme.darkSites = !Theme.darkSites }
                 }
                 Group {
                     id: look2
@@ -633,6 +634,9 @@ Rectangle {
                     ExtensionList {
                         id: extensionList
                         Layout.fillWidth: true
+                        // long lines wrap inside the column instead of widening it
+                        Layout.preferredWidth: 0
+                        Layout.maximumWidth: content.width
                         extensions: page.extensions
                         busy: page.fetchingExtension
                         onAddFromStore: typed => page.addFromStore(typed)

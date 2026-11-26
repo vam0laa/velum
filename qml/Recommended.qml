@@ -14,7 +14,6 @@ ColumnLayout {
 
     // ids and names as the store gives them
     readonly property var offers: [
-        { id: "eimadpbcbfnmbkopoojfekhnkhdbieeh", logo: "darkreader", name: "Dark Reader", note: Lang.t("Her siteyi koyu temaya çevirir.", "Turns every site dark.") },
         { id: "mnjggcdmjocbbbhaepdhchncahnbgone", logo: "sponsorblock", name: "SponsorBlock", note: Lang.t("YouTube videolarındaki sponsor bölümlerini atlar.", "Skips sponsored parts of YouTube videos.") }
     ]
 

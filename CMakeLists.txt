@@ -173,7 +173,7 @@ qt_add_qml_module(velum
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
-    RESOURCES data/velum.svg data/sky.jpg data/sky-night.jpg data/scanline.png data/logos/tr.svg data/logos/gb.svg data/logos/duckduckgo.png data/logos/brave.png data/logos/google.png data/logos/startpage.svg data/logos/darkreader.png data/logos/sponsorblock.png data/fonts/VT323-Regular.ttf data/fonts/Inter.ttf
+    RESOURCES data/velum.svg data/sky.jpg data/sky-night.jpg data/scanline.png data/logos/tr.svg data/logos/gb.svg data/logos/duckduckgo.png data/logos/brave.png data/logos/google.png data/logos/startpage.svg data/logos/sponsorblock.png data/fonts/VT323-Regular.ttf data/fonts/Inter.ttf
         data/fonts/extra/audiowide.ttf
         data/fonts/extra/bricolagegrotesque.ttf
         data/fonts/extra/bungee.ttf
