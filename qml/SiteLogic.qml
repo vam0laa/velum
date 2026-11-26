@@ -8,6 +8,7 @@ QtObject {
 
     // one page per site, the most visited first
     function refreshFrequent() {
+        app.recentPages = app.showRecent && !app.isPrivate ? History.browse("", 4) : []
         const seen = new Set(), out = []
         for (const p of History.frequent(60)) {
             const host = app.hostOf(p.url)

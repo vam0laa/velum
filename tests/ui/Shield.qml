@@ -3,6 +3,8 @@ import QtQuick
 // Stand-in for the C++ shield, which needs the web engine's network.
 QtObject {
     property bool enabled: true
+    signal changed()
+    signal countsChanged()
     property bool httpsFirst: true
     property bool blockThirdPartyCookies: true
     property bool forgetOnExit: false

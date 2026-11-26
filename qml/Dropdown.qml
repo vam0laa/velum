@@ -15,10 +15,10 @@ AbstractButton {
     onClicked: list.open()
     Accessible.name: chosenOption?.label ?? ""
 
-    background: Rectangle { radius: Theme.radius; color: drop.hovered || list.opened ? Theme.title : Theme.raised }
+    background: Rectangle { radius: Theme.round(height / 2); color: drop.hovered || list.opened ? Theme.title : Theme.raised; border.width: Theme.web ? 0 : 1; border.color: list.opened ? Theme.accent : Theme.line }
     contentItem: Item {
-        Rectangle { id: swatch; visible: drop.chosenOption?.color !== undefined; x: 12; anchors.verticalCenter: parent.verticalCenter; width: 12; height: 12; radius: Theme.radius; color: drop.chosenOption?.color ?? "transparent" }
-        Text { anchors { left: parent.left; leftMargin: swatch.visible ? 32 : 12; right: arrow.left; rightMargin: 6; verticalCenter: parent.verticalCenter } text: drop.chosenOption?.label ?? ""; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight }
+        Rectangle { id: swatch; visible: drop.chosenOption?.color !== undefined; x: 14; anchors.verticalCenter: parent.verticalCenter; width: 12; height: 12; radius: Theme.radius; color: drop.chosenOption?.color ?? "transparent" }
+        Text { anchors { left: parent.left; leftMargin: swatch.visible ? 34 : 14; right: arrow.left; rightMargin: 6; verticalCenter: parent.verticalCenter } text: drop.chosenOption?.label ?? ""; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight }
         Icon { id: arrow; anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter } name: "down"; size: 14; color: Theme.dim }
     }
 
@@ -32,7 +32,7 @@ AbstractButton {
         margins: 8
         enter: PopIn {}
         exit: PopOut {}
-        background: Rectangle { radius: Theme.radius; color: Theme.window; border.color: Theme.line; Shadow { radius: Theme.radius } }
+        background: Rectangle { radius: Theme.round(14); color: Theme.window; border.color: Theme.line; Shadow { radius: Theme.round(14) } }
         contentItem: ListView {
             id: rows
             clip: true

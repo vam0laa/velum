@@ -82,9 +82,9 @@ ItemDelegate {
         Rectangle {
             anchors.fill: parent
             visible: !row.horizontal
-            radius: row.styled("border-radius", Theme.web ? 0 : row.tabRadius > 0 ? Math.min(height / 2, Theme.tabShape === "pill" ? height / 2 : Theme.radius) : 0)
+            radius: row.styled("border-radius", Theme.web ? 0 : row.tabRadius > 0 ? Math.min(height / 2, Theme.tabShape === "pill" ? height / 2 : Theme.round(10)) : 0)
             color: row.styled("background", row.current && !row.lined ? Theme.raised : row.hovered ? (Theme.web ? Theme.title : Qt.alpha(Theme.raised, 0.5)) : "transparent")
-            border.width: Theme.web && row.current ? 2 : row.styled("border-width", row.styled("border-color", "") !== "" ? 1 : 0)
+            border.width: Theme.web && row.current ? 2 : row.styled("border-width", row.current && !row.lined || row.styled("border-color", "") !== "" ? 1 : 0)
             border.color: row.styled("border-color", Theme.line)
             Rectangle { visible: row.lined && row.current; width: 3; height: parent.height - 10; y: 5; radius: 1.5; color: Theme.accent }
         }

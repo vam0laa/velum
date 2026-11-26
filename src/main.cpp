@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     app.setDesktopFileName(QStringLiteral("velum"));
     app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/Velum/data/velum.svg")));
     // the interface's own lettering for anything that does not choose a font
-    const int font = QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/Velum/data/fonts/GoogleSansFlex.ttf"));
+    const int font = QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/Velum/data/fonts/Inter.ttf"));
     if (font >= 0)
         app.setFont(QFont(QFontDatabase::applicationFontFamilies(font).value(0)));
 

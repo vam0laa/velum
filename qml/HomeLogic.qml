@@ -24,18 +24,13 @@ QtObject {
 
     function readHome() {
         try {
-            if (app.saved.homeWidgets !== "") {
+            // the redesigned home page starts clean: earlier widgets can be added again,
+            // and what was written in them is kept
+            if (app.saved.homeDesign >= 2 && app.saved.homeWidgets !== "")
                 app.keepWidgets(JSON.parse(app.saved.homeWidgets))
-            } else {
-                // the three switches of earlier versions
-                const was = (key, usual) => String(app.saved.value(key, usual)) === "true"
-                const list = was("showClock", true) ? ["clock", "date", "calendar"] : []
-                if (was("startNotice", true))
-                    list.push("shield")
-                if (was("startNote", false))
-                    list.push("note")
-                app.keepWidgets(list)
-            }
+            else
+                app.keepWidgets([])
+            app.saved.homeDesign = 2
         } catch (e) {
         }
         app.homeWords = app.readStrings(app.saved.homeWords)

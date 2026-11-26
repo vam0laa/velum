@@ -105,7 +105,7 @@ QtObject {
         const c = look.colors;
         const sheet = new CSSStyleSheet();
         sheet.replaceSync(
-            '.page{min-height:100%;background:' + c.back + ';color:' + c.text + ';font:var(--size)/1.7 "Google Sans Flex","Noto Sans",system-ui,sans-serif;padding:48px 24px 120px;box-sizing:border-box}' +
+            '.page{min-height:100%;background:' + c.back + ';color:' + c.text + ';font:var(--size)/1.7 "Inter","Noto Sans",system-ui,sans-serif;padding:48px 24px 120px;box-sizing:border-box}' +
             '.text{max-width:34em;margin:0 auto;overflow-wrap:break-word}' +
             'header{border-bottom:2px solid ' + c.line + ';margin-bottom:1.6em;padding-bottom:1em}' +
             '.title{font-size:2em;line-height:1.15;letter-spacing:-.02em;margin:0 0 .4em}' +

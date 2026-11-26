@@ -7,6 +7,7 @@ Item {
     property string title
     property string file: ""            // the saved icon, "" when there is none
     property bool lifted: true
+    property bool plain: false          // no square of its own: it lies on the owner's
     width: 52
     height: 52
     Rectangle { x: 4; y: 4; width: parent.width; height: parent.height; color: Theme.bar; visible: Theme.web && mark.lifted }
@@ -14,6 +15,7 @@ Item {
     property color tone: Theme.accent      // behind the letter in the everyday look
     Rectangle {
         anchors.fill: parent
+        visible: !mark.plain
         radius: Theme.round(mark.width * 0.24)
         color: image.status === Image.Ready ? (Theme.night ? "#c3cdee" : "#ffffff") : Theme.web ? Theme.raised : mark.tone
         border.width: Theme.web ? 2 : 0
@@ -24,12 +26,12 @@ Item {
         visible: image.status !== Image.Ready
         text: mark.title.charAt(0).toLocaleUpperCase()
         textFormat: Text.PlainText
-        color: !Theme.web ? Theme.accentInk : Theme.night ? Theme.text : Theme.accent
-        font.family: Theme.ui; font.pixelSize: mark.width * (Theme.web ? 0.66 : 0.46)
+        color: mark.plain ? mark.tone : !Theme.web ? Theme.accentInk : Theme.night ? Theme.text : Theme.accent
+        font.family: Theme.ui; font.pixelSize: mark.width * (Theme.web ? 0.66 : mark.plain ? 0.78 : 0.46)
     }
     Image {
         id: image
-        anchors { fill: parent; margins: 10 }
+        anchors { fill: parent; margins: mark.plain ? 0 : 10 }
         source: mark.file
         cache: false
         fillMode: Image.PreserveAspectFit

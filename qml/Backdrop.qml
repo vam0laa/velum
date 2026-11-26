@@ -48,8 +48,29 @@ Item {
         anchors.fill: parent
         clip: true
         visible: backdrop.mode === "glow"
-        Glow { tone: Theme.accent; size: Math.max(parent.width, 500) * 0.8; x: -size * 0.35; y: -size * 0.45 }
-        Glow { tone: Theme.mauve; size: Math.max(parent.width, 500) * 0.7; x: parent.width - size * 0.6; y: parent.height * 0.25 }
+        // one wide, quiet light behind the middle of the page, with a grain of dots in it
+        Glow { id: light; tone: Theme.accent; size: Math.max(backdrop.width, 500) * 0.75; x: (backdrop.width - size) / 2; y: backdrop.height * 0.3 - size / 2; transform: Scale { yScale: 0.7; origin.y: light.size / 2 } }
+        Canvas {
+            id: grain
+            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top }
+            width: Math.min(parent.width, 960); height: Math.min(parent.height, 720)
+            property color tone: Theme.text
+            onToneChanged: requestPaint()
+            onPaint: {
+                const c = getContext("2d")
+                c.reset()
+                c.fillStyle = tone
+                const cx = width / 2, cy = height * 0.4
+                for (let y = 12; y < height; y += 24)
+                    for (let x = 12; x < width; x += 24) {
+                        const far = Math.hypot((x - cx) / (width * 0.5), (y - cy) / (height * 0.5))
+                        if (far < 1) {
+                            c.globalAlpha = 0.05 * (1 - far)
+                            c.fillRect(x, y, 1.5, 1.5)
+                        }
+                    }
+            }
+        }
     }
 
     Canvas {

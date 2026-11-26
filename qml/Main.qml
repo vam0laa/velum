@@ -20,7 +20,7 @@ ApplicationWindow {
     property string startBackground: "plain"
     property string startPicture: ""
     // the widgets of the home page, in order
-    property var homeWidgets: ["clock", "date", "calendar", "shield"]
+    property var homeWidgets: []
     readonly property bool showClock: homeWidgets.includes("clock")
     readonly property bool showShield: homeWidgets.includes("shield")
     readonly property bool showNote: homeWidgets.includes("note")
@@ -51,6 +51,8 @@ ApplicationWindow {
 
     function setStart(name, value) { return homeLogic.setStart(name, value) }
     property bool showFrequent: false
+    property bool showRecent: true
+    property var recentPages: []
     property string note: ""
     property var frequentPages: []
     property string iconFolder: ""          // "" keeps no site icons
@@ -404,6 +406,8 @@ ApplicationWindow {
         property alias startBack: window.startBackground
         property alias startPicture: window.startPicture
         property alias startVisited: window.showFrequent
+        property alias startRecent: window.showRecent
+        property int homeDesign: 0
         property alias note: window.note
         property string homeWidgets: ""
         property string pastDownloads: "[]"
@@ -1052,7 +1056,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 chrome: !window.pageFullScreen && !window.horizontalTabs
-                title: window.onSettings ? Lang.t("ayarlar", "settings") : window.onStartPage ? Lang.t("başlangıç", "start") : window.view && window.view.title !== "" ? window.view.title : window.currentHost
+                title: !Theme.web && (window.onSettings || window.onStartPage) ? "" : window.onSettings ? Lang.t("ayarlar", "settings") : window.onStartPage ? Lang.t("başlangıç", "start") : window.view && window.view.title !== "" ? window.view.title : window.currentHost
                 stripe: Theme.rainbow[Math.max(0, window.current) % Theme.rainbow.length]
                 minimizable: !window.horizontalTabs
                 maximizable: true
@@ -1308,6 +1312,7 @@ ApplicationWindow {
                             showShield: window.showShield
                             showNote: window.showNote
                             showFrequent: window.showFrequent
+                            showRecent: window.showRecent
                             showBookmarkBar: window.showBookmarkBar
                             onStartChanged: (name, value) => window.setStart(name, value)
                             onResetLook: window.resetLook()
@@ -1329,6 +1334,7 @@ ApplicationWindow {
 
                 StartPage {
                     id: start
+                    branded: window.horizontalTabs
                     x: window.splitShown ? window.view.x : 0
                     width: window.splitShown ? window.view.width : parent.width
                     height: parent.height
@@ -1338,6 +1344,8 @@ ApplicationWindow {
                     total: window.shortcuts.length
                     onManage: window.openBookmarks()
                     frequent: window.showFrequent ? window.frequentPages : []
+                    recent: window.showRecent && !window.isPrivate ? window.recentPages : []
+                    showRecent: window.showRecent
                     blocked: Shield.total
                     note: window.note
                     background: window.startBackground

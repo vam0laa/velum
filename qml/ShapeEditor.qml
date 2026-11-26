@@ -19,7 +19,7 @@ ColumnLayout {
         const here = Qt.fontFamilies()
         return ["Inter", "Roboto", "Noto Sans", "Ubuntu", "Cantarell", "Fira Sans", "Segoe UI", "Arial", "Noto Serif", "Fira Code", "Comic Sans MS"].filter(f => here.includes(f))
     }
-    readonly property var bodyFonts: [{ key: "", label: "Google Sans Flex" }].concat(Theme.bundled.filter(f => f.body).map(f => ({ key: f.name, label: f.name })), installed.map(f => ({ key: f, label: f })))
+    readonly property var bodyFonts: [{ key: "", label: "Inter" }].concat(Theme.bundled.filter(f => f.body).map(f => ({ key: f.name, label: f.name })), installed.map(f => ({ key: f, label: f })))
     readonly property var headFonts: [{ key: "", label: Lang.t("Arayüzle aynı", "Same as the rest") }].concat(Theme.bundled.map(f => ({ key: f.name, label: f.name })), installed.map(f => ({ key: f, label: f })))
 
     component Name: Text { Layout.fillWidth: true; color: Theme.text; font.family: Theme.ui; font.pixelSize: 14; elide: Text.ElideRight }

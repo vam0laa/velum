@@ -319,7 +319,7 @@ Popup {
                                         id: font
                                         required property var modelData
                                         readonly property bool chosen: (letters.head ? studio.headFamily : studio.fontFamily) === modelData.name
-                                        readonly property string shown: modelData.name !== "" ? modelData.name : letters.head ? Lang.t("Arayüzle aynı", "Same as the rest") : "Google Sans Flex"
+                                        readonly property string shown: modelData.name !== "" ? modelData.name : letters.head ? Lang.t("Arayüzle aynı", "Same as the rest") : "Inter"
                                         Layout.fillWidth: true
                                         Layout.preferredWidth: 1
                                         implicitHeight: 62

@@ -9,6 +9,9 @@ Rectangle {
     property var shortcuts: []
     property int total: 0               // all bookmarks, also those not shown here
     property var frequent: []           // [{ url, title }] from the history
+    property var recent: []             // [{ url, title, last }], newest first
+    property bool showRecent: true
+    property bool branded: true         // false: the side bar already shows the mark
     property double blocked: 0          // requests the shield has stopped so far
     property string note: ""
     property string background: "glow"
@@ -96,6 +99,14 @@ Rectangle {
     signal noteEdited(string text)
     signal customize()
 
+    // "12 min ago" for a time in seconds
+    function ago(seconds) {
+        const minutes = Math.max(0, Math.floor((now.getTime() / 1000 - seconds) / 60))
+        if (minutes < 1) return Lang.t("şimdi", "now")
+        if (minutes < 60) return Lang.t(minutes + " dk önce", minutes + "m ago")
+        if (minutes < 24 * 60) return Lang.t(Math.floor(minutes / 60) + " sa önce", Math.floor(minutes / 60) + "h ago")
+        return Lang.t(Math.floor(minutes / 1440) + " gün önce", Math.floor(minutes / 1440) + "d ago")
+    }
     function greeting(hour) {
         if (hour < 5) return Lang.t("iyi geceler", "good night")
         if (hour < 12) return Lang.t("günaydın", "good morning")

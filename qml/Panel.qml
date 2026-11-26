@@ -13,6 +13,7 @@ Item {
     property bool chrome: true            // false hides the frame (page full screen, top tabs)
     property bool shadow: true
     default property alias content: body.data
+    property bool brand: false           // Velum's mark at the left of the title strip
     signal minimize()
     signal maximize()
     signal closeRequested()
@@ -42,6 +43,7 @@ Item {
         onFill: panel.fill_()
         onStore: panel.store()
     }
+    Brand { visible: panel.chrome && panel.brand; x: 14; y: bar.y + (bar.height - height) / 2; scale: 0.9; transformOrigin: Item.Left }
     Item {
         id: body
         clip: true
