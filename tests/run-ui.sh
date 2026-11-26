@@ -16,7 +16,7 @@ cp "$here"/../qml/*.qml "$here"/ui/*.qml "$work/ui/"
 cp "$here/test_ui.qml" "$work/" && cp -r "$here/extension" "$work/"
 mkdir -p "$work/data" && cp -r "$here/../data/velum.svg" "$here/../data/fonts" "$here/../data/sky.jpg" "$here/../data/sky-night.jpg" "$here/../data/logos" "$here/../data/scanline.png" "$work/data/"
 {
-    for f in Theme Lang Keymap Access Address DesktopColors Shield History Resources Notifier Importer Passwords WebStore DefaultBrowser Files Updater Gpu Library; do echo "singleton $f $f.qml"; done
+    for f in Theme Lang Keymap Access Address DesktopColors Shield History Resources Notifier Importer Passwords WebStore DefaultBrowser Files Updater Gpu Library Assistant; do echo "singleton $f $f.qml"; done
     for f in "$here"/../qml/*.qml; do n=$(basename "$f" .qml); [ "$n" = Theme ] || [ "$n" = Lang ] || [ "$n" = Keymap ] || [ "$n" = Access ] || echo "$n $n.qml"; done
 } > "$work/ui/qmldir"
 XDG_CONFIG_HOME="$work/config" XDG_DATA_HOME="$work/data" QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \

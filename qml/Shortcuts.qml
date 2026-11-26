@@ -59,4 +59,5 @@ Item {
     Shortcut { sequences: Keymap.sequences("tabSearch"); onActivated: app.openTabSearch() }
     Shortcut { sequences: Keymap.sequences("newWindow"); onActivated: app.openWindow(false) }
     Shortcut { sequences: Keymap.sequences("privateWindow"); onActivated: app.openWindow(true) }
+    Shortcut { sequences: Keymap.sequences("assistant"); onActivated: app.toggleAssistant() }
 }

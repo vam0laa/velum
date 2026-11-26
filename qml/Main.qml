@@ -438,6 +438,7 @@ ApplicationWindow {
     SiteLogic { id: siteLogic; app: window }
     AskLogic { id: askLogic; app: window }
     DemoLogic { id: demoLogic; app: window }
+    AiLogic { id: aiLogic; app: window }
     WindowLogic { id: windowLogic; app: window }
     Component { id: privateProfile; WebEngineProfile { offTheRecord: true; persistentCookiesPolicy: WebEngineProfile.NoPersistentCookies; persistentPermissionsPolicy: WebEngineProfile.StoreInMemory } }
     TabLogic { id: tabLogic; app: window }
@@ -818,6 +819,10 @@ ApplicationWindow {
     }
 
     // sites you let open windows by themselves, until Velum is closed
+    property bool aiOpen: false           // the assistant beside the page
+    function toggleAssistant() { aiLogic.toggle() }
+    function askAssistant(question, withPage) { aiLogic.ask(question, withPage) }
+    function explain(selection) { aiLogic.explain(selection) }
     property var popupSites: []
     property var permissions: []
     function listPermissions() { askLogic.listPermissions() }
@@ -1032,10 +1037,22 @@ ApplicationWindow {
                 onVideo: window.toggleMini()
 
                 PageOverlay { app: window; anchors.fill: pagesArea; z: 2; visible: !window.pageFullScreen }
+                // made when first opened
+                Loader {
+                    id: aiLoader
+                    anchors { top: pagesArea.top; bottom: pagesArea.bottom; right: parent.right }
+                    width: Math.min(360, parent.width * 0.5)
+                    active: window.aiOpen && Assistant.enabled && !window.pageFullScreen
+                    visible: active
+                    z: 3
+                    sourceComponent: Component { AiPanel { app: window } }
+                }
 
                 Item {
                     id: pagesArea
                     anchors.fill: parent
+                    // the page makes room for the assistant
+                    anchors.rightMargin: aiLoader.active ? aiLoader.width : 0
 
                     Repeater {
                         id: views
@@ -1472,6 +1489,7 @@ ApplicationWindow {
         onSavePage: window.savePage()
         onViewSource: window.viewSource()
         onInspect: window.inspect(view)
+        onExplain: selection => window.explain(selection)
         onOpenInWindow: (url, hidden) => window.openWindow(hidden, [url])
     }
 

@@ -19,6 +19,7 @@ AppMenu {
     signal savePage()
     signal viewSource()
     signal inspect()
+    signal explain(string selection)
     signal openInWindow(string url, bool hidden)
 
     // takes what the engine reports about the click
@@ -50,6 +51,7 @@ AppMenu {
         text: Lang.t("Ara: ", "Search for: ") + (menu.selection.length > 28 ? menu.selection.slice(0, 27) + "…" : menu.selection)
         onTriggered: menu.searchFor(menu.selection)
     }
+    AppMenuItem { shown: Assistant.enabled && menu.selection !== "" && !menu.editable; text: Lang.t("Yardımcıya açıklat", "Ask the assistant to explain"); onTriggered: menu.explain(menu.selection) }
     AppMenuItem { shown: menu.plain; text: Lang.t("Geri", "Back"); enabled: menu.view?.canGoBack ?? false; onTriggered: menu.view.goBack() }
     AppMenuItem { shown: menu.plain; text: Lang.t("İleri", "Forward"); enabled: menu.view?.canGoForward ?? false; onTriggered: menu.view.goForward() }
     AppMenuItem { shown: menu.plain; text: Lang.t("Yenile", "Reload"); onTriggered: menu.view.reload() }

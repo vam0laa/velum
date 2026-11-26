@@ -163,7 +163,7 @@ Item {
             const made = count()
             w.openSettings(); t.check("the same tab is used again", w.current === settingsAt && count() === made && w.prefs.section === "privacy")
             for (const s of w.prefs.sections) w.openSettings(s.key)
-            t.check("every category opens", w.prefs.section === "about" && w.prefs.sections.length === 13)
+            t.check("every category opens", w.prefs.section === "about" && w.prefs.sections.length === 14)
             t.check("the command box finds the settings tab", bar.find("ayarlar").some(r => r.kind === "tab"))
             w.view.url = t.page("left"); t.check("going somewhere makes it an ordinary tab", !w.onSettings)
             w.closeTab(w.current)
@@ -425,6 +425,17 @@ Item {
             t.check("everywhere is said plainly", Access.list({ hosts: ["*://*/*"], permissions: ["storage"] }).length === 1 && Access.list({ hosts: ["<all_urls>"], permissions: ["history"] }).length === 2)
             t.check("named sites are named", Access.list({ hosts: ["https://a.example/*", "https://a.example/x"], permissions: [] })[0].indexOf("a.example") > 0)
             t.check("harmless permissions are not listed", Access.list({ hosts: [], permissions: ["storage", "alarms"] }).length === 0)
+            // ---- the assistant ----
+            {
+                Assistant.enabled = false; Assistant.asked = []
+                w.toggleAssistant(); t.check("switched off, it only shows its settings", !w.aiOpen && w.prefs.section === "assistant")
+                w.askAssistant("soru", false); t.check("and answers nothing", Assistant.asked.length === 0)
+                w.closeTab(w.current)
+                Assistant.enabled = true; w.toggleAssistant(); t.check("switched on, it opens beside the page", w.aiOpen)
+                w.askAssistant("merhaba", false); t.check("a question alone sends no page", Assistant.asked.length === 1 && Assistant.asked[0].material === "")
+                w.explain("secili metin"); t.check("explaining sends just the selection", Assistant.asked[1].material === "secili metin")
+                w.aiOpen = false; Assistant.enabled = false
+            }
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")
@@ -756,6 +767,21 @@ Item {
             t.check("then it gets its real name", Files.settled.join() === "release tool.sh.velum-hold")
             w.downloads = []; w.pastDownloads = []
             w.closeTab(w.current)
+            // the assistant reads a real page's words, never what is typed into it
+            w.view.loadHtml('<article><h1>Baslik</h1><p>Gorunen metin.</p><input value="gizli-yazi"><p style="display:none">sakli</p></article>', "https://read.example/")
+            Assistant.enabled = true; Assistant.asked = []
+            aiStep.start()
+        }
+    }
+    Timer {
+        id: aiStep; interval: 1200
+        property bool asked: false
+        onTriggered: {
+            const w = t.w
+            if (!asked) { asked = true; w.askAssistant("ozetle", true); restart(); return }
+            const sent = Assistant.asked[0]?.material ?? ""
+            t.check("a real page hands over its visible words only", sent.indexOf("Gorunen metin.") >= 0 && sent.indexOf("gizli-yazi") < 0 && sent.indexOf("sakli") < 0)
+            Assistant.enabled = false
             // more windows, with the real engine
             const before = History.pages.length
             t.pagesBefore = before
