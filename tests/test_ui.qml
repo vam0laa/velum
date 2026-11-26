@@ -434,6 +434,23 @@ Item {
         }
     }
     Timer {
+        id: statusStep; interval: 2500
+        onTriggered: {
+            const w = t.w
+            t.check("an error answer with its own page is shown, not covered", w.view.failure === null && w.view.title === "Check")
+            w.view.url = "http://127.0.0.1:8766/empty"
+            emptyStep.start()
+        }
+    }
+    Timer {
+        id: emptyStep; interval: 2500
+        onTriggered: {
+            t.check("an empty error answer is explained", t.w.view.failure !== null && t.w.view.failure.text.indexOf("404") >= 0)
+            console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
+            Qt.exit(t.failed)
+        }
+    }
+    Timer {
         id: installedStep; interval: 2500
         onTriggered: {
             const w = t.w
@@ -466,8 +483,9 @@ Item {
         id: removedStep; interval: 2000
         onTriggered: {
             t.check("and removed", t.w.extensions.length === 0)
-            console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
-            Qt.exit(t.failed)
+            t.w.openTab("")
+            t.w.view.url = "http://127.0.0.1:8766/page"
+            statusStep.start()
         }
     }
     Timer {

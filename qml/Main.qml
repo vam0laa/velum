@@ -1019,6 +1019,17 @@ ApplicationWindow {
         }
     }
 
+    // A site may answer with an error and still send a page: a check that you are a
+    // person, "not found" in its own words. That page is shown; only when there is
+    // nothing at all does Velum explain.
+    function explainIfBlank(page, url, status) {
+        page.runJavaScript("document.body === null || (document.body.innerText.trim() === '' && document.body.querySelector('img,iframe,canvas,video,svg,form') === null)",
+            WebEngineScript.ApplicationWorld, blank => {
+                if (blank !== false && String(page.url) === url)
+                    page.failure = { url: url, text: Lang.t("Sunucu boş bir hata yanıtı verdi (HTTP " + status + ").", "The server answered with an empty error (HTTP " + status + ")."), certificate: false }
+            })
+    }
+
     function say(text) {
         notice = text
         noticeTimer.restart()
@@ -1482,8 +1493,12 @@ ApplicationWindow {
                                     web.runJavaScript(reader.probe, WebEngineScript.ApplicationWorld, found => web.readable = found === true)
                                 }
                                 // -3 means "stopped": by you, or because another page was asked for
-                                if (info.status === WebEngineView.LoadFailedStatus && info.errorCode !== -3 && !failure)
-                                    failure = { url: String(info.url), text: info.errorString, certificate: false }
+                                if (info.status === WebEngineView.LoadFailedStatus && info.errorCode !== -3 && !failure) {
+                                    if (info.errorDomain === WebEngineLoadingInfo.HttpStatusCodeDomain)
+                                        window.explainIfBlank(web, String(info.url), info.errorCode)
+                                    else
+                                        failure = { url: String(info.url), text: info.errorString, certificate: false }
+                                }
                             }
                             onUrlChanged: {
                                 window.closeReader(web)      // sites that change page without loading

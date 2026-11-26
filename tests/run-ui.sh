@@ -3,7 +3,9 @@
 set -e
 here=$(cd "$(dirname "$0")" && pwd)
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+python3 -I "$here/status_server.py" &
+server=$!
+trap 'kill $server 2>/dev/null; rm -rf "$work"' EXIT
 mkdir -p "$work/ui"
 cp "$here"/../qml/*.qml "$here"/ui/*.qml "$work/ui/"
 cp "$here/test_ui.qml" "$work/" && cp -r "$here/extension" "$work/"
