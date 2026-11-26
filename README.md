@@ -32,6 +32,7 @@ Install for your user: `cmake --install build --prefix ~/.local`
 | Ctrl+J | downloads |
 | Shift+Esc | resources: memory and processor use per tab |
 | Ctrl+F | find in page (Enter, Shift+Enter, Esc) |
+| Ctrl+, | settings |
 | Ctrl+Tab, Ctrl+Shift+Tab | next / previous tab |
 | Ctrl+L | edit the address |
 | Ctrl+R, F5 | reload |
@@ -66,6 +67,10 @@ Open tabs come back at the next start and load when first looked at (a command t
 ## Sleeping tabs
 
 A tab you have not looked at is frozen after 2 minutes and discarded after 10, when the engine says that is safe ("relaxed" in the resource panel makes it 5 and 20, "off" turns it off). Pinned tabs and tabs playing sound stay awake. A discarded tab loads again when you open it, so text typed into a form on it may be lost; automatic sleeping can be switched off in the resource panel.
+
+## Settings
+
+Ctrl+, opens the settings: language (system, Turkish, English), search engine (DuckDuckGo, Brave Search, Startpage, Google), downloads folder, tab restoring and sleeping, and the privacy switches.
 
 ## Look
 

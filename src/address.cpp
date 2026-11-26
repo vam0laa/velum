@@ -8,10 +8,11 @@ namespace address {
 
 namespace {
 
-// DuckDuckGo is the default search because it does not build a profile of the user.
+int chosen = 0;
+
 QUrl search(const QString &text)
 {
-    return QUrl(QStringLiteral("https://duckduckgo.com/?q=")
+    return QUrl(QString::fromLatin1(engines().at(chosen).query)
                     + QString::fromLatin1(QUrl::toPercentEncoding(text)),
                 QUrl::StrictMode);
 }
@@ -27,6 +28,32 @@ bool isLocal(const QString &host)
     return ip.isLoopback() || ip.isPrivateUse() || ip.isLinkLocal();
 }
 
+}
+
+const QList<Engine> &engines()
+{
+    // DuckDuckGo is the default because it does not build a profile of the user.
+    static const QList<Engine> all = {
+        {"duckduckgo", "DuckDuckGo", "https://duckduckgo.com/?q="},
+        {"brave", "Brave Search", "https://search.brave.com/search?q="},
+        {"startpage", "Startpage", "https://www.startpage.com/sp/search?query="},
+        {"google", "Google", "https://www.google.com/search?q="},
+    };
+    return all;
+}
+
+void setEngine(const QString &key)
+{
+    chosen = 0;
+    for (int i = 0; i < engines().size(); ++i) {
+        if (key == QLatin1String(engines().at(i).key))
+            chosen = i;
+    }
+}
+
+Engine engine()
+{
+    return engines().at(chosen);
 }
 
 QUrl resolve(const QString &typed)

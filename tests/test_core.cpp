@@ -49,6 +49,17 @@ private slots:
         QCOMPARE(address::resolve(typed).toString(QUrl::FullyEncoded), expected);
     }
 
+    void searchEngines()
+    {
+        address::setEngine("brave");
+        QCOMPARE(address::resolve("a b").toString(QUrl::FullyEncoded), "https://search.brave.com/search?q=a%20b");
+        QVERIFY(address::isSearch("a b"));
+        address::setEngine("nonsense");
+        QCOMPARE(address::engine().key, "duckduckgo");
+        for (const auto &e : address::engines())
+            QVERIFY2(QByteArray(e.query).startsWith("https://"), e.key);
+    }
+
     void searching()
     {
         QVERIFY(address::isSearch("arch wiki"));

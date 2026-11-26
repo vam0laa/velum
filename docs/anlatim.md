@@ -246,6 +246,16 @@ Varsayılan "Erken" kipte süreler 2 ve 10 dakika. Karar tek, küçük bir fonks
 
 **Sertifika hatası** her zaman reddedilir. "Yine de devam et" düğmesi bilerek yok.
 
+## 7l. Ayarlar ve dil
+
+```qml
+function t(tr, en) { return turkish ? tr : en }
+text: Lang.t("Yeni sekme", "New tab")
+```
+`turkish` bir özellik; onu okuyan her metin, dil değişince kendiliğinden yeniden hesaplanır. Yeniden başlatma gerekmez.
+
+Arama motoru listesi C++ tarafında (`address::engines`), çünkü "bu yazı arama mı" kararını orası veriyor. Ayarlar sayfası yalnızca anahtarı değiştirir.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

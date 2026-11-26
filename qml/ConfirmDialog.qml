@@ -24,7 +24,7 @@ Popup {
         RowLayout {
             Layout.alignment: Qt.AlignRight
             spacing: 8
-            TextButton { text: "Vazgeç"; onClicked: dialog.close() }
+            TextButton { text: Lang.t("Vazgeç", "Cancel"); onClicked: dialog.close() }
             TextButton { text: dialog.action; strong: true; onClicked: { dialog.close(); dialog.confirmed() } }
         }
     }

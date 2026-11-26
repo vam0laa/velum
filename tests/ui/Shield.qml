@@ -8,7 +8,8 @@ QtObject {
     property bool forgetOnExit: false
     readonly property bool forgettingThisRun: false
     function clearData(p) {}
-    property string status: ""
+    property string statusCode: "none"
+    function statusText(tr, r, c) { return "" }
     property int revision: 0
     function attach(p) {}
     function blockedCount(h) { return 0 }

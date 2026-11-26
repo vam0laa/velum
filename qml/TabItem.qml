@@ -12,7 +12,7 @@ ItemDelegate {
     required property int asleep       // 0 awake, 1 frozen, 2 discarded
     property bool current: false
     property bool compact: false
-    readonly property string label: title === "" ? "Yeni sekme" : title
+    readonly property string label: title === "" ? Lang.t("Yeni sekme", "New tab") : title
     signal picked(int index)
     signal closed(int index)
     signal menuRequested(int index)
@@ -111,7 +111,7 @@ ItemDelegate {
             implicitHeight: 24
             iconSize: 14
             symbol: "close"
-            hint: "Sekmeyi kapat (Ctrl+W)"
+            hint: Lang.t("Sekmeyi kapat (Ctrl+W)", "Close the tab (Ctrl+W)")
             visible: !row.compact && !row.pinned && (row.hovered || row.current)
             onClicked: row.closed(row.index)
         }

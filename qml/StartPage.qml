@@ -15,10 +15,10 @@ Rectangle {
     signal addShortcut(string typed)
 
     function greeting(hour) {
-        if (hour < 5) return "İyi geceler"
-        if (hour < 12) return "Günaydın"
-        if (hour < 18) return "İyi günler"
-        return "İyi akşamlar"
+        if (hour < 5) return Lang.t("İyi geceler", "Good night")
+        if (hour < 12) return Lang.t("Günaydın", "Good morning")
+        if (hour < 18) return Lang.t("İyi günler", "Good afternoon")
+        return Lang.t("İyi akşamlar", "Good evening")
     }
 
     color: Theme.surface
@@ -48,7 +48,7 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: -10
-            text: page.greeting(page.now.getHours()) + " · " + page.now.toLocaleDateString(Qt.locale("tr_TR"), "d MMMM dddd")
+            text: page.greeting(page.now.getHours()) + " · " + page.now.toLocaleDateString(Qt.locale(Lang.turkish ? "tr_TR" : "en_US"), Lang.t("d MMMM dddd", "dddd, MMMM d"))
             color: Theme.dim
             font.pixelSize: 14
         }
@@ -108,7 +108,7 @@ Rectangle {
                             anchors { top: parent.top; right: parent.right }
                             implicitWidth: 22; implicitHeight: 22; iconSize: 12
                             symbol: "close"
-                            hint: "Yer imini kaldır"
+                            hint: Lang.t("Yer imini kaldır", "Remove the bookmark")
                             visible: tile.hovered || hovered
                             onClicked: page.removeShortcut(tile.index)
                         }
@@ -122,7 +122,7 @@ Rectangle {
                 hoverEnabled: true
                 visible: page.shortcuts.length < 10
                 onClicked: { adding.visible = true; address.forceActiveFocus() }
-                Accessible.name: "Yer imi ekle"
+                Accessible.name: Lang.t("Yer imi ekle", "Add a bookmark")
                 background: Rectangle { radius: 14; color: plus.hovered ? Theme.raised : "transparent" }
                 contentItem: Item {
                     Rectangle {
@@ -131,7 +131,7 @@ Rectangle {
                         color: "transparent"; border.color: Theme.line
                         Icon { anchors.centerIn: parent; name: "plus"; color: Theme.dim }
                     }
-                    Text { anchors { bottom: parent.bottom; bottomMargin: 10; horizontalCenter: parent.horizontalCenter } text: "Ekle"; color: Theme.dim; font.pixelSize: 11 }
+                    Text { anchors { bottom: parent.bottom; bottomMargin: 10; horizontalCenter: parent.horizontalCenter } text: Lang.t("Ekle", "Add"); color: Theme.dim; font.pixelSize: 11 }
                 }
             }
         }
@@ -140,7 +140,7 @@ Rectangle {
             visible: false
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: 320
-            placeholderText: "Yer imi adresi, örn. vamola.dev (Enter)"
+            placeholderText: Lang.t("Yer imi adresi, örn. vamola.dev (Enter)", "Bookmark address, e.g. vamola.dev (Enter)")
             onAccepted: { page.addShortcut(text); text = ""; visible = false }
             Keys.onEscapePressed: { text = ""; visible = false }
             // the base field would navigate; here Enter only adds
@@ -149,7 +149,7 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             visible: !page.hasWidevine
-            text: "Widevine bulunamadı: Netflix gibi korumalı yayınlar açılmaz."
+            text: Lang.t("Widevine bulunamadı: Netflix gibi korumalı yayınlar açılmaz.", "Widevine not found: protected video such as Netflix will not play.")
             color: Theme.dim
             font.pixelSize: 12
         }

@@ -86,10 +86,27 @@ QString Shield::folder() const
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/filters");
 }
 
-void Shield::setStatus(const QString &text)
+void Shield::setStatus(const QString &code, int count)
 {
-    m_status = text;
+    m_status = code;
+    m_statusCount = count;
     emit changed();
+}
+
+QString Shield::statusText(bool turkish, int, const QString &) const
+{
+    const auto t = [turkish](const char *tr, const char *en) { return QString::fromUtf8(turkish ? tr : en); };
+    if (m_status == QLatin1String("ready"))
+        return t("Koruma açık · %1 liste", "Protection on · %1 lists").arg(m_statusCount);
+    if (m_status == QLatin1String("loading"))
+        return t("Listeler yükleniyor…", "Loading lists…");
+    if (m_status == QLatin1String("downloading"))
+        return t("Listeler indiriliyor…", "Downloading lists…");
+    if (m_status == QLatin1String("failed"))
+        return t("Listeler alınamadı", "The lists could not be loaded");
+    if (m_status == QLatin1String("cleared"))
+        return t("Çerezler ve önbellek silindi", "Cookies and cache deleted");
+    return t("Filtre listeleri henüz yok", "No filter lists yet");
 }
 
 // Reads the lists on disk and builds the engine on a worker thread, so the window never stalls.
@@ -109,11 +126,11 @@ void Shield::load()
             found.append({file.readAll(), source.trusted});
     }
     if (found.isEmpty()) {
-        setStatus(QStringLiteral("Filtre listeleri henüz yok"));
+        setStatus(QStringLiteral("none"));
         return;
     }
     m_loading = true;
-    setStatus(QStringLiteral("Listeler yükleniyor…"));
+    setStatus(QStringLiteral("loading"));
     QThread *worker = QThread::create([this, found, resources] {
         QElapsedTimer timer;
         timer.start();
@@ -123,8 +140,7 @@ void Shield::load()
             m_loading = false;
             if (built)
                 m_blocker = built;
-            setStatus(built ? QStringLiteral("Koruma açık · %1 liste").arg(count)
-                            : QStringLiteral("Listeler okunamadı"));
+            setStatus(built ? QStringLiteral("ready") : QStringLiteral("failed"), count);
         });
     });
     connect(worker, &QThread::finished, worker, &QObject::deleteLater);
@@ -137,7 +153,7 @@ void Shield::updateLists()
         return;
     QDir().mkpath(folder());
     m_failed = 0;
-    setStatus(QStringLiteral("Listeler indiriliyor…"));
+    setStatus(QStringLiteral("downloading"));
     for (const lists::Source &source : lists::sources()) {
         QNetworkRequest request(source.url);
         request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -158,7 +174,7 @@ void Shield::updateLists()
                 ++m_failed;
             if (--m_pending == 0) {
                 if (m_failed > 0 && !m_blocker)
-                    setStatus(QStringLiteral("%1 liste indirilemedi").arg(m_failed));
+                    setStatus(QStringLiteral("failed"), m_failed);
                 load();
             }
         });
@@ -224,7 +240,7 @@ void Shield::clearData(QObject *profile)
     if (auto *quick = qobject_cast<QQuickWebEngineProfile *>(profile)) {
         quick->cookieStore()->deleteAllCookies();
         quick->clearHttpCache();
-        setStatus(QStringLiteral("Çerezler ve önbellek silindi"));
+        setStatus(QStringLiteral("cleared"));
     }
 }
 

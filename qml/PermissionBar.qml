@@ -27,12 +27,12 @@ Rectangle {
         anchors { fill: parent; margins: 14 }
         spacing: 10
         Text { Layout.fillWidth: true; text: bar.site; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.text; font.pixelSize: 14; font.weight: Font.Bold }
-        Text { Layout.fillWidth: true; text: bar.wish + " istiyor."; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13 }
+        Text { Layout.fillWidth: true; text: bar.wish; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13 }
         RowLayout {
             Layout.alignment: Qt.AlignRight
             spacing: 8
-            TextButton { text: "Reddet"; onClicked: bar.answered(false) }
-            TextButton { text: "İzin ver"; strong: true; enabled: bar.armed; onClicked: bar.answered(true) }
+            TextButton { text: Lang.t("Reddet", "Block"); onClicked: bar.answered(false) }
+            TextButton { text: Lang.t("İzin ver", "Allow"); strong: true; enabled: bar.armed; onClicked: bar.answered(true) }
         }
     }
 }

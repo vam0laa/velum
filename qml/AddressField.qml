@@ -9,7 +9,7 @@ TextField {
 
     function showAddress() { text = activeFocus ? (pageUrl.toString() === "about:blank" ? "" : pageUrl.toString()) : Address.display(pageUrl) }
 
-    placeholderText: "Ara ya da adres yaz"
+    placeholderText: Lang.t("Ara ya da adres yaz", "Search or type an address")
     placeholderTextColor: Theme.dim
     color: Theme.text
     selectionColor: Theme.accent

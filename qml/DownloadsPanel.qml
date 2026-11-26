@@ -17,16 +17,16 @@ Popup {
     background: Rectangle { radius: 14; color: Theme.surface; border.color: Theme.line }
 
     function size(bytes) {
-        if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1).replace(".", ",") + " GB"
-        if (bytes >= 1048576) return (bytes / 1048576).toFixed(1).replace(".", ",") + " MB"
+        if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1).replace(".", Lang.t(",", ".")) + " GB"
+        if (bytes >= 1048576) return (bytes / 1048576).toFixed(1).replace(".", Lang.t(",", ".")) + " MB"
         return Math.max(0, Math.round(bytes / 1024)) + " KB"
     }
 
     function describe(state, received, total) {
         switch (state) {
-        case WebEngineDownloadRequest.DownloadCompleted: return "Bitti · " + size(received)
-        case WebEngineDownloadRequest.DownloadCancelled: return "İptal edildi"
-        case WebEngineDownloadRequest.DownloadInterrupted: return "Yarıda kaldı"
+        case WebEngineDownloadRequest.DownloadCompleted: return Lang.t("Bitti · ", "Done · ") + size(received)
+        case WebEngineDownloadRequest.DownloadCancelled: return Lang.t("İptal edildi", "Cancelled")
+        case WebEngineDownloadRequest.DownloadInterrupted: return Lang.t("Yarıda kaldı", "Interrupted")
         }
         return total > 0 ? size(received) + " / " + size(total) : size(received)
     }
@@ -35,10 +35,10 @@ Popup {
         anchors { left: parent.left; right: parent.right }
         spacing: 8
         RowLayout {
-            Text { Layout.fillWidth: true; text: "İndirmeler"; color: Theme.text; font.pixelSize: 14; font.weight: Font.Bold }
-            TextButton { text: "Bitenleri temizle"; visible: panel.downloads.length > 0; onClicked: panel.clearFinished() }
+            Text { Layout.fillWidth: true; text: Lang.t("İndirmeler", "Downloads"); color: Theme.text; font.pixelSize: 14; font.weight: Font.Bold }
+            TextButton { text: Lang.t("Bitenleri temizle", "Clear finished"); visible: panel.downloads.length > 0; onClicked: panel.clearFinished() }
         }
-        Text { visible: panel.downloads.length === 0; text: "Henüz bir şey indirmedin."; color: Theme.dim; font.pixelSize: 12 }
+        Text { visible: panel.downloads.length === 0; text: Lang.t("Henüz bir şey indirmedin.", "Nothing downloaded yet."); color: Theme.dim; font.pixelSize: 12 }
         ListView {
             Layout.fillWidth: true
             implicitHeight: Math.min(contentHeight, 320)
@@ -58,8 +58,8 @@ Popup {
                     spacing: 2
                     RowLayout {
                         Text { Layout.fillWidth: true; text: row.modelData.downloadFileName; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.text; font.pixelSize: 12 }
-                        IconButton { implicitWidth: 26; implicitHeight: 26; iconSize: 14; symbol: "folder"; hint: "Klasörde göster"; onClicked: panel.showFolder(row.modelData.downloadDirectory) }
-                        IconButton { implicitWidth: 26; implicitHeight: 26; iconSize: 13; symbol: "close"; hint: "İptal"; visible: row.running; onClicked: row.modelData.cancel() }
+                        IconButton { implicitWidth: 26; implicitHeight: 26; iconSize: 14; symbol: "folder"; hint: Lang.t("Klasörde göster", "Show in folder"); onClicked: panel.showFolder(row.modelData.downloadDirectory) }
+                        IconButton { implicitWidth: 26; implicitHeight: 26; iconSize: 13; symbol: "close"; hint: Lang.t("İptal", "Cancel"); visible: row.running; onClicked: row.modelData.cancel() }
                     }
                     Text { text: panel.describe(row.modelData.state, row.modelData.receivedBytes, row.modelData.totalBytes); color: Theme.dim; font.pixelSize: 11 }
                     Rectangle {

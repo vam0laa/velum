@@ -17,35 +17,6 @@ Popup {
 
     readonly property bool siteAllowed: Shield.allowed(host, Shield.revision)
 
-    component Choice: AbstractButton {
-        id: choice
-        property bool on
-        property string label
-        property string note
-        Layout.fillWidth: true
-        implicitHeight: 40
-        focusPolicy: Qt.NoFocus
-        contentItem: RowLayout {
-            spacing: 10
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 1
-                Text { text: choice.label; color: choice.enabled ? Theme.text : Theme.dim; font.pixelSize: 13 }
-                Text { text: choice.note; visible: text !== ""; color: Theme.dim; font.pixelSize: 11; Layout.fillWidth: true; elide: Text.ElideRight }
-            }
-            Rectangle {
-                implicitWidth: 34; implicitHeight: 20; radius: 10
-                color: choice.on ? Theme.accent : Theme.raised
-                Rectangle {
-                    width: 14; height: 14; radius: 7; y: 3
-                    x: choice.on ? 17 : 3
-                    color: choice.on ? Theme.onAccent : Theme.dim
-                    Behavior on x { NumberAnimation { duration: Theme.quick } }
-                }
-            }
-        }
-    }
-
     ColumnLayout {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -59,50 +30,50 @@ Popup {
         Text {
             Layout.fillWidth: true
             Layout.topMargin: -8
-            text: panel.host === "" ? "istek engellendi" : "istek engellendi · " + panel.host
+            text: Lang.t("istek engellendi", "requests blocked") + (panel.host === "" ? "" : " · " + panel.host)
             textFormat: Text.PlainText
             elide: Text.ElideRight
             color: Theme.dim
             font.pixelSize: 12
         }
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.line }
-        Choice {
-            label: "Bu sitede engelle"
-            note: "Bir site bozulursa kapat"
+        Toggle {
+            label: Lang.t("Bu sitede engelle", "Block on this site")
+            note: Lang.t("Bir site bozulursa kapat", "Turn off if a site breaks")
             visible: panel.host !== ""
             enabled: Shield.enabled
             on: Shield.enabled && !panel.siteAllowed
             onClicked: { Shield.setAllowed(panel.host, !panel.siteAllowed); panel.reload() }
         }
-        Choice {
-            label: "Reklam ve izleyici engelleme"
-            note: "Bütün sitelerde"
+        Toggle {
+            label: Lang.t("Reklam ve izleyici engelleme", "Block ads and trackers")
+            note: Lang.t("Bütün sitelerde", "On every site")
             on: Shield.enabled
             onClicked: { Shield.enabled = !Shield.enabled; panel.reload() }
         }
-        Choice {
-            label: "Önce HTTPS"
-            note: "http adreslerini şifreli aç"
+        Toggle {
+            label: Lang.t("Önce HTTPS", "HTTPS first")
+            note: Lang.t("http adreslerini şifreli aç", "Open http addresses encrypted")
             on: Shield.httpsFirst
             onClicked: { Shield.httpsFirst = !Shield.httpsFirst; panel.reload() }
         }
-        Choice {
-            label: "Üçüncü taraf çerezleri engelle"
-            note: "Siteler arası takibi zorlaştırır"
+        Toggle {
+            label: Lang.t("Üçüncü taraf çerezleri engelle", "Block third party cookies")
+            note: Lang.t("Siteler arası takibi zorlaştırır", "Makes cross-site tracking harder")
             on: Shield.blockThirdPartyCookies
             onClicked: { Shield.blockThirdPartyCookies = !Shield.blockThirdPartyCookies; panel.reload() }
         }
-        Choice {
-            label: "Çıkışta çerezleri unut"
-            note: "Sonraki açılıştan itibaren"
+        Toggle {
+            label: Lang.t("Çıkışta çerezleri unut", "Forget cookies on exit")
+            note: Lang.t("Sonraki açılıştan itibaren", "From the next start")
             on: Shield.forgetOnExit
             onClicked: Shield.forgetOnExit = !Shield.forgetOnExit
         }
-        TextButton { Layout.fillWidth: true; text: "Çerezleri ve önbelleği sil…"; onClicked: { panel.close(); panel.clearRequested() } }
+        TextButton { Layout.fillWidth: true; text: Lang.t("Çerezleri ve önbelleği sil…", "Delete cookies and cache…"); onClicked: { panel.close(); panel.clearRequested() } }
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.line }
         RowLayout {
-            Text { Layout.fillWidth: true; text: Shield.status; color: Theme.dim; font.pixelSize: 11; elide: Text.ElideRight }
-            IconButton { symbol: "reload"; iconSize: 14; implicitWidth: 28; implicitHeight: 28; hint: "Listeleri güncelle"; onClicked: Shield.updateLists() }
+            Text { Layout.fillWidth: true; text: Shield.statusText(Lang.turkish, Shield.revision, Shield.statusCode); color: Theme.dim; font.pixelSize: 11; elide: Text.ElideRight }
+            IconButton { symbol: "reload"; iconSize: 14; implicitWidth: 28; implicitHeight: 28; hint: Lang.t("Listeleri güncelle", "Update lists"); onClicked: Shield.updateLists() }
         }
     }
 }

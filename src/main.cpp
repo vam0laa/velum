@@ -4,6 +4,7 @@
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QtWebEngineQuick>
@@ -50,6 +51,7 @@ int main(int argc, char *argv[])
     args.addOption(demo);
     args.process(app);
 
+    address::setEngine(QSettings().value(QStringLiteral("search/engine")).toString());
     QStringList start;
     for (const QString &typed : args.positionalArguments())
         start << address::resolve(typed).toString();

@@ -51,16 +51,16 @@ Item {
             const target = Address.resolve(text)
             const searching = Address.isSearch(text)
             out.push({ kind: "go", icon: searching ? "search" : "globe", title: searching ? text.trim() : Address.display(target),
-                       note: searching ? "DuckDuckGo'da ara" : "Aç", url: target })
+                       note: searching ? Lang.t(Address.engineName + " ile ara", "Search with " + Address.engineName) : Lang.t("Aç", "Open"), url: target })
         }
         for (let i = 0; i < (tabModel ? tabModel.count : 0); i++) {
             const t = tabModel.get(i)
             if (t.title !== "" && (q === "" || has(t.title) || has(t.pageUrl)))
-                out.push({ kind: "tab", icon: "panel", title: t.title, note: "Sekmeye geç", index: i })
+                out.push({ kind: "tab", icon: "panel", title: t.title, note: Lang.t("Sekmeye geç", "Switch to tab"), index: i })
         }
         for (const s of shortcuts)
             if (q !== "" && (has(s.title) || has(s.url)))
-                out.push({ kind: "shortcut", icon: "star", title: s.title, note: "Yer imi", url: s.url })
+                out.push({ kind: "shortcut", icon: "star", title: s.title, note: Lang.t("Yer imi", "Bookmark"), url: s.url })
         for (const c of commands)
             if (q === "" || has(c.name))
                 out.push({ kind: "command", icon: "command", title: c.name, note: c.keys, run: c.run })
@@ -138,7 +138,7 @@ Item {
                     id: input
                     Layout.fillWidth: true
                     implicitHeight: 44
-                    placeholderText: bar.historyOnly ? "Geçmişte ara (Shift+Delete: sil)" : bar.forNewTab ? "Yeni sekmede aç: adres, arama ya da komut" : "Adres, arama ya da komut"
+                    placeholderText: bar.historyOnly ? Lang.t("Geçmişte ara (Shift+Delete: sil)", "Search history (Shift+Delete: remove)") : bar.forNewTab ? Lang.t("Yeni sekmede aç: adres, arama ya da komut", "Open in a new tab: address, search or command") : Lang.t("Adres, arama ya da komut", "Address, search or command")
                     placeholderTextColor: Theme.dim
                     color: Theme.text
                     selectionColor: Theme.accent

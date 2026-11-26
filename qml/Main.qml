@@ -23,6 +23,7 @@ ApplicationWindow {
     readonly property int freezeAfter: (sleepMode === 2 ? 5 : 2) * 60 * 1000      // milliseconds unseen
     readonly property int discardAfter: (sleepMode === 2 ? 20 : 10) * 60 * 1000
     property bool restoreSession: true
+    property string downloadFolder: ""   // "" = the system downloads folder
     property var downloads: []        // download requests of this run, newest first
     property var asks: []             // unanswered permission requests: [{ page, permission, site, wish }]
     // the question for the page being looked at, if it has one
@@ -159,6 +160,7 @@ ApplicationWindow {
         property string shortcuts: "[]"
         property string session: "{}"
         property alias restoreSession: window.restoreSession
+        property alias downloadFolder: window.downloadFolder
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
         property alias width: window.width
@@ -294,6 +296,8 @@ ApplicationWindow {
     }
 
     function startDownload(request) {
+        if (downloadFolder !== "")
+            request.downloadDirectory = downloadFolder
         request.accept()            // saved into your downloads folder, never opened
         downloads = [request].concat(downloads)
         side.openDownloads()
@@ -367,7 +371,7 @@ ApplicationWindow {
                 users[p.renderProcessPid] = (users[p.renderProcessPid] ?? 0) + 1
         resources.rows = pages.map((p, i) => {
             const use = p ? found[String(p.renderProcessPid)] : undefined
-            return { index: i, title: tabs.get(i).title || "Yeni sekme", memory: use?.memory ?? 0, cpu: use?.cpu ?? 0,
+            return { index: i, title: tabs.get(i).title || Lang.t("Yeni sekme", "New tab"), memory: use?.memory ?? 0, cpu: use?.cpu ?? 0,
                      state: tabs.get(i).asleep, shared: p ? users[p.renderProcessPid] > 1 : false, current: p === view }
         }).sort((a, b) => b.memory - a.memory)
         resources.total = found.total
@@ -379,6 +383,8 @@ ApplicationWindow {
     }
     // the box belongs to the page it was opened on
     onViewChanged: findBar.close()
+
+    function openSettings() { settings.open() }
 
     function showCommandHistory() {
         commandBar.show(false, "", true)
@@ -404,12 +410,12 @@ ApplicationWindow {
     // what a permission means, in words; empty for the ones Velum always refuses
     function wishFor(type) {
         switch (type) {
-        case WebEnginePermission.PermissionType.MediaAudioCapture: return "Mikrofonunu kullanmak"
-        case WebEnginePermission.PermissionType.MediaVideoCapture: return "Kameranı kullanmak"
-        case WebEnginePermission.PermissionType.MediaAudioVideoCapture: return "Kameranı ve mikrofonunu kullanmak"
-        case WebEnginePermission.PermissionType.Geolocation: return "Konumunu öğrenmek"
-        case WebEnginePermission.PermissionType.ClipboardReadWrite: return "Panonu okumak ve değiştirmek"
-        case WebEnginePermission.PermissionType.MouseLock: return "Fare imlecini kilitlemek"
+        case WebEnginePermission.PermissionType.MediaAudioCapture: return Lang.t("Mikrofonunu kullanmak istiyor.", "wants to use your microphone.")
+        case WebEnginePermission.PermissionType.MediaVideoCapture: return Lang.t("Kameranı kullanmak istiyor.", "wants to use your camera.")
+        case WebEnginePermission.PermissionType.MediaAudioVideoCapture: return Lang.t("Kameranı ve mikrofonunu kullanmak istiyor.", "wants to use your camera and microphone.")
+        case WebEnginePermission.PermissionType.Geolocation: return Lang.t("Konumunu öğrenmek istiyor.", "wants to know your location.")
+        case WebEnginePermission.PermissionType.ClipboardReadWrite: return Lang.t("Panonu okumak ve değiştirmek istiyor.", "wants to read and change your clipboard.")
+        case WebEnginePermission.PermissionType.MouseLock: return Lang.t("Fare imlecini kilitlemek istiyor.", "wants to lock the mouse pointer.")
         }
         return ""
     }
@@ -431,6 +437,10 @@ ApplicationWindow {
     function demo(action) {
         if (action === "resources")
             resources.open()
+        else if (action.startsWith("settings:")) {
+            settings.section = Number(action.slice(9))
+            settings.open()
+        }
         else if (action === "sleep")
             sleepOthers()
         else if (action.startsWith("find:")) {
@@ -472,6 +482,7 @@ ApplicationWindow {
             host: window.currentHost
             onReloadPage: window.view.reload()
             onClearData: clearDialog.open()
+            onSettings: window.openSettings()
             downloads: window.downloads
             onShowFolder: folder => Qt.openUrlExternally("file://" + folder.split("/").map(encodeURIComponent).join("/"))
             onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
@@ -644,13 +655,13 @@ ApplicationWindow {
                 anchors.fill: parent
                 radius: card.radius
                 visible: !window.onStartPage && window.view !== null && (window.view.crashed || window.view.failure !== null)
-                heading: window.view?.crashed ? "Bu sekme çöktü" : window.view?.failure?.certificate ? "Bu bağlantı güvenli değil" : "Sayfa açılamadı"
+                heading: window.view?.crashed ? Lang.t("Bu sekme çöktü", "This tab crashed") : window.view?.failure?.certificate ? Lang.t("Bu bağlantı güvenli değil", "This connection is not safe") : Lang.t("Sayfa açılamadı", "The page could not be opened")
                 address: window.view ? (window.view.failure?.url ?? String(window.view.url)) : ""
-                detail: window.view?.crashed ? "Sayfayı çizen süreç beklenmedik şekilde kapandı." : window.view?.failure?.text ?? ""
-                advice: window.view?.crashed ? "Yeniden denemek çoğu zaman yeter."
-                      : window.view?.failure?.certificate ? "Sitenin sertifikası doğrulanamadı. Biri araya girmiş olabilir; Velum bu uyarıyı atlamana izin vermez."
-                      : Shield.httpsFirst ? "İnternet bağlantını ve adresi kontrol et. Site yalnızca http destekliyorsa kalkan panelinden \"Önce HTTPS\"i kapatabilirsin."
-                      : "İnternet bağlantını ve adresi kontrol et."
+                detail: window.view?.crashed ? Lang.t("Sayfayı çizen süreç beklenmedik şekilde kapandı.", "The process drawing the page ended unexpectedly.") : window.view?.failure?.text ?? ""
+                advice: window.view?.crashed ? Lang.t("Yeniden denemek çoğu zaman yeter.", "Trying again is usually enough.")
+                      : window.view?.failure?.certificate ? Lang.t("Sitenin sertifikası doğrulanamadı. Biri araya girmiş olabilir; Velum bu uyarıyı atlamana izin vermez.", "The site's certificate could not be verified. Someone may be in between; Velum does not let you skip this.")
+                      : Shield.httpsFirst ? Lang.t("İnternet bağlantını ve adresi kontrol et. Site yalnızca http destekliyorsa kalkan panelinden \"Önce HTTPS\"i kapatabilirsin.", "Check your connection and the address. If the site only supports http, switch \"HTTPS first\" off in the shield panel.")
+                      : Lang.t("İnternet bağlantını ve adresi kontrol et.", "Check your connection and the address.")
                 onRetry: {
                     const page = window.view
                     const target = page.failure?.url ?? String(page.url)
@@ -699,6 +710,17 @@ ApplicationWindow {
         }
     }
 
+    SettingsPage {
+        id: settings
+        sleepMode: window.sleepMode
+        restoreSession: window.restoreSession
+        downloadFolder: window.downloadFolder
+        onSleepModeChosen: mode => window.sleepMode = mode
+        onRestoreSessionChosen: on => window.restoreSession = on
+        onDownloadFolderChosen: folder => window.downloadFolder = folder
+        onClearRequested: clearDialog.open()
+    }
+
     ResourcePanel {
         id: resources
         mode: window.sleepMode
@@ -711,9 +733,9 @@ ApplicationWindow {
 
     ConfirmDialog {
         id: clearDialog
-        heading: "Gezinme verileri silinsin mi?"
-        detail: "Geçmiş, çerezler ve önbellek silinir; bütün sitelerden çıkış yapılır. Yer imlerin kalır. Bu geri alınamaz."
-        action: "Sil"
+        heading: Lang.t("Gezinme verileri silinsin mi?", "Delete browsing data?")
+        detail: Lang.t("Geçmiş, çerezler ve önbellek silinir; bütün sitelerden çıkış yapılır. Yer imlerin kalır. Bu geri alınamaz.", "History, cookies and the cache are deleted and you are signed out everywhere. Bookmarks stay. This cannot be undone.")
+        action: Lang.t("Sil", "Delete")
         onConfirmed: { History.clear(); Shield.clearData(window.profile) }
     }
 
@@ -724,21 +746,22 @@ ApplicationWindow {
         shortcuts: window.shortcuts
         history: History
         commands: [
-            { name: "Sekmeyi sabitle ya da çöz", keys: "Ctrl+Shift+P", run: () => window.togglePin(window.current) },
-            { name: "Kapatılan sekmeyi geri aç", keys: "Ctrl+Shift+T", run: () => window.reopenClosed() },
-            { name: "Yer imi ekle ya da kaldır", keys: "Ctrl+D", run: () => window.toggleBookmark() },
-            { name: "Geçmiş", keys: "Ctrl+H", run: () => Qt.callLater(window.showCommandHistory) },
-            { name: "İndirmeler", keys: "Ctrl+J", run: () => side.openDownloads() },
-            { name: "Kaynaklar: hangi sekme ne kadar yiyor", keys: "Shift+Esc", run: () => resources.open() },
-            { name: "Diğer sekmeleri uyut", keys: "", run: () => window.sleepOthers() },
-            { name: "Yan paneli daralt ya da genişlet", keys: "Ctrl+B", run: () => window.compactSidebar = !window.compactSidebar },
-            { name: "Sekmeyi kapat", keys: "Ctrl+W", run: () => window.closeTab(window.current) },
-            { name: "Diğer sekmeleri kapat", keys: "", run: () => window.closeOthers(window.current) },
-            { name: "Sayfada ara", keys: "Ctrl+F", run: () => Qt.callLater(window.findInPage) },
-            { name: window.restoreSession ? "Açılışta sekmeleri geri getirme" : "Açılışta sekmeleri geri getir", keys: "", run: () => window.restoreSession = !window.restoreSession },
-            { name: "Gezinme verilerini sil", keys: "Ctrl+Shift+Delete", run: () => clearDialog.open() },
-            { name: "Tam ekran", keys: "F11", run: () => window.toggleWindowFullScreen() },
-            { name: "Velum'dan çık", keys: "Ctrl+Q", run: () => Qt.quit() }
+            { name: Lang.t("Sekmeyi sabitle ya da çöz", "Pin or unpin the tab"), keys: "Ctrl+Shift+P", run: () => window.togglePin(window.current) },
+            { name: Lang.t("Kapatılan sekmeyi geri aç", "Reopen the closed tab"), keys: "Ctrl+Shift+T", run: () => window.reopenClosed() },
+            { name: Lang.t("Yer imi ekle ya da kaldır", "Add or remove a bookmark"), keys: "Ctrl+D", run: () => window.toggleBookmark() },
+            { name: Lang.t("Geçmiş", "History"), keys: "Ctrl+H", run: () => Qt.callLater(window.showCommandHistory) },
+            { name: Lang.t("İndirmeler", "Downloads"), keys: "Ctrl+J", run: () => side.openDownloads() },
+            { name: Lang.t("Kaynaklar: hangi sekme ne kadar yiyor", "Resources: what each tab uses"), keys: "Shift+Esc", run: () => resources.open() },
+            { name: Lang.t("Diğer sekmeleri uyut", "Put other tabs to sleep"), keys: "", run: () => window.sleepOthers() },
+            { name: Lang.t("Yan paneli daralt ya da genişlet", "Narrow or widen the side bar"), keys: "Ctrl+B", run: () => window.compactSidebar = !window.compactSidebar },
+            { name: Lang.t("Sekmeyi kapat", "Close the tab"), keys: "Ctrl+W", run: () => window.closeTab(window.current) },
+            { name: Lang.t("Diğer sekmeleri kapat", "Close other tabs"), keys: "", run: () => window.closeOthers(window.current) },
+            { name: Lang.t("Sayfada ara", "Find in page"), keys: "Ctrl+F", run: () => Qt.callLater(window.findInPage) },
+            { name: window.restoreSession ? Lang.t("Açılışta sekmeleri geri getirme", "Do not reopen tabs at start") : Lang.t("Açılışta sekmeleri geri getir", "Reopen tabs at start"), keys: "", run: () => window.restoreSession = !window.restoreSession },
+            { name: Lang.t("Gezinme verilerini sil", "Delete browsing data"), keys: "Ctrl+Shift+Delete", run: () => clearDialog.open() },
+            { name: Lang.t("Ayarlar", "Settings"), keys: "Ctrl+,", run: () => Qt.callLater(window.openSettings) },
+            { name: Lang.t("Tam ekran", "Full screen"), keys: "F11", run: () => window.toggleWindowFullScreen() },
+            { name: Lang.t("Velum'dan çık", "Quit Velum"), keys: "Ctrl+Q", run: () => Qt.quit() }
         ]
         onOpened: (target, inNewTab) => window.navigate(target, inNewTab)
         onTabChosen: i => window.current = i
@@ -753,15 +776,15 @@ ApplicationWindow {
         id: tabMenu
         property int index: 0
         readonly property bool pinned: index < window.pinnedCount
-        MenuItem { text: tabMenu.pinned ? "Sabitlemeyi kaldır" : "Sabitle"; onTriggered: window.togglePin(tabMenu.index) }
-        MenuItem { text: "Çoğalt"; onTriggered: window.openTab(tabs.get(tabMenu.index).pageUrl) }
-        MenuItem { text: "Yenile"; onTriggered: (views.itemAt(tabMenu.index) as WebEngineView).reload() }
-        MenuItem { text: "Uyut"; enabled: tabMenu.index !== window.current; onTriggered: window.sleepTab(tabMenu.index) }
-        MenuItem { text: "Yer imlerine ekle"; onTriggered: window.addShortcut(tabs.get(tabMenu.index).pageUrl, tabs.get(tabMenu.index).title) }
+        MenuItem { text: tabMenu.pinned ? Lang.t("Sabitlemeyi kaldır", "Unpin") : Lang.t("Sabitle", "Pin"); onTriggered: window.togglePin(tabMenu.index) }
+        MenuItem { text: Lang.t("Çoğalt", "Duplicate"); onTriggered: window.openTab(tabs.get(tabMenu.index).pageUrl) }
+        MenuItem { text: Lang.t("Yenile", "Reload"); onTriggered: (views.itemAt(tabMenu.index) as WebEngineView).reload() }
+        MenuItem { text: Lang.t("Uyut", "Sleep"); enabled: tabMenu.index !== window.current; onTriggered: window.sleepTab(tabMenu.index) }
+        MenuItem { text: Lang.t("Yer imlerine ekle", "Bookmark"); onTriggered: window.addShortcut(tabs.get(tabMenu.index).pageUrl, tabs.get(tabMenu.index).title) }
         MenuSeparator {}
-        MenuItem { text: "Kapat"; onTriggered: window.closeTab(tabMenu.index) }
-        MenuItem { text: "Diğerlerini kapat"; onTriggered: window.closeOthers(tabMenu.index) }
-        MenuItem { text: "Kapatılanı geri aç"; enabled: window.closedTabs.length > 0; onTriggered: window.reopenClosed() }
+        MenuItem { text: Lang.t("Kapat", "Close"); onTriggered: window.closeTab(tabMenu.index) }
+        MenuItem { text: Lang.t("Diğerlerini kapat", "Close others"); onTriggered: window.closeOthers(tabMenu.index) }
+        MenuItem { text: Lang.t("Kapatılanı geri aç", "Reopen closed tab"); enabled: window.closedTabs.length > 0; onTriggered: window.reopenClosed() }
     }
 
     // keyboard
@@ -770,6 +793,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+P"; onActivated: window.togglePin(window.current) }
     Shortcut { sequence: "Ctrl+D"; onActivated: window.toggleBookmark() }
     Shortcut { sequences: [StandardKey.Find]; onActivated: window.findInPage() }
+    Shortcut { sequence: "Ctrl+,"; onActivated: window.openSettings() }
     Shortcut { sequence: "Shift+Escape"; onActivated: resources.open() }
     Shortcut { sequence: "Ctrl+H"; onActivated: window.showCommandHistory() }
     Shortcut { sequence: "Ctrl+J"; onActivated: side.openDownloads() }

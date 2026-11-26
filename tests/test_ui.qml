@@ -20,6 +20,7 @@ Item {
         onTriggered: {
             t.w = main.createObject(null, { startUrls: [t.page("a"), t.page("b"), t.page("c")], hasWidevine: true })
             const w = t.w
+            Lang.choice = "tr"
             t.check("three start tabs, first current", w.current === 0 && t.shown() === "a")
             w.step(1);  t.check("next tab", t.shown() === "b")
             w.step(-1); w.step(-1); t.check("previous wraps around", t.shown() === "c")
@@ -84,6 +85,12 @@ Item {
             t.check("after long it is discarded", w.sleepTarget(21 * minute, S.Discarded, false, false, false) === S.Discarded)
             t.check("the engine's advice is respected", w.sleepTarget(60 * minute, S.Frozen, false, false, false) === S.Frozen && w.sleepTarget(60 * minute, S.Active, false, false, false) === S.Active)
             t.check("pinned, playing and loading tabs stay awake", [[true, false, false], [false, true, false], [false, false, true]].every(f => w.sleepTarget(60 * minute, S.Discarded, f[0], f[1], f[2]) === S.Active))
+            t.check("texts follow the language", Lang.t("evet", "yes") === "evet" && bar.find("tam ekran").length > 0)
+            Lang.choice = "en"
+            t.check("changing the language rewrites the commands", bar.find("full screen").some(r => r.kind === "command") && w.wishFor(WebEnginePermission.PermissionType.Geolocation) === "wants to know your location.")
+            Lang.choice = "tr"
+            w.openSettings(); t.check("the settings page opens", true)
+            w.downloadFolder = "/tmp/somewhere"; t.check("a download folder can be chosen", w.downloadFolder === "/tmp/somewhere"); w.downloadFolder = ""
             w.addShortcut("velum.example"); t.check("shortcuts are found", bar.find("velum.ex").some(r => r.kind === "shortcut"))
             w.removeShortcut(0)
 

@@ -24,6 +24,7 @@ Rectangle {
     property string host: ""            // of the current page, for the shield
     signal reloadPage()
     signal clearData()
+    signal settings()
     property var downloads: []
     readonly property int running: downloads.filter(d => !d.isFinished).length
     signal showFolder(string folder)
@@ -48,18 +49,18 @@ Rectangle {
             IconButton {
                 Layout.alignment: Qt.AlignHCenter
                 symbol: "panel"
-                hint: side.compact ? "Paneli genişlet (Ctrl+B)" : "Paneli daralt (Ctrl+B)"
+                hint: side.compact ? Lang.t("Paneli genişlet (Ctrl+B)", "Widen the side bar (Ctrl+B)") : Lang.t("Paneli daralt (Ctrl+B)", "Narrow the side bar (Ctrl+B)")
                 hintBeside: side.compact
                 onClicked: side.toggle()
             }
             Item { Layout.fillWidth: true; visible: !side.compact }
-            IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "back"; hint: "Geri (Alt+Sol)"; hintBeside: side.compact; enabled: side.view?.canGoBack ?? false; onClicked: side.view.goBack() }
-            IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "forward"; hint: "İleri (Alt+Sağ)"; hintBeside: side.compact; enabled: side.view?.canGoForward ?? false; onClicked: side.view.goForward() }
+            IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "back"; hint: Lang.t("Geri (Alt+Sol)", "Back (Alt+Left)"); hintBeside: side.compact; enabled: side.view?.canGoBack ?? false; onClicked: side.view.goBack() }
+            IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "forward"; hint: Lang.t("İleri (Alt+Sağ)", "Forward (Alt+Right)"); hintBeside: side.compact; enabled: side.view?.canGoForward ?? false; onClicked: side.view.goForward() }
             IconButton {
                 id: shieldButton
                 Layout.alignment: Qt.AlignHCenter
                 symbol: "shield"
-                hint: "Koruma"
+                hint: Lang.t("Koruma", "Protection")
                 hintBeside: side.compact
                 readonly property int blocked: Shield.blockedCount(side.host, Shield.revision)
                 opacity: Shield.enabled && !Shield.allowed(side.host, Shield.revision) ? 1 : 0.45
@@ -85,7 +86,7 @@ Rectangle {
             IconButton {
                 Layout.alignment: Qt.AlignHCenter
                 symbol: side.view?.loading ? "stop" : "reload"
-                hint: side.view?.loading ? "Durdur" : "Yenile (Ctrl+R)"
+                hint: side.view?.loading ? Lang.t("Durdur", "Stop") : Lang.t("Yenile (Ctrl+R)", "Reload (Ctrl+R)")
                 hintBeside: side.compact
                 onClicked: side.view.loading ? side.view.stop() : side.view.reload()
             }
@@ -102,7 +103,7 @@ Rectangle {
             Layout.alignment: Qt.AlignHCenter
             visible: side.compact
             symbol: "search"
-            hint: "Adres (Ctrl+L)"
+            hint: Lang.t("Adres (Ctrl+L)", "Address (Ctrl+L)")
             hintBeside: true
             onClicked: side.search()
         }
@@ -162,7 +163,7 @@ Rectangle {
 
         GridLayout {
             Layout.fillWidth: true
-            columns: side.compact ? 1 : 2
+            columns: side.compact ? 1 : 3
         AbstractButton {
             id: add
             Layout.fillWidth: true
@@ -170,19 +171,26 @@ Rectangle {
             hoverEnabled: true
             focusPolicy: Qt.NoFocus
             onClicked: side.newTab()
-            Accessible.name: "Yeni sekme"
+            Accessible.name: Lang.t("Yeni sekme", "New tab")
             contentItem: Item {
                 Icon { id: plus; name: "plus"; color: Theme.dim; size: 16; anchors.verticalCenter: parent.verticalCenter; x: side.compact ? (parent.width - width) / 2 : 12 }
-                Text { visible: !side.compact; text: "Yeni sekme"; color: Theme.dim; font.pixelSize: 13; anchors { left: plus.right; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Text { visible: !side.compact; text: Lang.t("Yeni sekme", "New tab"); color: Theme.dim; font.pixelSize: 13; anchors { left: plus.right; leftMargin: 10; verticalCenter: parent.verticalCenter } }
             }
             background: Rectangle { radius: Theme.radius; color: add.hovered ? Theme.surface : "transparent" }
-            Hint { text: "Yeni sekme (Ctrl+T)"; shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
+            Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
+        }
+        IconButton {
+            Layout.alignment: Qt.AlignHCenter
+            symbol: "settings"
+            hint: Lang.t("Ayarlar (Ctrl+,)", "Settings (Ctrl+,)")
+            hintBeside: side.compact
+            onClicked: side.settings()
         }
         IconButton {
             id: downloadButton
             Layout.alignment: Qt.AlignHCenter
             symbol: "download"
-            hint: "İndirmeler (Ctrl+J)"
+            hint: Lang.t("İndirmeler (Ctrl+J)", "Downloads (Ctrl+J)")
             hintBeside: side.compact
             onClicked: downloadsPanel.open()
             Rectangle {

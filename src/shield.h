@@ -26,7 +26,8 @@ class Shield : public QWebEngineUrlRequestInterceptor
     // the value forgetOnExit had at start: the engine accepts its cookie setting only once
     Q_PROPERTY(bool forgettingThisRun READ forgettingThisRun CONSTANT)
     Q_PROPERTY(bool ready READ ready NOTIFY changed)
-    Q_PROPERTY(QString status READ status NOTIFY changed)
+    // "none", "loading", "ready", "downloading", "failed" or "cleared"; statusText() words it
+    Q_PROPERTY(QString statusCode READ statusCode NOTIFY changed)
     Q_PROPERTY(int revision READ revision NOTIFY countsChanged)   // bindings watch this to re-read counts
 
 public:
@@ -44,7 +45,9 @@ public:
     void setForgetOnExit(bool on);
     bool forgettingThisRun() const { return m_forgettingThisRun; }
     bool ready() const { return m_blocker != nullptr; }
-    QString status() const { return m_status; }
+    QString statusCode() const { return m_status; }
+    // the arguments after `turkish` only make interface bindings re-read the text
+    Q_INVOKABLE QString statusText(bool turkish, int revision = 0, const QString &code = {}) const;
     int revision() const { return m_revision; }
 
     Q_INVOKABLE void attach(QObject *profile);                      // start watching a browser profile
@@ -62,7 +65,7 @@ signals:
 
 private:
     void load();
-    void setStatus(const QString &text);
+    void setStatus(const QString &code, int count = 0);
     QString folder() const;
 
     std::shared_ptr<Blocker> m_blocker;
@@ -75,7 +78,8 @@ private:
     bool m_forget = false;
     bool m_forgettingThisRun = false;
     QTimer m_notify;
-    QString m_status;
+    QString m_status = QStringLiteral("none");
+    int m_statusCount = 0;
     int m_revision = 0;
     int m_pending = 0;
     int m_failed = 0;
