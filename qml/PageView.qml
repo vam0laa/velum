@@ -103,6 +103,8 @@ WebEngineView {
     settings.hyperlinkAuditingEnabled: false     // no "ping" tracking on links
     settings.pluginsEnabled: true
     settings.pdfViewerEnabled: true
+    // a turn of the wheel glides instead of jumping; the engine leaves this off
+    settings.scrollAnimatorEnabled: Theme.moving
     // the engine's own dark mode: sites with a dark look of their own are left as they are
     settings.forceDarkMode: Theme.darkening
 

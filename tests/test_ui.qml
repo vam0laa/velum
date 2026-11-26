@@ -58,6 +58,7 @@ Item {
                 Shield.pageScriptsReady = true; Shield.changed()
                 t.check("their arrival is acted on once", w.scriptsMissing === false)
             }
+            t.check("pages scroll smoothly, unless motion is off", w.view.settings.scrollAnimatorEnabled === Theme.moving)
             t.check("sites are told the languages", w.profile.httpAcceptLanguage.indexOf("en") >= 0 && w.acceptLanguages("tr_TR") === "tr-TR,tr,en-US,en"
                     && w.acceptLanguages("en_US") === "en-US,en" && w.acceptLanguages("C") === "en-US,en")
             {
