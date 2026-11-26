@@ -387,14 +387,11 @@ private slots:
 
     void accelerationSetting()
     {
-        QCOMPARE(graphics::cleanMode("rubbish"), "auto");
-        QCOMPARE(graphics::engineFlags("auto", true), QByteArray());
-        QCOMPARE(graphics::engineFlags("off", true), QByteArray("--disable-gpu"));
-        QVERIFY(graphics::engineFlags("boost", true).contains("AcceleratedVideoDecodeLinuxGL"));
-        QVERIFY(!graphics::engineFlags("boost", false).contains("Linux"));
-        QCOMPARE(graphics::safeMode("boost", true), "auto");
-        QCOMPARE(graphics::safeMode("boost", false), "boost");
-        QCOMPARE(graphics::safeMode("off", true), "off");
+        QCOMPARE(graphics::engineFlags(false, false, true), QByteArray("--disable-gpu"));
+        QCOMPARE(graphics::engineFlags(true, true, true), QByteArray());
+        QVERIFY(graphics::engineFlags(true, false, true).contains("AcceleratedVideoDecodeLinuxGL"));
+        QVERIFY(!graphics::engineFlags(true, false, false).contains("Linux"));
+        QVERIFY(!graphics::engineFlags(true, false, true).contains("ignore-gpu-blocklist"));
     }
 
     void updateVersions()

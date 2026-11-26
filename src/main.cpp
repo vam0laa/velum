@@ -30,24 +30,20 @@ int main(int argc, char *argv[])
     QByteArray flags = qgetenv("QTWEBENGINE_CHROMIUM_FLAGS");
     if (!cdm.isEmpty())
         flags += " --widevine-path=" + cdm.toLocal8Bit();
-    // the acceleration setting; a forced start that never got going is given up
-    QCoreApplication::setOrganizationName(QStringLiteral("velum"));
-    QCoreApplication::setApplicationName(QStringLiteral("velum"));
-    bool forced = false;
+    // "use the graphics card"; extra switches that kept a start from finishing are left out
+    bool trying = false;
     {
         QSettings settings;
-        const QString wanted = graphics::cleanMode(settings.value(QStringLiteral("graphics/mode")).toString());
-        const QString mode = graphics::safeMode(wanted, settings.value(QStringLiteral("graphics/pending")).toBool());
-        if (mode != wanted) {
-            settings.setValue(QStringLiteral("graphics/mode"), mode);
-            settings.setValue(QStringLiteral("graphics/fellBack"), true);
-        }
-        forced = mode == QLatin1String("boost");
-        settings.setValue(QStringLiteral("graphics/pending"), forced);
+        const bool accelerate = settings.value(QStringLiteral("graphics/accelerate"), true).toBool();
+        const bool careful = settings.value(QStringLiteral("graphics/careful")).toBool()
+                             || settings.value(QStringLiteral("graphics/pending")).toBool();
+        trying = accelerate && !careful;
+        settings.setValue(QStringLiteral("graphics/careful"), careful);
+        settings.setValue(QStringLiteral("graphics/pending"), trying);
 #ifdef Q_OS_LINUX
-        flags += ' ' + graphics::engineFlags(mode, true);
+        flags += ' ' + graphics::engineFlags(accelerate, careful, true);
 #else
-        flags += ' ' + graphics::engineFlags(mode, false);
+        flags += ' ' + graphics::engineFlags(accelerate, careful, false);
 #endif
     }
     if (!flags.trimmed().isEmpty())
@@ -122,8 +118,8 @@ int main(int argc, char *argv[])
                          [window](const QStringList &urls) { QMetaObject::invokeMethod(window, "openExternal", Q_ARG(QVariant, urls)); });
     }
 
-    // still running a while later, or closed properly: the forced start worked
-    if (forced) {
+    // still running a while later, or closed properly: this start worked
+    if (trying) {
         const auto worked = [] { QSettings().setValue(QStringLiteral("graphics/pending"), false); };
         QTimer::singleShot(15000, &app, worked);
         QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, worked);

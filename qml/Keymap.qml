@@ -33,6 +33,7 @@ QtObject {
         { id: "gameMode", keys: "Ctrl+Shift+G", name: Lang.t("Oyun modu", "Game mode") },
         { id: "resources", keys: "Shift+Esc", name: Lang.t("Kaynaklar", "Resources") },
         { id: "settings", keys: "Ctrl+,", name: Lang.t("Ayarlar", "Settings") },
+        { id: "resetLook", keys: "Ctrl+Shift+0", name: Lang.t("Görünümü sıfırla", "Reset the look") },
         { id: "clear", keys: "Ctrl+Shift+Del", name: Lang.t("Gezinme verilerini sil", "Delete browsing data") },
         { id: "fullScreen", keys: "F11", name: Lang.t("Tam ekran", "Full screen") },
         { id: "quit", keys: "Ctrl+Q", name: Lang.t("Çıkış", "Quit") }

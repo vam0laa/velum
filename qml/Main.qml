@@ -66,6 +66,13 @@ ApplicationWindow {
         } catch (e) {
         }
     }
+    // the way out of a look gone wrong
+    function resetLook() {
+        Theme.resetAll()
+        homeCss = ""
+        say(Lang.t("Görünüm sıfırlandı.", "The look was reset."))
+    }
+
     // ---- sharing your look ----
     function themeText() {
         return JSON.stringify({ velumTheme: 1, look: Theme.bundle(),
@@ -1912,7 +1919,8 @@ ApplicationWindow {
                             showFrequent: window.showFrequent
                             showBookmarkBar: window.showBookmarkBar
                             onStartChanged: (name, value) => window.setStart(name, value)
-                            onExportTheme: file => window.exportTheme(file)
+                            onResetLook: window.resetLook()
+                    onExportTheme: file => window.exportTheme(file)
                     onImportTheme: file => window.importTheme(file)
                     onDesignRequested: { window.openTab(""); Qt.callLater(() => start.editor?.open(0)) }
                             extensions: window.extensions
@@ -2205,5 +2213,6 @@ ApplicationWindow {
     Shortcut { sequence: "Escape"; enabled: window.pageFullScreen; onActivated: window.view.triggerWebAction(WebEngineView.ExitFullScreen) }
     Shortcut { sequences: Keymap.sequences("fullScreen"); onActivated: window.toggleWindowFullScreen() }
     Shortcut { sequences: Keymap.sequences("quit"); onActivated: Qt.quit() }
+    Shortcut { sequences: Keymap.sequences("resetLook"); onActivated: window.resetLook() }
     Shortcut { sequences: Keymap.sequences("gameMode"); onActivated: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game") }
 }

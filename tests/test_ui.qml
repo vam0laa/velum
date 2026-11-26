@@ -267,6 +267,12 @@ Item {
             Theme.motion = true
             for (const shape of ["pill", "square", "line", "rounded"]) Theme.tabShape = shape
             w.openSettings("look"); t.check("the look settings open", w.prefs.section === "look"); w.closeTab(w.current)
+            // lettering and the way back
+            t.check("many letterings come along", Theme.bundled.length >= 20 && String(Theme.fontFile("Pacifico")).endsWith("pacifico.ttf") && Theme.fontFile("Arial") === "")
+            const sans = Theme.ui
+            Theme.fontFamily = "Lexend"; Theme.headFamily = "Monoton"; t.check("the chosen ones are used", Theme.ui !== sans && Theme.display !== Theme.ui)
+            Theme.css = ".toolbar { background: #ff0000 }"; Theme.roundness = 0; Theme.palette = "nord"
+            w.resetLook(); t.check("resetting the look undoes it all", Theme.ui === sans && Theme.headFamily === "" && Theme.css === "" && Theme.roundness === 1 && Theme.palette === "lucid")
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")

@@ -31,6 +31,45 @@ QtObject {
     property string density: "normal"      // "compact", "normal", "roomy"
     property string tabShape: "rounded"    // "rounded", "pill", "square", "line"
     property string fontFamily: ""         // "" Velum's own lettering
+    property string headFamily: ""         // headline and clock; "" the same as the rest
+
+    // the lettering that comes with Velum. "body": readable enough for the whole browser.
+    readonly property var bundled: [
+        { file: "spacegrotesk", name: "Space Grotesk", body: true },
+        { file: "lexend", name: "Lexend", body: true },
+        { file: "outfit", name: "Outfit", body: true },
+        { file: "sora", name: "Sora", body: true },
+        { file: "quicksand", name: "Quicksand", body: true },
+        { file: "comfortaa", name: "Comfortaa", body: true },
+        { file: "chakrapetch", name: "Chakra Petch", body: true },
+        { file: "syne", name: "Syne", body: true },
+        { file: "bricolagegrotesque", name: "Bricolage Grotesque", body: true },
+        { file: "jetbrainsmono", name: "JetBrains Mono", body: true },
+        { file: "playfairdisplay", name: "Playfair Display", body: true },
+        { file: "patrickhand", name: "Patrick Hand", body: true },
+        { file: "caveat", name: "Caveat", body: false },
+        { file: "dancingscript", name: "Dancing Script", body: false },
+        { file: "pacifico", name: "Pacifico", body: false },
+        { file: "lobster", name: "Lobster", body: false },
+        { file: "righteous", name: "Righteous", body: false },
+        { file: "audiowide", name: "Audiowide", body: false },
+        { file: "bungee", name: "Bungee", body: false },
+        { file: "monoton", name: "Monoton", body: false },
+        { file: "majormonodisplay", name: "Major Mono Display", body: false },
+        { file: "rubikglitch", name: "Rubik Glitch", body: false },
+        { file: "pressstart2p", name: "Press Start 2P", body: false }
+    ]
+    function fontFile(name) {
+        const found = bundled.find(f => f.name === name)
+        return found ? Qt.resolvedUrl("../data/fonts/extra/" + found.file + ".ttf") : ""
+    }
+    // only what is chosen is loaded
+    property FontLoader bodyLoader: FontLoader { source: theme.fontFile(theme.fontFamily) || theme.sansFont.source }
+    property FontLoader headLoader: FontLoader { source: theme.fontFile(theme.headFamily) || theme.sansFont.source }
+    function family(name, loader) {
+        return fontFile(name) === "" ? name : loader.status === FontLoader.Ready ? loader.name : sansFont.name
+    }
+    readonly property string display: web ? pixelFont.name : headFamily !== "" ? family(headFamily, headLoader) : ui
     property var barLeft: ["back", "forward", "reload", "home"]      // toolbar buttons
     property var barRight: ["downloads", "extensions"]               // before the menu
     property string css: ""                // your style sheet for the browser itself
@@ -118,7 +157,7 @@ QtObject {
     // the look as it can be written to a file and read back
     function bundle() {
         return { palette: palette, colors: custom, accent: accentChoice, roundness: roundness, density: density, tabShape: tabShape,
-                 font: fontFamily, left: barLeft, right: barRight, css: css, glass: glass }
+                 font: fontFamily, headFont: headFamily, left: barLeft, right: barRight, css: css, glass: glass }
     }
     // takes over what is valid in `d` and leaves the rest alone
     function applyBundle(d) {
@@ -137,6 +176,8 @@ QtObject {
             tabShape = d.tabShape
         if (typeof d.font === "string" && /^[\w \-]{0,60}$/.test(d.font))
             fontFamily = d.font
+        if (typeof d.headFont === "string" && /^[\w \-]{0,60}$/.test(d.headFont))
+            headFamily = d.headFont
         if (Array.isArray(d.left) && Array.isArray(d.right))
             keepButtons(d.left, d.right)
         if (typeof d.css === "string")
@@ -144,8 +185,13 @@ QtObject {
         if (typeof d.glass === "boolean")
             glass = d.glass
     }
+    // back to the way Velum arrives, whatever was done to it
+    function resetAll() {
+        resetShape()
+        accentChoice = ""; palette = "lucid"; style = "classic"; glass = false
+    }
     function resetShape() {
-        roundness = 1; density = "normal"; tabShape = "rounded"; fontFamily = ""; css = ""
+        roundness = 1; density = "normal"; tabShape = "rounded"; fontFamily = ""; headFamily = ""; css = ""
         keepButtons(["back", "forward", "reload", "home"], ["downloads", "extensions"])
     }
 
@@ -165,6 +211,7 @@ QtObject {
         property alias density: theme.density
         property alias tabShape: theme.tabShape
         property alias fontFamily: theme.fontFamily
+        property alias headFamily: theme.headFamily
         property alias css: theme.css
         category: "look"
         property alias tone: theme.palette
@@ -269,7 +316,7 @@ QtObject {
     property FontLoader pixelFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/VT323-Regular.ttf") }
     readonly property string pixel: pixelFont.name      // has the Turkish letters
     property FontLoader sansFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/GoogleSansFlex.woff") }
-    readonly property string ui: web ? pixelFont.name : fontFamily !== "" ? fontFamily : sansFont.name
+    readonly property string ui: web ? pixelFont.name : fontFamily !== "" ? family(fontFamily, bodyLoader) : sansFont.name
     // sizes are written for the small pixel letters; the other font needs less
     function size(n) { return web ? n : Math.round(n / 1.3) }
     // real weights of the variable font; the pixel font has only one

@@ -3,45 +3,43 @@
 #include <QSettings>
 #include <QtQml/qqmlregistration.h>
 
-#include "graphics.h"
-
-// The graphics acceleration setting ("Gpu"). It is read before the engine starts, so a
+// The "use the graphics card" switch ("Gpu"). It is read before the engine starts, so a
 // change applies from the next start.
 class Gpu : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
-    Q_PROPERTY(QString mode READ mode WRITE setMode NOTIFY changedMode)   // "auto", "boost", "off"
-    Q_PROPERTY(bool changed READ changed NOTIFY changedMode)              // differs from this run's
-    Q_PROPERTY(bool fellBack READ fellBack CONSTANT)                      // "boost" was given up at start
+    Q_PROPERTY(bool on READ on WRITE setOn NOTIFY changedOn)
+    Q_PROPERTY(bool changed READ changed NOTIFY changedOn)      // differs from this run's
+    Q_PROPERTY(bool careful READ careful NOTIFY changedOn)      // extras left out after a failed start
 
 public:
     explicit Gpu(QObject *parent = nullptr) : QObject(parent)
     {
-        m_started = m_mode = graphics::cleanMode(QSettings().value(QStringLiteral("graphics/mode")).toString());
-        m_fellBack = QSettings().value(QStringLiteral("graphics/fellBack")).toBool();
+        m_started = m_on = QSettings().value(QStringLiteral("graphics/accelerate"), true).toBool();
+        m_careful = QSettings().value(QStringLiteral("graphics/careful")).toBool();
     }
-    QString mode() const { return m_mode; }
-    bool changed() const { return m_mode != m_started; }
-    bool fellBack() const { return m_fellBack; }
-    void setMode(const QString &mode)
+    bool on() const { return m_on; }
+    bool changed() const { return m_on != m_started; }
+    bool careful() const { return m_on && m_careful; }
+    void setOn(bool on)
     {
-        const QString clean = graphics::cleanMode(mode);
-        if (clean == m_mode)
+        if (on == m_on)
             return;
-        m_mode = clean;
+        m_on = on;
+        m_careful = false;      // switching it yourself gives it a fresh try
         QSettings settings;
-        settings.setValue(QStringLiteral("graphics/mode"), clean);
-        settings.setValue(QStringLiteral("graphics/fellBack"), false);
-        emit changedMode();
+        settings.setValue(QStringLiteral("graphics/accelerate"), on);
+        settings.setValue(QStringLiteral("graphics/careful"), false);
+        emit changedOn();
     }
 
 signals:
-    void changedMode();
+    void changedOn();
 
 private:
-    QString m_mode;
-    QString m_started;
-    bool m_fellBack = false;
+    bool m_on = true;
+    bool m_started = true;
+    bool m_careful = false;
 };

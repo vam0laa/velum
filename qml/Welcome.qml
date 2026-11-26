@@ -323,6 +323,31 @@ Popup {
                             visible: welcome.step === 5
                             Layout.fillWidth: true
                             spacing: 16
+                            // asked in plain words, on unless you untick it
+                            AbstractButton {
+                                id: gpu
+                                Layout.fillWidth: true
+                                implicitHeight: gpuWords.implicitHeight + 32
+                                focusPolicy: Qt.NoFocus
+                                hoverEnabled: true
+                                onClicked: Gpu.on = !Gpu.on
+                                Accessible.name: Lang.t("Ekran kartını kullan", "Use graphics acceleration")
+                                background: Rectangle { radius: Theme.round(20); color: gpu.hovered ? Theme.title : Theme.raised; border.width: Gpu.on ? 2 : 0; border.color: welcome.tone }
+                                contentItem: Item {
+                                    Rectangle {
+                                        x: 18; anchors.verticalCenter: parent.verticalCenter; width: 26; height: 26; radius: Theme.round(8)
+                                        color: Gpu.on ? welcome.tone : "transparent"; border.width: Gpu.on ? 0 : 2; border.color: Theme.dim
+                                        Label { anchors.centerIn: parent; visible: Gpu.on; text: "✓"; color: Theme.accentInk; font.pixelSize: 17; font.variableAxes: Theme.axes(800) }
+                                    }
+                                    Column {
+                                        id: gpuWords
+                                        anchors { left: parent.left; leftMargin: 60; right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
+                                        spacing: 2
+                                        Label { width: parent.width; wrapMode: Text.WordWrap; text: Lang.t("Videolar ve kaydırma daha akıcı olsun", "Smoother videos and scrolling"); font.pixelSize: 16; font.variableAxes: Theme.axes(750) }
+                                        Label { width: parent.width; wrapMode: Text.WordWrap; text: Lang.t("Velum bilgisayarının ekran kartını kullanır (önerilir). Görüntü bozulursa Ayarlar → Performans'tan kapatabilirsin.", "Velum uses your computer's graphics card (recommended). If the picture looks wrong, switch it off in Settings → Performance."); color: Theme.dim; font.pixelSize: 13 }
+                                    }
+                                }
+                            }
                             Image { Layout.alignment: Qt.AlignHCenter; source: Qt.resolvedUrl("../data/velum.svg"); sourceSize: Qt.size(240, 240); Layout.preferredWidth: 104; Layout.preferredHeight: 104 }
                             GridLayout {
                                 Layout.fillWidth: true

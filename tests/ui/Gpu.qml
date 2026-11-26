@@ -1,8 +1,8 @@
 pragma Singleton
 import QtQuick
-// Stand-in for the graphics setting.
+// Stand-in for the graphics card switch.
 QtObject {
-    property string mode: "auto"
-    property bool changed: mode !== "auto"
-    property bool fellBack: false
+    property bool on: true
+    property bool changed: !on
+    property bool careful: false
 }

@@ -51,6 +51,7 @@ Rectangle {
     property bool showBookmarkBar
     signal startChanged(string name, var value)      // a property of the window and its new value
     signal designRequested()
+    signal resetLook()
     signal exportTheme(url file)
     signal importTheme(url file)
 
@@ -80,7 +81,7 @@ Rectangle {
         const q = query.trim().toLocaleLowerCase()
         return q === "" ? section === key : String(words).toLocaleLowerCase().indexOf(q) >= 0
     }
-    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, look3, look4, look5, look6, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
+    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
 
     color: Theme.sheetBack
 
@@ -382,6 +383,14 @@ Rectangle {
                 }
 
                 Group {
+                    id: look7
+                    wanted: !Theme.web && page.shows("look", "sıfırla varsayılan bozuldu eski reset default")
+                    heading: Lang.t("Bir şeyler ters mi gitti?", "Did something go wrong?")
+                    symbol: "reload"
+                    Note { text: Lang.t("Renkleri, şekli, yazı tiplerini ve tarayıcı CSS'ini ilk hâline döndürür. Kendi temanın renkleri silinmez, istersen geri seçebilirsin.", "Puts colours, shape, lettering and the browser style sheet back as they were. Your theme's colours are kept; you can pick it again.") + (Keymap.text("resetLook") !== "" ? "\n" + Lang.t("Hiçbir şey görünmüyorsa: ", "If nothing can be seen: ") + Keymap.text("resetLook") : "") }
+                    TextButton { Layout.fillWidth: true; implicitHeight: 40; text: Lang.t("Görünümü sıfırla", "Reset the look"); onClicked: page.resetLook() }
+                }
+                Group {
                     id: look3
                     wanted: !Theme.web && page.shows("look", "kendi temam renk editör custom theme colours özel")
                     heading: Lang.t("Kendi teman", "Your own theme")
@@ -493,16 +502,9 @@ Rectangle {
                     wanted: page.shows("speed", "ekran kartı hızlandırma gpu video donanım graphics acceleration hardware")
                     heading: Lang.t("Ekran kartı", "Graphics card")
                     symbol: "gauge"
-                    Line {
-                        label: Lang.t("Hızlandırma", "Acceleration")
-                        Dropdown {
-                            options: [{ key: "auto", label: Lang.t("Otomatik", "Automatic") }, { key: "boost", label: Lang.t("Zorla (güçlü)", "Forced") }, { key: "off", label: Lang.t("Kapalı", "Off") }]
-                            current: Gpu.mode
-                            onChosen: key => Gpu.mode = key
-                        }
-                    }
-                    Note { text: Lang.t("\"Zorla\" sayfa çizimini ve video çözmeyi ekran kartına verir; sürücüye göre işlemciyi ve ısıyı azaltabilir. Sayfalar bozuk görünürse \"Otomatik\"e dön.", "\"Forced\" hands drawing and video decoding to the graphics card; depending on the driver it can lower load and heat. If pages look wrong, go back to \"Automatic\".") }
-                    Note { visible: Gpu.fellBack; color: Theme.danger; text: Lang.t("Son açılış \"Zorla\" ile yarıda kaldığı için Otomatik'e dönüldü.", "The last start did not finish in forced mode, so it went back to automatic.") }
+                    Toggle { label: Lang.t("Ekran kartını kullan", "Use graphics acceleration"); note: Lang.t("Kaydırma ve video daha akıcı olur", "Smoother scrolling and video"); on: Gpu.on; onClicked: Gpu.on = !Gpu.on }
+                    Note { text: Lang.t("Sayfalar bozuk ya da siyah görünürse kapat.", "Switch it off if pages look broken or black.") }
+                    Note { visible: Gpu.careful; color: Theme.danger; text: Lang.t("Son açılış yarıda kaldığı için bazı hızlandırmalar kapalı. Anahtarı kapatıp açarsan yeniden denenir.", "The last start did not finish, so some acceleration is off. Switch it off and on to try again.") }
                     Note { visible: Gpu.changed; text: Lang.t("Değişiklik Velum'u kapatıp açınca geçerli olur.", "The change applies after restarting Velum.") }
                     TextButton { Layout.fillWidth: true; implicitHeight: 40; text: Lang.t("Ekran kartı durumunu göster", "Show graphics status"); onClicked: page.openPage("chrome://gpu") }
                 }

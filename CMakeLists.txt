@@ -134,6 +134,52 @@ qt_add_qml_module(velum
         qml/TextButton.qml
         qml/ConfirmDialog.qml
     RESOURCES data/velum.svg data/sky.jpg data/sky-night.jpg data/scanline.png data/logos/tr.svg data/logos/gb.svg data/logos/duckduckgo.png data/logos/brave.png data/logos/google.png data/logos/startpage.svg data/logos/ublock.png data/logos/darkreader.png data/logos/sponsorblock.png data/fonts/VT323-Regular.ttf data/fonts/GoogleSansFlex.woff
+        data/fonts/extra/audiowide.ttf
+        data/fonts/extra/bricolagegrotesque.ttf
+        data/fonts/extra/bungee.ttf
+        data/fonts/extra/caveat.ttf
+        data/fonts/extra/chakrapetch.ttf
+        data/fonts/extra/comfortaa.ttf
+        data/fonts/extra/dancingscript.ttf
+        data/fonts/extra/jetbrainsmono.ttf
+        data/fonts/extra/lexend.ttf
+        data/fonts/extra/lobster.ttf
+        data/fonts/extra/majormonodisplay.ttf
+        data/fonts/extra/monoton.ttf
+        data/fonts/extra/outfit.ttf
+        data/fonts/extra/pacifico.ttf
+        data/fonts/extra/patrickhand.ttf
+        data/fonts/extra/playfairdisplay.ttf
+        data/fonts/extra/pressstart2p.ttf
+        data/fonts/extra/quicksand.ttf
+        data/fonts/extra/righteous.ttf
+        data/fonts/extra/rubikglitch.ttf
+        data/fonts/extra/sora.ttf
+        data/fonts/extra/spacegrotesk.ttf
+        data/fonts/extra/syne.ttf
+        data/fonts/extra/audiowide-OFL.txt
+        data/fonts/extra/bricolagegrotesque-OFL.txt
+        data/fonts/extra/bungee-OFL.txt
+        data/fonts/extra/caveat-OFL.txt
+        data/fonts/extra/chakrapetch-OFL.txt
+        data/fonts/extra/comfortaa-OFL.txt
+        data/fonts/extra/dancingscript-OFL.txt
+        data/fonts/extra/jetbrainsmono-OFL.txt
+        data/fonts/extra/lexend-OFL.txt
+        data/fonts/extra/lobster-OFL.txt
+        data/fonts/extra/majormonodisplay-OFL.txt
+        data/fonts/extra/monoton-OFL.txt
+        data/fonts/extra/outfit-OFL.txt
+        data/fonts/extra/pacifico-OFL.txt
+        data/fonts/extra/patrickhand-OFL.txt
+        data/fonts/extra/playfairdisplay-OFL.txt
+        data/fonts/extra/pressstart2p-OFL.txt
+        data/fonts/extra/quicksand-OFL.txt
+        data/fonts/extra/righteous-OFL.txt
+        data/fonts/extra/rubikglitch-OFL.txt
+        data/fonts/extra/sora-OFL.txt
+        data/fonts/extra/spacegrotesk-OFL.txt
+        data/fonts/extra/syne-OFL.txt
     SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h ${NOTIFIER_HEADER} src/files.h src/gpubridge.h src/updatebridge.h src/importbridge.h src/passwordbridge.h src/storebridge.h src/defaultbrowser.h
     IMPORTS QtQuick
 )

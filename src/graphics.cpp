@@ -71,26 +71,17 @@ double xwaylandScale(const QByteArray &monitors, const QByteArray &zeroScaling)
     return scale >= 0.5 && scale <= 4 ? scale : 0;
 }
 
-QString cleanMode(const QString &mode)
+QByteArray engineFlags(bool accelerate, bool careful, bool linux_)
 {
-    return mode == QLatin1String("boost") || mode == QLatin1String("off") ? mode : QStringLiteral("auto");
-}
-
-QByteArray engineFlags(const QString &mode, bool linux_)
-{
-    if (mode == QLatin1String("off"))
+    if (!accelerate)
         return "--disable-gpu";
-    if (mode != QLatin1String("boost"))
+    if (careful)
         return {};
-    QByteArray flags = "--ignore-gpu-blocklist --enable-gpu-rasterization --enable-zero-copy";
+    // the graphics card draws and decodes where its driver is trusted to
+    QByteArray flags = "--enable-gpu-rasterization";
     if (linux_)
         flags += " --enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL";
     return flags;
-}
-
-QString safeMode(const QString &mode, bool pending)
-{
-    return mode == QLatin1String("boost") && pending ? QStringLiteral("auto") : cleanMode(mode);
 }
 
 QByteArray cursorTheme(const QByteArray &answer, const QStringList &folders)

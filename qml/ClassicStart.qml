@@ -78,6 +78,7 @@ Item {
                     spacing: 2
                     Words {
                         Layout.fillWidth: true
+                        face: Theme.display
                         names: ["headline"]
                         visible: root.page.css(["headline"], "display", "block") !== "none"
                         text: root.page.headline !== "" ? root.page.headline : Lang.t("Velum senin", "Velum is your")
@@ -105,6 +106,7 @@ Item {
                             id: said
                             x: 26
                             y: 3
+                            face: Theme.display
                             names: ["pill"]
                             text: pill.words[pill.word % pill.words.length]
                             base: Theme.accentInk
@@ -253,6 +255,7 @@ Item {
                     opacity: root.page.css(["clock"], "opacity", 1)
                     spacing: 0
                     component Digits: Words {
+                        face: Theme.display
                         names: ["clock"]
                         Layout.alignment: Qt.AlignHCenter
                         size: grid.two ? 190 : 150

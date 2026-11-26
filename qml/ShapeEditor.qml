@@ -14,12 +14,13 @@ ColumnLayout {
         history: Lang.t("Geçmiş", "History"), game: Lang.t("Oyun modu", "Game mode"), settings: Lang.t("Ayarlar", "Settings") })
     // the shown ones in their order, then the hidden ones
     readonly property var rows: Theme.barLeft.concat(Theme.barRight, Theme.buttonIds.filter(b => !Theme.barLeft.includes(b) && !Theme.barRight.includes(b)))
-    // lettering that is installed here
-    readonly property var fonts: {
+    // Velum's own lettering, and what is installed here
+    readonly property var installed: {
         const here = Qt.fontFamilies()
-        const known = ["Inter", "Roboto", "Noto Sans", "Ubuntu", "Cantarell", "Fira Sans", "Segoe UI", "Arial", "Noto Serif", "JetBrains Mono", "Fira Code", "Cascadia Code", "Comic Neue", "Comic Sans MS"]
-        return [{ key: "", label: "Google Sans Flex" }].concat(known.filter(f => here.includes(f)).map(f => ({ key: f, label: f })))
+        return ["Inter", "Roboto", "Noto Sans", "Ubuntu", "Cantarell", "Fira Sans", "Segoe UI", "Arial", "Noto Serif", "Fira Code", "Comic Sans MS"].filter(f => here.includes(f))
     }
+    readonly property var bodyFonts: [{ key: "", label: "Google Sans Flex" }].concat(Theme.bundled.filter(f => f.body).map(f => ({ key: f.name, label: f.name })), installed.map(f => ({ key: f, label: f })))
+    readonly property var headFonts: [{ key: "", label: Lang.t("Arayüzle aynı", "Same as the rest") }].concat(Theme.bundled.map(f => ({ key: f.name, label: f.name })), installed.map(f => ({ key: f, label: f })))
 
     component Name: Text { Layout.fillWidth: true; color: Theme.text; font.family: Theme.ui; font.pixelSize: 14; elide: Text.ElideRight }
     component Row_: RowLayout { Layout.fillWidth: true; Layout.minimumHeight: 38; spacing: 10 }
@@ -37,8 +38,12 @@ ColumnLayout {
         Segments { options: [{ key: "rounded", label: Lang.t("Kutu", "Box") }, { key: "pill", label: Lang.t("Hap", "Pill") }, { key: "square", label: Lang.t("Kare", "Square") }, { key: "line", label: Lang.t("Çizgi", "Line") }]; current: Theme.tabShape; onChosen: key => Theme.tabShape = key }
     }
     Row_ {
-        Name { text: Lang.t("Yazı tipi", "Lettering") }
-        Dropdown { implicitWidth: 220; options: shape.fonts; current: Theme.fontFamily; onChosen: key => Theme.fontFamily = key }
+        Name { text: Lang.t("Arayüz yazı tipi", "Browser lettering") }
+        Dropdown { implicitWidth: 220; options: shape.bodyFonts; current: Theme.fontFamily; onChosen: key => Theme.fontFamily = key }
+    }
+    Row_ {
+        Name { text: Lang.t("Başlık ve saat yazı tipi", "Headline and clock lettering") }
+        Dropdown { implicitWidth: 220; options: shape.headFonts; current: Theme.headFamily; onChosen: key => Theme.headFamily = key }
     }
 
     Name { Layout.topMargin: 10; text: Lang.t("Araç çubuğu düğmeleri", "Toolbar buttons"); font.variableAxes: Theme.axes(700) }

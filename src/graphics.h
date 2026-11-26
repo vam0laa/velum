@@ -17,16 +17,10 @@ bool hybridWithNvidia(const QString &drm);
 // answers of "hyprctl monitors -j" and "hyprctl getoption xwayland:force_zero_scaling -j".
 double xwaylandScale(const QByteArray &monitors, const QByteArray &zeroScaling);
 
-// The acceleration setting: "auto" (the engine decides), "boost" or "off".
-QString cleanMode(const QString &mode);
-
-// The engine switches for that setting, to be added to its command line. `linux_` adds the
-// video decoding switches that only Linux has.
-QByteArray engineFlags(const QString &mode, bool linux_);
-
-// A forced start that never reported success is not tried again: `pending` says the last
-// start in `mode` did not finish. Returns the mode to use now.
-QString safeMode(const QString &mode, bool pending);
+// The engine switches for the one "use the graphics card" setting, to be added to its
+// command line. `careful`: the last start with the extra switches did not finish, so
+// leave them out. `linux_` adds the video decoding switches that only Linux has.
+QByteArray engineFlags(bool accelerate, bool careful, bool linux_);
 
 // Through XWayland a program does not learn the desktop's mouse pointer and would show
 // another one. `answer` is what "gsettings get org.gnome.desktop.interface cursor-theme"

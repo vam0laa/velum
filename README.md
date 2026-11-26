@@ -31,9 +31,11 @@ Logos of search engines, extensions and flags in `data/logos` belong to their ow
 
 Settings → Appearance: pick a theme or make your own from fifteen colours, set corners, density, tab shape and lettering, choose and order the toolbar buttons, add a style sheet for the browser (`.tabbar .toolbar .tab .tab-active .address .sidebar .bookmarks .button .menu`), and save it all, with the home page design, to a `.velumtheme` file to share.
 
+Twenty-three open licensed letterings come along (see data/fonts/extra). Ctrl+Shift+0 resets the look.
+
 ## Speed
 
-Three modes in the menu and in Settings → Performance: balanced, game (background tabs freeze within seconds, no animations) and saver. A memory limit puts the longest unseen tabs to sleep. Graphics acceleration can be forced or switched off. Shortcuts can be changed in Settings → Shortcuts.
+Three modes in the menu and in Settings → Performance: balanced, game (background tabs freeze within seconds, no animations) and saver. A memory limit puts the longest unseen tabs to sleep. Graphics acceleration is one switch (on unless you switch it off), also asked on the welcome pages. Shortcuts can be changed in Settings → Shortcuts.
 
 ## Windows (beta)
 
