@@ -15,8 +15,29 @@ Item {
     property bool videoButton: false      // there is a video that can go to the small window
     property bool videoOut: false
     signal video()
+    property bool readerButton: false     // there is an article that can be read
+    property bool readerOn: false
+    signal reader()
 
     implicitHeight: 28
+
+    component Pill: Rectangle {
+        id: pill
+        property string symbol
+        property string text
+        property string hint
+        signal pressed()
+        implicitWidth: label.implicitWidth + 36
+        implicitHeight: 20
+        radius: 10
+        color: pillArea.containsMouse ? Theme.title : Theme.raised
+        Icon { x: 9; anchors.verticalCenter: parent.verticalCenter; name: pill.symbol; size: 13; color: Theme.mauve }
+        Text { id: label; x: 27; anchors.verticalCenter: parent.verticalCenter; text: pill.text; color: Theme.text; font.pixelSize: 11 }
+        MouseArea { id: pillArea; anchors.fill: parent; hoverEnabled: true; onClicked: pill.pressed() }
+        Hint { text: pill.hint; shown: pillArea.containsMouse; y: 26 }
+        Accessible.role: Accessible.Button
+        Accessible.name: text
+    }
 
     component Dot: Rectangle {
         id: dot
@@ -47,18 +68,19 @@ Item {
             font.family: Theme.pixel
             font.pixelSize: 18
         }
-        Rectangle {
+        Pill {
+            visible: bar.readerButton
+            symbol: "book"
+            text: bar.readerOn ? Lang.t("sayfaya dön", "back to page") : Lang.t("okuma modu", "reader")
+            hint: "Alt+R"
+            onPressed: bar.reader()
+        }
+        Pill {
             visible: bar.videoButton
-            implicitWidth: label.implicitWidth + 36
-            implicitHeight: 20
-            radius: 10
-            color: videoArea.containsMouse ? Theme.title : Theme.raised
-            Icon { x: 9; anchors.verticalCenter: parent.verticalCenter; name: "pip"; size: 13; color: Theme.mauve }
-            Text { id: label; x: 27; anchors.verticalCenter: parent.verticalCenter; text: bar.videoOut ? Lang.t("videoyu geri al", "bring video back") : Lang.t("küçük pencere", "mini player"); color: Theme.text; font.pixelSize: 11 }
-            MouseArea { id: videoArea; anchors.fill: parent; hoverEnabled: true; onClicked: bar.video() }
-            Hint { text: "Alt+P"; shown: videoArea.containsMouse; y: 26 }
-            Accessible.role: Accessible.Button
-            Accessible.name: label.text
+            symbol: "pip"
+            text: bar.videoOut ? Lang.t("videoyu geri al", "bring video back") : Lang.t("küçük pencere", "mini player")
+            hint: "Alt+P"
+            onPressed: bar.video()
         }
         Dot { visible: bar.minimizable; tone: Theme.peach; hint: Lang.t("Yan paneli daralt", "Narrow the side bar"); onPressed: bar.minimize() }
         Dot { visible: bar.maximizable; tone: Theme.green; hint: Lang.t("Tam ekran", "Full screen"); onPressed: bar.maximize() }

@@ -265,8 +265,57 @@ Item {
         id: doneStep; interval: 800
         onTriggered: {
             t.check("a page without a video says so", t.w.miniPage === null && t.w.notice !== "")
-            console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
-            Qt.exit(t.failed)
+            const w = t.w
+            w.notice = ""
+            w.toggleReader()
+            noArticleStep.start()
+        }
+    }
+    Timer {
+        id: noArticleStep; interval: 800
+        onTriggered: {
+            const w = t.w
+            t.check("a page without an article says so", !w.view.reading && w.notice !== "")
+            const p = "Bu uzun bir paragraf, okuma modunun makaleyi bulabilmesi için yeterince metin taşıyor ve birkaç kez yineleniyor. ".repeat(3)
+            w.view.loadHtml('<title>Deneme</title><nav class="menu"><a href="/x">Menü bağlantısı</a></nav>'
+                + '<div id="content"><article><h1>Başlık</h1><p onclick="evil()" style="color:red">' + p + '</p><p>' + p + ' <a href="/iyi">iyi bağlantı</a> <a href="javascript:alert(1)">kötü</a></p><p>' + p + '</p><p>' + p + '</p>'
+                + '<script>window.ran = 1</scr' + 'ipt><div class="share-buttons">Paylaş düğmeleri</div><form><input value="form"></form></article></div>'
+                + '<aside class="sidebar"><p>' + 'Yan sütun yazısı. '.repeat(20) + '</p></aside>', "https://article.example/yazi")
+            readStep.start()
+        }
+    }
+    Timer {
+        id: readStep; interval: 2000
+        onTriggered: {
+            const w = t.w
+            t.check("an article is noticed", w.view.readable)
+            w.toggleReader()
+            shownStep.start()
+        }
+    }
+    Timer {
+        id: shownStep; interval: 800
+        onTriggered: {
+            const w = t.w
+            t.check("reading mode turns on", w.view.reading)
+            w.view.runJavaScript("const s = document.getElementById('velum-reader').shadowRoot; ({ text: s.textContent, heads: s.querySelectorAll('h1').length,"
+                + " dirty: s.querySelectorAll('script,form,input,[onclick],[style]').length, links: [...s.querySelectorAll('a')].map(a => a.getAttribute('href')), size: getComputedStyle(s.querySelector('.page')).fontSize })", r => {
+                t.check("the article is there once, with its headline", r.heads === 1 && r.text.indexOf("Başlık") >= 0 && r.text.indexOf("yeterince metin") > 0 && r.text.indexOf("article.example") > 0)
+                t.check("menus, side columns and buttons are left out", ["Menü bağlantısı", "Yan sütun", "Paylaş", "window.ran"].every(x => r.text.indexOf(x) < 0))
+                t.check("nothing that runs is carried over", r.dirty === 0 && r.links.filter(l => !!l).join() === "https://article.example/iyi")
+                const before = w.readerSize
+                w.sizeReader(2)
+                w.view.runJavaScript("getComputedStyle(document.getElementById('velum-reader').shadowRoot.querySelector('.page')).fontSize", size => {
+                    t.check("the letters grow", r.size === before + "px" && size === (before + 2) + "px")
+                    w.sizeReader(-2)
+                    w.toggleReader()
+                    w.view.runJavaScript("document.getElementById('velum-reader') === null && document.documentElement.style.overflow === ''", gone => {
+                        t.check("leaving restores the page", gone === true && !w.view.reading)
+                        console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
+                        Qt.exit(t.failed)
+                    })
+                })
+            })
         }
     }
     Timer {

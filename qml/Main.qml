@@ -42,6 +42,7 @@ ApplicationWindow {
     property alias mini: miniPlayer
     readonly property WebEngineView miniPage: miniPlayer.page   // the tab in the small window
     property string notice: ""        // a short message over the page
+    property int readerSize: 18       // letter size in reading mode
     property var asks: []             // unanswered permission requests: [{ page, permission, site, wish }]
     // the question for the page being looked at, if it has one
     readonly property var ask: asks.find(a => a.page === view) ?? null
@@ -187,6 +188,7 @@ ApplicationWindow {
         property alias downloadFolder: window.downloadFolder
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
+        property alias readerSize: window.readerSize
         property string spaces: "[]"
         property alias space: window.space
         property alias width: window.width
@@ -640,6 +642,7 @@ ApplicationWindow {
                 missing()
                 return
             }
+            closeReader(page)
             if (page === splitLeft || page === splitRight)
                 unsplit()
             miniPlayer.paused = found.paused === true
@@ -659,6 +662,40 @@ ApplicationWindow {
         miniPlayer.page = null
         miniPlayer.hide()
     }
+
+    // ---- reading mode ----
+    function toggleReader() {
+        const page = view
+        if (!page || onStartPage || page === miniPage)
+            return
+        if (page.reading) {
+            closeReader(page)
+            return
+        }
+        const color = c => String(c)
+        const look = { size: readerSize, dark: Theme.surface.hslLightness < 0.5, minutes: Lang.t("dk okuma", "min read"),
+                       colors: { back: color(Theme.surface), text: color(Theme.text), dim: color(Theme.dim), accent: color(Theme.accent), card: color(Theme.frame), line: color(Theme.line) } }
+        page.runJavaScript(reader.enter(look), WebEngineScript.ApplicationWorld, found => {
+            if (found === true)
+                page.reading = true
+            else
+                say(Lang.t("Bu sayfada okunacak bir yazı bulunamadı.", "There is no article to read on this page."))
+        })
+    }
+
+    function closeReader(page) {
+        if (!page || !page.reading)
+            return
+        page.reading = false
+        page.runJavaScript(reader.leave, WebEngineScript.ApplicationWorld)
+    }
+
+    function sizeReader(by) {
+        readerSize = Math.max(14, Math.min(28, readerSize + by))
+        view?.runJavaScript(reader.resize(readerSize), WebEngineScript.ApplicationWorld)
+    }
+
+    Reader { id: reader }
 
     function say(text) {
         notice = text
@@ -781,6 +818,8 @@ ApplicationWindow {
         }
         else if (action === "allow" && ask)
             answer(ask, true)
+        else if (action === "reader")
+            toggleReader()
         else if (action === "import")
             openImport()
         else if (action === "bookmarks")
@@ -860,6 +899,9 @@ ApplicationWindow {
             onMinimize: window.compactSidebar = !window.compactSidebar
             onMaximize: window.toggleWindowFullScreen()
             onCloseRequested: window.closeTab(window.current)
+            readerButton: !window.onStartPage && window.view !== null && window.view !== window.miniPage && (window.view.readable || window.view.reading)
+            readerOn: window.view?.reading ?? false
+            onReader: window.toggleReader()
             videoButton: window.miniPage !== null || (!window.onStartPage && (window.view?.recentlyAudible ?? false))
             videoOut: window.miniPage !== null
             onVideo: window.toggleMini()
@@ -879,6 +921,8 @@ ApplicationWindow {
                         required property bool lazy
                         property bool started: false
                         property bool crashed: false
+                        property bool readable: false       // there is an article here
+                        property bool reading: false        // and it is shown in reading mode
                         property var failure: null          // { url, text, certificate }
                         // loads the address a restored tab was waiting with
                         function load_() {
@@ -987,16 +1031,21 @@ ApplicationWindow {
                             if (info.status === WebEngineView.LoadStartedStatus) {
                                 if (web === window.miniPage)      // another page: the video is gone
                                     window.closeMini()
+                                readable = false
+                                reading = false
                                 crashed = false
                                 failure = null
                             }
-                            if (info.status === WebEngineView.LoadSucceededStatus)
+                            if (info.status === WebEngineView.LoadSucceededStatus) {
                                 History.add(String(url), title)
+                                web.runJavaScript(reader.probe, WebEngineScript.ApplicationWorld, found => web.readable = found === true)
+                            }
                             // -3 means "stopped": by you, or because another page was asked for
                             if (info.status === WebEngineView.LoadFailedStatus && info.errorCode !== -3 && !failure)
                                 failure = { url: String(info.url), text: info.errorString, certificate: false }
                         }
                         onUrlChanged: {
+                            window.closeReader(web)      // sites that change page without loading
                             if (lazy && !started)
                                 return
                             tabs.setProperty(index, "pageUrl", String(url))
@@ -1126,6 +1175,26 @@ ApplicationWindow {
                 }
             }
 
+            // letter size and the way out, while reading
+            Rectangle {
+                anchors { right: parent.right; bottom: parent.bottom; margins: 18 }
+                visible: window.view?.reading ?? false
+                z: 3
+                width: readerControls.implicitWidth + 14
+                height: 42
+                radius: 21
+                color: Theme.window
+                border.color: Theme.line
+                Row {
+                    id: readerControls
+                    anchors.centerIn: parent
+                    spacing: 6
+                    TextButton { text: "A−"; implicitHeight: 28; enabled: window.readerSize > 14; onClicked: window.sizeReader(-2) }
+                    TextButton { text: "A+"; implicitHeight: 28; enabled: window.readerSize < 28; onClicked: window.sizeReader(2) }
+                    TextButton { text: Lang.t("Çık", "Close"); implicitHeight: 28; strong: true; onClicked: window.toggleReader() }
+                }
+            }
+
             // a short message at the bottom of the page
             Rectangle {
                 anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 18 }
@@ -1239,6 +1308,7 @@ ApplicationWindow {
             { name: Lang.t("Diğer sekmeleri kapat", "Close other tabs"), keys: "", run: () => window.closeOthers(window.current) },
             { name: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"), keys: "Ctrl+\\", run: () => window.toggleSplit() },
             { name: Lang.t("Videoyu küçük pencereye al ya da geri getir", "Video in a small window, or back"), keys: "Alt+P", run: () => window.toggleMini() },
+            { name: Lang.t("Okuma modu", "Reading mode"), keys: "Alt+R", run: () => window.toggleReader() },
             { name: Lang.t("Yeni çalışma alanı", "New workspace"), keys: "", run: () => spaceDialog.show(0, "", false) },
             { name: Lang.t("Sayfada ara", "Find in page"), keys: "Ctrl+F", run: () => Qt.callLater(window.findInPage) },
             { name: window.restoreSession ? Lang.t("Açılışta sekmeleri geri getirme", "Do not reopen tabs at start") : Lang.t("Açılışta sekmeleri geri getir", "Reopen tabs at start"), keys: "", run: () => window.restoreSession = !window.restoreSession },
@@ -1296,6 +1366,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+D"; onActivated: window.toggleBookmark() }
     Shortcut { sequences: [StandardKey.Find]; onActivated: window.findInPage() }
     Shortcut { sequence: "Ctrl+Shift+O"; onActivated: window.openBookmarks() }
+    Shortcut { sequence: "Alt+R"; onActivated: window.toggleReader() }
     Shortcut { sequence: "Alt+P"; onActivated: window.toggleMini() }
     Shortcut { sequence: "Alt+1"; onActivated: window.switchSpace(window.spaces[0]?.id) }
     Shortcut { sequence: "Alt+2"; onActivated: window.switchSpace(window.spaces[1]?.id ?? 0) }

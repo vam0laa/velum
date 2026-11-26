@@ -65,6 +65,7 @@ qt_add_qml_module(velum
         qml/MiniPlayer.qml
         qml/BookmarksPage.qml
         qml/ImportPanel.qml
+        qml/Reader.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml

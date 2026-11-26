@@ -311,6 +311,15 @@ Pencerenin başlığı `Picture-in-Picture`: Hyprland kuralları bu başlığı 
 
 `importbridge.h` yalnızca kendi bulduğu profilleri okur. Parola ve çerez alınmaz. Aynı aktarmayı iki kez yapmak bir şeyi çoğaltmaz.
 
+## 7u. Okuma modu
+
+`qml/Reader.qml` içindeki JavaScript:
+1. **Bulur:** her uzun paragraf, kapsayan öğeye puan verir; menü, kenar sütunu, yorum gibi adlı bölümler sayılmaz.
+2. **Temiz kopyalar:** sayfanın öğelerini taşımaz, izin verilen etiketlerden *yenilerini* yapar. Betik, form, `onclick`, `javascript:` bağlantısı bu yüzden geçemez.
+3. **Üste serer:** kendi stilini taşıyan bir katman (shadow root). Çıkınca katman silinir, sayfa olduğu gibi kalır.
+
+Betik `ApplicationWorld`'de çalışır: sayfanın kendi kodu onun değişkenlerine karışamaz.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.
