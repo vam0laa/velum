@@ -12,6 +12,9 @@ Item {
     signal minimize()
     signal maximize()
     signal closeRequested()
+    property bool videoButton: false      // there is a video that can go to the small window
+    property bool videoOut: false
+    signal video()
 
     implicitHeight: 28
 
@@ -43,6 +46,19 @@ Item {
             color: bar.stripe
             font.family: Theme.pixel
             font.pixelSize: 18
+        }
+        Rectangle {
+            visible: bar.videoButton
+            implicitWidth: label.implicitWidth + 36
+            implicitHeight: 20
+            radius: 10
+            color: videoArea.containsMouse ? Theme.title : Theme.raised
+            Icon { x: 9; anchors.verticalCenter: parent.verticalCenter; name: "pip"; size: 13; color: Theme.mauve }
+            Text { id: label; x: 27; anchors.verticalCenter: parent.verticalCenter; text: bar.videoOut ? Lang.t("videoyu geri al", "bring video back") : Lang.t("küçük pencere", "mini player"); color: Theme.text; font.pixelSize: 11 }
+            MouseArea { id: videoArea; anchors.fill: parent; hoverEnabled: true; onClicked: bar.video() }
+            Hint { text: "Alt+P"; shown: videoArea.containsMouse; y: 26 }
+            Accessible.role: Accessible.Button
+            Accessible.name: label.text
         }
         Dot { visible: bar.minimizable; tone: Theme.peach; hint: Lang.t("Yan paneli daralt", "Narrow the side bar"); onPressed: bar.minimize() }
         Dot { visible: bar.maximizable; tone: Theme.green; hint: Lang.t("Tam ekran", "Full screen"); onPressed: bar.maximize() }

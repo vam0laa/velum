@@ -62,6 +62,7 @@ qt_add_qml_module(velum
         qml/Kicker.qml
         qml/SpaceBar.qml
         qml/SpaceDialog.qml
+        qml/MiniPlayer.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml

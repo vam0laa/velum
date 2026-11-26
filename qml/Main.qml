@@ -37,6 +37,9 @@ ApplicationWindow {
     readonly property bool splitShown: moves >= 0 && !pageFullScreen && splitLeft !== null && splitRight !== null && view !== null
                                        && (view === splitLeft || view === splitRight) && inSpace(splitLeft.index) && inSpace(splitRight.index)
     property var downloads: []        // download requests of this run, newest first
+    property alias mini: miniPlayer
+    readonly property WebEngineView miniPage: miniPlayer.page   // the tab in the small window
+    property string notice: ""        // a short message over the page
     property var asks: []             // unanswered permission requests: [{ page, permission, site, wish }]
     // the question for the page being looked at, if it has one
     readonly property var ask: asks.find(a => a.page === view) ?? null
@@ -138,7 +141,7 @@ ApplicationWindow {
     function touchSession() { sessionTimer.restart() }
     onCurrentChanged: { followCurrent(); touchSession() }
     onMovesChanged: touchSession()
-    onClosing: saveSession()
+    onClosing: { closeMini(); saveSession() }
 
     // addresses handed over by a second start of Velum
     function openExternal(urls) {
@@ -215,6 +218,8 @@ ApplicationWindow {
         if (index < 0 || index >= tabs.count)
             return
         const closing = views.itemAt(index) as WebEngineView
+        if (closing && closing === miniPage)
+            closeMini()
         if (closing && (closing === splitLeft || closing === splitRight))
             unsplit()
         const tab = tabs.get(index)
@@ -498,7 +503,7 @@ ApplicationWindow {
     // Puts the tab at `index` beside the current one.
     function splitWith(index) {
         const other = views.itemAt(index) as WebEngineView
-        if (!other || !view || other === view)
+        if (!other || !view || other === view || other === miniPage || view === miniPage)
             return false
         const here = view
         splitLeft = here
@@ -527,6 +532,56 @@ ApplicationWindow {
         }
         splitWith(other)
     }
+
+    // ---- the small video window ----
+    // Alt+P and the title bar button: take the video out, or bring it back.
+    function toggleMini() {
+        if (miniPage)
+            closeMini()
+        else
+            openMini(current)
+    }
+
+    function openMini(index) {
+        const page = views.itemAt(index) as WebEngineView
+        if (!page || page === miniPage)
+            return
+        closeMini()
+        const missing = () => say(Lang.t("Bu sayfada küçük pencereye alınacak bir video yok.", "There is no video on this page to take out."))
+        if (page.url.toString() === "" || page.lifecycleState !== WebEngineView.LifecycleState.Active) {
+            missing()
+            return
+        }
+        page.runJavaScript(miniPlayer.enterScript, found => {
+            if (!found) {
+                missing()
+                return
+            }
+            if (page === splitLeft || page === splitRight)
+                unsplit()
+            miniPlayer.paused = found.paused === true
+            miniPlayer.height = Math.max(135, Math.min(720, Math.round(miniPlayer.width * found.height / found.width)))
+            miniPlayer.page = page
+            page.parent = miniPlayer.stage
+            miniPlayer.show()
+        })
+    }
+
+    function closeMini() {
+        const page = miniPlayer.page
+        if (!page)
+            return
+        page.runJavaScript(miniPlayer.leaveScript)
+        page.parent = pagesArea
+        miniPlayer.page = null
+        miniPlayer.hide()
+    }
+
+    function say(text) {
+        notice = text
+        noticeTimer.restart()
+    }
+    Timer { id: noticeTimer; interval: 3500; onTriggered: window.notice = "" }
 
     function sleepState(index) { return index >= 0 && index < tabs.count ? tabs.get(index).asleep : -1 }
 
@@ -644,6 +699,8 @@ ApplicationWindow {
         }
         else if (action === "allow" && ask)
             answer(ask, true)
+        else if (action === "mini")
+            toggleMini()
         else if (action.startsWith("space:"))
             addSpace(action.slice(6))
         else if (action === "split")
@@ -717,8 +774,12 @@ ApplicationWindow {
             onMinimize: window.compactSidebar = !window.compactSidebar
             onMaximize: window.toggleWindowFullScreen()
             onCloseRequested: window.closeTab(window.current)
+            videoButton: window.miniPage !== null || (!window.onStartPage && (window.view?.recentlyAudible ?? false))
+            videoOut: window.miniPage !== null
+            onVideo: window.toggleMini()
 
             Item {
+                id: pagesArea
                 anchors.fill: parent
 
                 Repeater {
@@ -754,11 +815,13 @@ ApplicationWindow {
                         }
                         onLifecycleStateChanged: tabs.setProperty(index, "asleep", lifecycleState)
                         readonly property bool beside: window.splitShown && (web === window.splitLeft || web === window.splitRight)
-                        readonly property real divide: Math.round(parent.width * window.splitRatio)
-                        visible: web === window.view || beside
+                        // "parent" is the small window while the video is out there
+                        readonly property real room: parent?.width ?? 0
+                        readonly property real divide: Math.round(room * window.splitRatio)
+                        visible: web === window.view || web === window.miniPage || beside
                         x: beside && web === window.splitRight ? divide + 4 : 0
-                        width: !beside ? parent.width : web === window.splitLeft ? divide - 4 : parent.width - divide - 4
-                        height: parent.height
+                        width: !beside ? room : web === window.splitLeft ? divide - 4 : room - divide - 4
+                        height: parent?.height ?? 0
                         // clicking into the other half makes that tab the current one
                         onActiveFocusChanged: if (activeFocus && beside && web !== window.view) window.current = index
 
@@ -773,6 +836,8 @@ ApplicationWindow {
                             error.rejectCertificate()
                         }
                         onRenderProcessTerminated: (status, code) => {
+                            if (web === window.miniPage)
+                                window.closeMini()
                             // putting a tab to sleep ends its process too; that is not a crash
                             if (status !== WebEngineView.NormalTerminationStatus && lifecycleState === WebEngineView.LifecycleState.Active)
                                 crashed = true
@@ -834,6 +899,8 @@ ApplicationWindow {
                         onLoadingChanged: info => {
                             tabs.setProperty(index, "loading", loading)
                             if (info.status === WebEngineView.LoadStartedStatus) {
+                                if (web === window.miniPage)      // another page: the video is gone
+                                    window.closeMini()
                                 crashed = false
                                 failure = null
                             }
@@ -857,6 +924,10 @@ ApplicationWindow {
                         onWindowCloseRequested: window.closeTab(index)
 
                         onFullScreenRequested: request => {
+                            if (web === window.miniPage) {
+                                request.reject()
+                                return
+                            }
                             window.pageFullScreen = request.toggleOn
                             if (request.toggleOn)
                                 window.showFullScreen()
@@ -955,6 +1026,33 @@ ApplicationWindow {
                 onAnswered: allow => window.answer(window.ask, allow)
             }
 
+            // what the window shows while the current tab's video is out
+            Rectangle {
+                anchors.fill: parent
+                visible: window.miniPage !== null && window.view === window.miniPage
+                color: Theme.surface
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 14
+                    Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "pip"; size: 48; color: Theme.mauve }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("Video küçük pencerede oynuyor", "The video is playing in the small window"); color: Theme.text; font.pixelSize: 18; font.weight: Font.Bold }
+                    TextButton { anchors.horizontalCenter: parent.horizontalCenter; strong: true; text: Lang.t("Buraya geri al", "Bring it back"); onClicked: window.closeMini() }
+                }
+            }
+
+            // a short message at the bottom of the page
+            Rectangle {
+                anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 18 }
+                width: Math.min(parent.width - 24, noticeText.implicitWidth + 32)
+                height: 38
+                radius: 19
+                z: 3
+                visible: window.notice !== ""
+                color: Theme.raised
+                border.color: Theme.line
+                Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.pixelSize: 13; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+            }
+
             StartPage {
                 id: start
                 x: window.splitShown ? window.view.x : 0
@@ -1004,6 +1102,11 @@ ApplicationWindow {
         onConfirmed: { History.clear(); Shield.clearData(window.profile) }
     }
 
+    MiniPlayer {
+        id: miniPlayer
+        onBackRequested: window.closeMini()
+    }
+
     SpaceDialog {
         id: spaceDialog
         onAccepted: (id, name) => id === 0 ? window.addSpace(name) : window.renameSpace(id, name)
@@ -1028,6 +1131,7 @@ ApplicationWindow {
             { name: Lang.t("Sekmeyi kapat", "Close the tab"), keys: "Ctrl+W", run: () => window.closeTab(window.current) },
             { name: Lang.t("Diğer sekmeleri kapat", "Close other tabs"), keys: "", run: () => window.closeOthers(window.current) },
             { name: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"), keys: "Ctrl+\\", run: () => window.toggleSplit() },
+            { name: Lang.t("Videoyu küçük pencereye al ya da geri getir", "Video in a small window, or back"), keys: "Alt+P", run: () => window.toggleMini() },
             { name: Lang.t("Yeni çalışma alanı", "New workspace"), keys: "", run: () => spaceDialog.show(0, "", false) },
             { name: Lang.t("Sayfada ara", "Find in page"), keys: "Ctrl+F", run: () => Qt.callLater(window.findInPage) },
             { name: window.restoreSession ? Lang.t("Açılışta sekmeleri geri getirme", "Do not reopen tabs at start") : Lang.t("Açılışta sekmeleri geri getir", "Reopen tabs at start"), keys: "", run: () => window.restoreSession = !window.restoreSession },
@@ -1062,6 +1166,7 @@ ApplicationWindow {
         AppMenuItem { text: Lang.t("Yenile", "Reload"); onTriggered: (views.itemAt(tabMenu.index) as WebEngineView).reload() }
         AppMenuItem { text: Lang.t("Uyut", "Sleep"); enabled: tabMenu.index !== window.current; onTriggered: window.sleepTab(tabMenu.index) }
         AppMenuItem { text: Lang.t("Yer imlerine ekle", "Bookmark"); onTriggered: window.addShortcut(tabs.get(tabMenu.index).pageUrl, tabs.get(tabMenu.index).title) }
+        AppMenuItem { text: Lang.t("Videoyu küçük pencereye al", "Video in a small window"); onTriggered: window.openMini(tabMenu.index) }
         AppMenuItem { text: Lang.t("Yan yana aç", "Open side by side"); shown: tabMenu.index !== window.current; onTriggered: window.splitWith(tabMenu.index) }
         AppMenuItem { text: Lang.t("Bölünmeyi kapat", "End split view"); shown: window.splitShown; onTriggered: window.unsplit() }
         // moving a tab to another workspace; there are at most six
@@ -1083,6 +1188,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+P"; onActivated: window.togglePin(window.current) }
     Shortcut { sequence: "Ctrl+D"; onActivated: window.toggleBookmark() }
     Shortcut { sequences: [StandardKey.Find]; onActivated: window.findInPage() }
+    Shortcut { sequence: "Alt+P"; onActivated: window.toggleMini() }
     Shortcut { sequence: "Alt+1"; onActivated: window.switchSpace(window.spaces[0]?.id) }
     Shortcut { sequence: "Alt+2"; onActivated: window.switchSpace(window.spaces[1]?.id ?? 0) }
     Shortcut { sequence: "Alt+3"; onActivated: window.switchSpace(window.spaces[2]?.id ?? 0) }

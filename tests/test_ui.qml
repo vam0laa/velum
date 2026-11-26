@@ -8,6 +8,8 @@ Item {
     property var w
     property var second
     property int failed: 0
+    property var video
+    property var videoHome
     function check(name, ok) { if (!ok) failed++; console.log((ok ? "PASS " : "FAIL ") + name) }
     function page(u) { return "about:blank#" + u }
     // the tab order as letters, pinned ones in capitals
@@ -177,6 +179,64 @@ Item {
             const other2 = w.current
             w.current = other2 + 1
             t.check("choosing a sleeping tab wakes it", w.view.lifecycleState === WebEngineView.LifecycleState.Active && w.sleepState(other2 + 1) === 0)
+            // a page with a live video made from a canvas, so no file or network is needed
+            w.openTab("")
+            w.view.loadHtml('<body style="margin:0"><div id="box" style="transform:translateX(40px)"><p>text</p><canvas width="320" height="180"></canvas><video muted autoplay playsinline style="width:200px"></video></div>'
+                + '<script>const c=document.querySelector("canvas"),x=c.getContext("2d");let n=0;setInterval(()=>{x.fillStyle=n++%2?"#89b4fa":"#cba6f7";x.fillRect(0,0,320,180)},50);'
+                + 'const v=document.querySelector("video");v.srcObject=c.captureStream(20);v.play()</script></body>', "https://video.example/")
+            videoStep.start()
+        }
+    }
+    Timer {
+        id: videoStep; interval: 2500
+        onTriggered: {
+            const w = t.w
+            t.video = w.view
+            t.videoHome = w.view.parent
+            w.toggleMini()
+            miniStep.start()
+        }
+    }
+    Timer {
+        id: miniStep; interval: 1200
+        onTriggered: {
+            const w = t.w
+            t.check("the video's page moves to the small window", w.miniPage === t.video && t.video.parent === w.mini.stage && w.mini.visible)
+            t.check("the window has the video's shape and the title compositors know", w.mini.height === 270 && w.mini.title === "Picture-in-Picture")
+            t.video.runJavaScript("const r = document.querySelector('video').getBoundingClientRect(); [r.x, r.y, r.width, r.height, innerWidth, innerHeight, getComputedStyle(document.querySelector('p')).visibility]", r => {
+                t.check("the video fills the small window and the rest is hidden", r[0] === 0 && r[1] === 0 && r[2] === r[4] && r[3] === r[5] && r[4] <= 481 && r[6] === "hidden")
+                w.step(1)
+                t.check("another tab can be used meanwhile", w.view !== t.video && t.video.visible && t.video.parent === w.mini.stage)
+                w.sleepTab(w.tabIndexOf(t.video)); t.check("the playing tab is not put to sleep", t.video.lifecycleState === WebEngineView.LifecycleState.Active)
+                w.toggleMini()
+                t.check("bringing it back restores the tab", w.miniPage === null && t.video.parent === t.videoHome && !w.mini.visible && !t.video.visible)
+                t.video.runJavaScript("[document.querySelectorAll('[data-velum-path],[data-velum-mini],#velum-mini').length, getComputedStyle(document.querySelector('p')).visibility]", left => {
+                    t.check("the page is as it was", left[0] === 0 && left[1] === "visible")
+                    w.openMini(w.tabIndexOf(t.video))
+                    closeStep.start()
+                })
+            })
+        }
+    }
+    Timer {
+        id: closeStep; interval: 1200
+        onTriggered: {
+            const w = t.w
+            t.check("it can be taken out again", w.miniPage === t.video)
+            w.closeTab(w.tabIndexOf(t.video))
+            t.check("closing the tab closes the small window", w.miniPage === null && !w.mini.visible)
+            w.openTab(t.page("novideo"))
+            plainStep.start()
+        }
+    }
+    Timer {
+        id: plainStep; interval: 1200
+        onTriggered: { t.w.toggleMini(); doneStep.start() }
+    }
+    Timer {
+        id: doneStep; interval: 800
+        onTriggered: {
+            t.check("a page without a video says so", t.w.miniPage === null && t.w.notice !== "")
             console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
             Qt.exit(t.failed)
         }

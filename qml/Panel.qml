@@ -14,6 +14,9 @@ Item {
     signal minimize()
     signal maximize()
     signal closeRequested()
+    property alias videoButton: bar.videoButton
+    property alias videoOut: bar.videoOut
+    signal video()
 
     Rectangle { anchors.fill: parent; visible: panel.chrome; color: panel.fill; radius: Theme.corner; border.width: 1; border.color: Theme.line }
     TitleBar {
@@ -23,6 +26,7 @@ Item {
         onMinimize: panel.minimize()
         onMaximize: panel.maximize()
         onCloseRequested: panel.closeRequested()
+        onVideo: panel.video()
     }
     // a hairline under the title
     Rectangle { visible: panel.chrome; anchors { left: parent.left; right: parent.right; top: bar.bottom; leftMargin: 1; rightMargin: 1 } height: 1; color: Theme.line; opacity: 0.6 }

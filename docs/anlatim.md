@@ -289,6 +289,16 @@ Her sekmenin bir `space` numarası var. Kenar çubuğu yalnızca `pinned || spac
 
 Dikkat edilen kural: ekranda her zaman o alanın gösterebileceği bir sekme olur. Son sekmeyi kapatınca ya da taşıyınca sabitlenene dönülür; o da yoksa boş sekme açılır (`neighbourOf` -1 dönerse).
 
+## 7r. Küçük video penceresi
+
+```qml
+page.runJavaScript(miniPlayer.enterScript, ...)   // 1: videoyu sayfayı kaplayacak hale getir
+page.parent = miniPlayer.stage                    // 2: sayfayı küçük pencereye taşı
+```
+Qt WebEngine tarayıcıların "picture-in-picture" özelliğini desteklemiyor. Onun yerine sekmenin sayfasının kendisi küçük pencereye taşınıyor: yeniden yüklenmediği için video kesilmiyor. JavaScript yalnızca bir stil ekler (videoyu büyütür, gerisini gizler); geri dönünce stil silinir.
+
+Pencerenin başlığı `Picture-in-Picture`: Hyprland kuralları bu başlığı tanıyıp pencereyi yüzen ve sabit yapar. Sınırlar: başka siteden gömülü (iframe) videolar bulunamaz; sitenin kendi çizdiği altyazılar küçük pencerede görünmez.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.
