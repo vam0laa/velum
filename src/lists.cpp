@@ -42,6 +42,50 @@ bool isCaptchaService(const QString &host)
         || h == QLatin1String("www.recaptcha.net") || h == QLatin1String("hcaptcha.com") || h.endsWith(QLatin1String(".hcaptcha.com"));
 }
 
+QByteArray forThisEngine(const QByteArray &list)
+{
+    // "a", "!a", and these joined with && and ||
+    const auto holds = [](const QByteArray &condition) {
+        const QByteArray text = QByteArray(condition).replace("||", "|").replace("&&", "&");
+        for (const QByteArray &either : text.split('|')) {
+            bool all = true;
+            for (QByteArray word : either.split('&')) {
+                word = word.trimmed();
+                const bool negated = word.startsWith('!');
+                if (negated)
+                    word = word.mid(1).trimmed();
+                all = all && ((word == "env_chromium" || word == "ext_ublock") != negated);
+            }
+            if (all)
+                return true;
+        }
+        return false;
+    };
+    QByteArray out;
+    out.reserve(list.size());
+    QList<bool> open;          // for each "!#if" we are in: is this part of it taken?
+    int skipping = 0;          // how many of them are not
+    qsizetype at = 0;
+    while (at < list.size()) {
+        qsizetype end = list.indexOf('\n', at);
+        end = end < 0 ? list.size() : end + 1;
+        const QByteArrayView line = QByteArrayView(list).sliced(at, end - at);
+        at = end;
+        if (line.startsWith("!#if ")) {
+            open.append(holds(line.sliced(5).toByteArray().trimmed()));
+            skipping += !open.last();
+        } else if (line.startsWith("!#else") && !open.isEmpty()) {
+            skipping += open.last() ? 1 : -1;
+            open.last() = !open.last();
+        } else if (line.startsWith("!#endif") && !open.isEmpty()) {
+            skipping -= !open.takeLast();
+        } else if (skipping == 0) {
+            out.append(line);
+        }
+    }
+    return out;
+}
+
 bool shouldUpgrade(const QUrl &url)
 {
     if (url.scheme() != QLatin1String("http"))

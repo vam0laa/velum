@@ -211,6 +211,7 @@ ApplicationWindow {
         const ownProfile = sharedProfile === null
         if (ownProfile) {
             Shield.attach(profile)          // every request now passes through the shield
+            scriptsMissing = !Shield.pageScriptsReady
             guardEarly()
             profile.downloadRequested.connect(startDownload)
         }
@@ -739,10 +740,26 @@ ApplicationWindow {
             profile.userScripts.insert(script)
         }
     }
+    property bool scriptsMissing: false
+    function reloadEarlySites() {
+        const sites = Shield.earlySites()
+        for (let i = 0; i < tabs.count; i++) {
+            const page = pageViewAt(i)
+            if (page && sites.includes(hostOf(page.url)))
+                page.reload()
+        }
+    }
     // new lists, protection switched off, or a site let through
     Connections {
         target: Shield
-        function onChanged() { window.guardEarly() }
+        function onChanged() {
+            window.guardEarly()
+            // the very first time: sites that need the scripts early were opened without them
+            if (Shield.pageScriptsReady && window.scriptsMissing) {
+                window.scriptsMissing = false
+                window.reloadEarlySites()
+            }
+        }
     }
 
     function watchLogins() { return passwordLogic.watchLogins() }

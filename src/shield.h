@@ -29,6 +29,8 @@ class Shield : public QWebEngineUrlRequestInterceptor
     // the value forgetOnExit had at start: the engine accepts its cookie setting only once
     Q_PROPERTY(bool forgettingThisRun READ forgettingThisRun CONSTANT)
     Q_PROPERTY(bool ready READ ready NOTIFY changed)
+    // uBlock Origin's page scripts are in the engine
+    Q_PROPERTY(bool pageScriptsReady READ pageScriptsReady NOTIFY changed)
     // a script waiting to be run on an empty page; its answer goes to takeScriptlets()
     Q_PROPERTY(QString converter READ converter NOTIFY converterChanged)
     // refuse sites on the list of known harmful ones (abuse.ch URLhaus)
@@ -56,6 +58,7 @@ public:
     void setForgetOnExit(bool on);
     bool forgettingThisRun() const { return m_forgettingThisRun; }
     bool ready() const { return m_blocker != nullptr; }
+    bool pageScriptsReady() const { return m_pageScripts; }
     QString statusCode() const { return m_status; }
     QString converter() const { return m_converter; }
     Q_INVOKABLE void takeScriptlets(const QString &json);
@@ -140,5 +143,6 @@ private:
     bool m_httpsFirst = true;
     bool m_loading = false;
     bool m_dnsForNow = false;
+    bool m_pageScripts = false;
     bool m_again = false;        // something changed while the engine was being built
 };

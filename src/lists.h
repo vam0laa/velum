@@ -25,6 +25,10 @@ bool plausible(const QString &file, const QByteArray &data);
 // or it forgets you passed and asks again. Exact hosts only, never all of Google.
 bool isCaptchaService(const QString &host);
 
+// uBlock Origin's lists hold parts for one engine only, between "!#if" and "!#endif".
+// Returns the list as it is meant for a Chromium engine that cannot filter raw HTML.
+QByteArray forThisEngine(const QByteArray &list);
+
 // Whether a request to `url` over plain http should be sent over https instead.
 bool shouldUpgrade(const QUrl &url);
 

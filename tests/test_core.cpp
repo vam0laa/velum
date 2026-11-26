@@ -497,6 +497,14 @@ private slots:
         QVERIFY(!scriptlets::plausible("[]") && !scriptlets::plausible("nonsense"));
     }
 
+    void listsForThisEngine()
+    {
+        const QByteArray list = "a\n!#if env_firefox\nfox\n!#if env_chromium\nnested\n!#endif\n!#else\nrest\n!#endif\n"
+                                "!#if !cap_html_filtering\nscripts\n!#else\nhtml\n!#endif\n!#if env_mobile || env_chromium\nb\n!#endif\n"
+                                "!#if env_chromium && !env_mobile\nc\n!#endif\nd";
+        QCOMPARE(lists::forThisEngine(list), QByteArray("a\nrest\nscripts\nb\nc\nd"));
+    }
+
     void captchaServices()
     {
         for (const char *yes : {"challenges.cloudflare.com", "www.google.com", "www.recaptcha.net", "hcaptcha.com", "newassets.hcaptcha.com"})

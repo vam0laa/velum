@@ -159,11 +159,12 @@ void Shield::load(bool wait)
         if (source.file.endsWith(QLatin1String(".json")))
             resources = file.readAll();
         else
-            found.append({file.readAll(), source.trusted});
+            found.append({lists::forThisEngine(file.readAll()), source.trusted});
     }
     // uBlock Origin's page scripts, once converted, join Brave's
     QFile ubo(folder() + QStringLiteral("/ubo-scriptlets.json"));
-    if (ubo.open(QIODevice::ReadOnly)) {
+    const bool withScripts = ubo.open(QIODevice::ReadOnly);
+    if (withScripts) {
         QJsonArray all = QJsonDocument::fromJson(resources).array();
         for (const auto &one : QJsonDocument::fromJson(ubo.readAll()).array())
             all.append(one);
@@ -181,10 +182,12 @@ void Shield::load(bool wait)
         qCDebug(shieldLog) << "engine built from" << found.size() << "lists and" << resources.size() << "bytes of scripts in" << timer.elapsed() << "ms";
         return built;
     };
-    const auto use = [this, count](const std::shared_ptr<Blocker> &built) {
+    const auto use = [this, count, withScripts](const std::shared_ptr<Blocker> &built) {
         m_loading = false;
-        if (built)
+        if (built) {
             m_blocker = built;
+            m_pageScripts = withScripts;
+        }
         setStatus(built ? QStringLiteral("ready") : QStringLiteral("failed"), count);
         if (std::exchange(m_again, false))
             load();
