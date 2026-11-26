@@ -16,7 +16,7 @@ Rectangle {
     width: 380
     height: column.implicitHeight + 28
     radius: Theme.radius
-    color: Theme.styled("popup", "background", Theme.window)
+    color: "#171a20"
     border.color: Theme.green
 
     ColumnLayout {
@@ -26,11 +26,11 @@ Rectangle {
         Text {
             Layout.fillWidth: true
             text: bar.offer?.changed ? Lang.t("Kayıtlı parola güncellensin mi?", "Update the saved password?") : Lang.t("Parola kaydedilsin mi?", "Save this password?")
-            color: Theme.text
-            font.family: Theme.ui; font.pixelSize: Theme.size(18)
+            color: "#eef0f4"
+            font.family: Theme.sansFont.name; font.pixelSize: Theme.size(18)
             font.weight: Font.Normal
         }
-        Text { Layout.fillWidth: true; text: bar.offer?.origin ?? ""; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(16) }
+        Text { Layout.fillWidth: true; text: bar.offer?.origin ?? ""; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: "#a8aebb"; font.family: Theme.sansFont.name; font.pixelSize: Theme.size(16) }
         TextField {
             id: name
             Layout.fillWidth: true
@@ -38,20 +38,20 @@ Rectangle {
             leftPadding: 12
             enabled: !(bar.offer?.changed ?? false)
             placeholderText: Lang.t("Kullanıcı adı", "User name")
-            placeholderTextColor: Theme.dim
-            color: Theme.text
-            selectionColor: Theme.accent
-            selectedTextColor: Theme.accentInk
-            font.family: Theme.ui; font.pixelSize: Theme.size(17)
-            background: Rectangle { radius: Theme.radius; color: Theme.frame; border.color: name.activeFocus ? Theme.accent : Theme.line }
+            placeholderTextColor: "#a8aebb"
+            color: "#eef0f4"
+            selectionColor: "#8ab4ff"
+            selectedTextColor: "#0b1220"
+            font.family: Theme.sansFont.name; font.pixelSize: Theme.size(17)
+            background: Rectangle { radius: Theme.radius; color: "#232833"; border.color: name.activeFocus ? "#8ab4ff" : "#3a4150" }
         }
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
-            TextButton { text: Lang.t("Bu sitede asla", "Never here"); onClicked: bar.never() }
+            SafeButton { text: Lang.t("Bu sitede asla", "Never here"); onClicked: bar.never() }
             Item { Layout.fillWidth: true }
-            TextButton { text: Lang.t("Şimdi değil", "Not now"); onClicked: bar.later() }
-            TextButton { text: bar.offer?.changed ? Lang.t("Güncelle", "Update") : Lang.t("Kaydet", "Save"); strong: true; onClicked: bar.accepted(name.text.trim()) }
+            SafeButton { text: Lang.t("Şimdi değil", "Not now"); onClicked: bar.later() }
+            SafeButton { text: bar.offer?.changed ? Lang.t("Güncelle", "Update") : Lang.t("Kaydet", "Save"); strong: true; onClicked: bar.accepted(name.text.trim()) }
         }
     }
 }

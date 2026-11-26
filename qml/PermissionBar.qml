@@ -18,7 +18,7 @@ Bevel {
 
     implicitWidth: 360
     implicitHeight: column.implicitHeight + 28
-    color: Theme.styled("popup", "background", Theme.window)
+    color: "#171a20"
     light: Theme.peach
     radius: Theme.radius
 
@@ -26,13 +26,13 @@ Bevel {
         id: column
         anchors { fill: parent; margins: 14 }
         spacing: 10
-        Text { Layout.fillWidth: true; text: bar.site; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(18); font.weight: Font.Normal }
-        Text { Layout.fillWidth: true; text: bar.wish; wrapMode: Text.WordWrap; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(17) }
+        Text { Layout.fillWidth: true; text: bar.site; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: "#eef0f4"; font.family: Theme.sansFont.name; font.pixelSize: Theme.size(18); font.weight: Font.Normal }
+        Text { Layout.fillWidth: true; text: bar.wish; wrapMode: Text.WordWrap; color: "#a8aebb"; font.family: Theme.sansFont.name; font.pixelSize: Theme.size(17) }
         RowLayout {
             Layout.alignment: Qt.AlignRight
             spacing: 8
-            TextButton { text: Lang.t("Reddet", "Block"); onClicked: bar.answered(false) }
-            TextButton { text: Lang.t("İzin ver", "Allow"); strong: true; enabled: bar.armed; onClicked: bar.answered(true) }
+            SafeButton { text: Lang.t("Reddet", "Block"); onClicked: bar.answered(false) }
+            SafeButton { text: Lang.t("İzin ver", "Allow"); strong: true; enabled: bar.armed; onClicked: bar.answered(true) }
         }
     }
 }

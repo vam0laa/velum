@@ -49,6 +49,14 @@ print(json.dumps({"version": version,
                   "url": f"https://github.com/{repo}/releases/download/v{version}/{os.path.basename(setup)}",
                   "sha256": hashlib.sha256(data).hexdigest(), "size": len(data), "notes": notes}, ensure_ascii=False, indent=1))
 PY
+# the last look before the signature makes this file trusted by every installed Velum
+echo "built from $(git rev-parse --short HEAD), by run $run"
+echo "installer: $(basename "$setup"), $(stat -c %s "$setup") bytes"
+echo "sha256:    $(sha256sum "$setup" | cut -d' ' -f1)"
+printf 'sign and publish? (type "yes") '
+read -r answer
+[ "$answer" = yes ] || { echo "nothing was signed or published"; exit 1; }
+
 openssl pkeyutl -sign -rawin -inkey "$key" -in "$work/update.json" | base64 -w0 > "$work/update.json.sig"
 
 # published as an ordinary release: the updater asks GitHub for the latest one

@@ -16,6 +16,7 @@ AbstractButton {
     contentItem: Text {
         id: label
         text: button.text
+        textFormat: Text.PlainText
         color: button.styled("color", button.strong ? Theme.accentInk : Theme.text)
         font.family: button.styled("font-family", Theme.ui); font.pixelSize: button.styled("font-size", Theme.size(18))
         font.variableAxes: button.styled("font-weight", 0) > 0 ? Theme.axes(button.styled("font-weight", 400)) : ({})

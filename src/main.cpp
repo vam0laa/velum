@@ -32,14 +32,13 @@ int main(int argc, char *argv[])
         flags += " --widevine-path=" + cdm.toLocal8Bit();
     // "use the graphics card"; extra switches that kept a start from finishing are left out
     bool trying = false;
+    bool careful = false;
     {
         QSettings settings;
         const bool accelerate = settings.value(QStringLiteral("graphics/accelerate"), true).toBool();
-        const bool careful = settings.value(QStringLiteral("graphics/careful")).toBool()
+        careful = settings.value(QStringLiteral("graphics/careful")).toBool()
                              || settings.value(QStringLiteral("graphics/pending")).toBool();
         trying = accelerate && !careful;
-        settings.setValue(QStringLiteral("graphics/careful"), careful);
-        settings.setValue(QStringLiteral("graphics/pending"), trying);
 #ifdef Q_OS_LINUX
         flags += ' ' + graphics::engineFlags(accelerate, careful, true);
 #else
@@ -85,7 +84,7 @@ int main(int argc, char *argv[])
     address::setEngine(QSettings().value(QStringLiteral("search/engine")).toString());
     QStringList start;
     for (const QString &typed : args.positionalArguments())
-        start << address::resolve(typed).toString();
+        start << address::fromArgument(typed).toString(QUrl::FullyEncoded);
 
     // A second start (a link clicked in another program) opens in the window that is already there.
     // Development runs stay on their own.
@@ -96,6 +95,10 @@ int main(int argc, char *argv[])
             return 0;
         instance.listen(socket);
     }
+
+    // noted only now: a second start that handed its link over, or --help, leaves no mark
+    QSettings().setValue(QStringLiteral("graphics/careful"), careful);
+    QSettings().setValue(QStringLiteral("graphics/pending"), trying);
 
     QQuickWindow::setDefaultAlphaBuffer(true);     // needed for the glass look
     QQmlApplicationEngine engine;

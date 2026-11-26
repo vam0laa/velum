@@ -8,6 +8,10 @@ namespace address {
 // An address is opened, anything else is searched for. Empty text gives an empty URL.
 QUrl resolve(const QString &typed);
 
+// An argument of the command line: a file that exists (also by a relative name, or a
+// Windows path) is that file; anything else is read like something typed.
+QUrl fromArgument(const QString &argument);
+
 // The search engines on offer; the first is the default.
 struct Engine {
     const char *key;

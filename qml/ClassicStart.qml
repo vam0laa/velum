@@ -230,7 +230,7 @@ Item {
                             implicitWidth: Math.min(260, measure.implicitWidth + 34)
                             text: modelData.title
                             onClicked: root.page.go(modelData.url)
-                            Text { id: measure; visible: false; text: parent.text; font.family: Theme.ui; font.pixelSize: 13 }
+                            Text { id: measure; visible: false; text: parent.text; textFormat: Text.PlainText; font.family: Theme.ui; font.pixelSize: 13 }
                         }
                     }
                 }

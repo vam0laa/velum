@@ -5,6 +5,10 @@
 #include <QVariantList>
 
 // The pages you visited, kept in a small SQLite file on this computer only.
+// Text as it is compared when searching: small letters, and the four letters i, ı, I and İ
+// all alike, so that "izmir" finds "İzmir" and "ışık" finds "IŞIK".
+QString searchFold(const QString &text);
+
 class HistoryStore
 {
 public:
@@ -33,6 +37,7 @@ public:
     void forgetBefore(qint64 when);
 
 private:
+    void fill();
     HistoryStore(const HistoryStore &) = delete;
     QString m_name;
     QSqlDatabase m_db;

@@ -100,6 +100,14 @@ QUrl resolve(const QString &typed)
     return search(text);
 }
 
+QUrl fromArgument(const QString &argument)
+{
+    const QFileInfo file(argument);
+    if (!argument.isEmpty() && file.isFile())
+        return QUrl::fromLocalFile(file.absoluteFilePath());
+    return resolve(argument);
+}
+
 QUrl searchFor(const QString &text)
 {
     return search(text.simplified().left(500));

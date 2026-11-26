@@ -302,6 +302,36 @@ Item {
             w.homeCss = ".clock { color: #00ff00 }"; t.check("its own sheet wins", w.startPage.css(["clock"], "color", "") === "#00ff00"); w.homeCss = ""
             w.openSettings("look"); w.closeTab(w.current)
             Theme.css = ""; t.check("clearing gives the theme back", String(Theme.text) !== "#ff0000")
+            {
+            // ---- fixes from the analysis ----
+            const asked = []
+            const fetch_ = (name, extra) => Object.assign({ downloadFileName: name, downloadDirectory: "/tmp", url: "https://files.example/" + name, view: null, state: 0, receivedBytes: 0, totalBytes: 1,
+                accept: () => asked.push("accept " + name), pause: () => asked.push("pause " + name), resume: () => asked.push("resume " + name), cancel: () => asked.push("cancel " + name) }, extra ?? {})
+            const had = w.downloads.length
+            t.check("programs are known as risky", w.risky("a.EXE") && w.risky("x.sh ") && w.risky("y.AppImage") && !w.risky("photo.jpg") && !w.risky("exe.pdf"))
+            w.startDownload(fetch_("setup.exe")); t.check("a risky download waits for an answer", w.waiting.length === 1 && asked.join() === "accept setup.exe,pause setup.exe" && w.downloads.length === had)
+            w.answerDownload(false); t.check("refusing cancels it", w.waiting.length === 0 && asked[2] === "cancel setup.exe" && w.downloads.length === had)
+            w.startDownload(fetch_("doc.pdf")); t.check("an ordinary file downloads straight away", w.waiting.length === 0 && w.downloads.length === had + 1)
+            w.askDownloads = true; w.startDownload(fetch_("doc2.pdf")); w.answerDownload(true); t.check("or is asked about, if you wish", asked[asked.length - 1] === "resume doc2.pdf" && w.downloads.length === had + 2)
+            w.askDownloads = false; w.downloads = []
+            const before = count(), here = w.view
+            t.check("a window nobody clicked for is not opened", w.newWindowFrom(here, false, false, () => {}) === null && count() === before)
+            const question = w.asks.find(a => a.popup)
+            t.check("you are asked instead", question !== undefined)
+            if (question) w.answer(question, true)
+            let filled = 0
+            const popped = w.newWindowFrom(here, false, false, () => filled++)
+            t.check("an allowed site may", popped !== null && filled === 1 && count() === before + 1 && popped.popup && !w.onStartPage)
+            w.closeTab(w.current); w.popupSites = []
+            const stayed = w.view, behind = w.newWindowFrom(stayed, true, true, () => {})
+            t.check("a background tab stays behind", w.view === stayed && count() === before + 1)
+            w.closeTab(w.tabIndexOf(behind))
+            w.openTab(t.page("full")); w.enterPageFull(w.view); t.check("a page fills the screen", w.pageFullScreen)
+            w.closeTab(w.current); t.check("closing that tab brings the browser back", !w.pageFullScreen && w.fullPage === null)
+            Theme.applyBundle({ palette: "constructor", accent: "toString" }); t.check("odd names in a theme file are refused", Theme.palette !== "constructor" && Theme.accentChoice !== "toString" && Theme.shown !== "constructor")
+            const look = w.themeText(); w.keepWords("Eski", "x"); Files.write("file:///tmp/u.velumtheme", look); w.importTheme("file:///tmp/u.velumtheme")
+            t.check("a loaded theme can be undone", w.homeHeadline === "" && w.beforeImport !== ""); Theme.motion = false; w.undoImport(); t.check("which restores what you had", w.homeHeadline === "Eski" && w.beforeImport === ""); Theme.motion = true; w.keepWords("", "")
+            }
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")
@@ -593,8 +623,44 @@ Item {
         id: removedStep; interval: 2000
         onTriggered: {
             t.check("and removed", t.w.extensions.length === 0)
-            t.w.openTab("")
-            t.w.view.url = "http://127.0.0.1:8766/page"
+            // with the real engine: a window nobody clicked for, then a risky download
+            t.w.asks = []; t.w.popupSites = []
+            t.w.openTab("http://127.0.0.1:8766/pop")
+            t.tabsBefore = t.w.tabCount
+            popStep.start()
+        }
+    }
+    property int tabsBefore: 0
+    Timer {
+        id: popStep; interval: 2000
+        onTriggered: {
+            const w = t.w
+            t.check("a real page cannot open a window unasked", w.asks.some(a => a.popup) && w.tabCount === t.tabsBefore)
+            w.asks = []
+            w.downloadFolder = String(Qt.resolvedUrl("data")).replace("file://", "")
+            w.downloads = []
+            w.view.url = "http://127.0.0.1:8766/tool.sh"
+            downStep.start()
+        }
+    }
+    Timer {
+        id: downStep; interval: 2500
+        onTriggered: {
+            const w = t.w, d = w.waiting[0]
+            t.check("a real risky download is held back", w.waiting.length === 1 && d.isPaused && w.downloads.length === 0 && d.state !== WebEngineDownloadRequest.DownloadCompleted)
+            w.answerDownload(true)
+            gotStep.start()
+        }
+    }
+    Timer {
+        id: gotStep; interval: 2000
+        onTriggered: {
+            const w = t.w
+            t.check("and completes once you agree", w.downloads.length === 1 && w.downloads[0].state === WebEngineDownloadRequest.DownloadCompleted && w.downloads[0].receivedBytes > 300000)
+            w.downloadFolder = ""; w.downloads = []
+            w.closeTab(w.current)
+            w.openTab("")
+            w.view.url = "http://127.0.0.1:8766/page"
             statusStep.start()
         }
     }

@@ -6,6 +6,13 @@
 #include <QUuid>
 #include <QVariantMap>
 
+QString searchFold(const QString &text)
+{
+    QString s = text;
+    s.replace(QChar(0x0130), QLatin1Char('i')).replace(QChar(0x0131), QLatin1Char('i'));
+    return s.toLower();
+}
+
 HistoryStore::HistoryStore(const QString &path) : m_name(QUuid::createUuid().toString())
 {
     m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), m_name);
@@ -18,6 +25,29 @@ HistoryStore::HistoryStore(const QString &path) : m_name(QUuid::createUuid().toS
     q.exec(QStringLiteral("PRAGMA secure_delete=ON"));   // deleted pages really leave the file
     q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS pages(url TEXT PRIMARY KEY, title TEXT NOT NULL DEFAULT '', "
                           "visits INTEGER NOT NULL DEFAULT 1, last INTEGER NOT NULL)"));
+    // the searched form of address and title; older databases get it filled in once
+    q.exec(QStringLiteral("ALTER TABLE pages ADD COLUMN fold TEXT"));      // fails when it is there
+    fill();
+}
+
+// writes the searched form of every row that lacks it
+void HistoryStore::fill()
+{
+    QList<std::pair<QString, QString>> missing;
+    QSqlQuery q(m_db);
+    q.exec(QStringLiteral("SELECT url, title FROM pages WHERE fold IS NULL"));
+    while (q.next())
+        missing.append({q.value(0).toString(), q.value(1).toString()});
+    if (missing.isEmpty())
+        return;
+    m_db.transaction();
+    q.prepare(QStringLiteral("UPDATE pages SET fold = ? WHERE url = ?"));
+    for (const auto &[url, title] : std::as_const(missing)) {
+        q.addBindValue(searchFold(url + QLatin1Char('\n') + title));
+        q.addBindValue(url);
+        q.exec();
+    }
+    m_db.commit();
 }
 
 HistoryStore::~HistoryStore()
@@ -36,11 +66,12 @@ void HistoryStore::add(const QString &url, const QString &title, qint64 when)
     QSqlQuery q(m_db);
     q.prepare(QStringLiteral("INSERT INTO pages(url, title, last) VALUES(?, ?, ?) ON CONFLICT(url) DO UPDATE SET "
                              "visits = visits + 1, last = excluded.last, "
-                             "title = CASE WHEN excluded.title = '' THEN title ELSE excluded.title END"));
+                             "title = CASE WHEN excluded.title = '' THEN title ELSE excluded.title END, fold = NULL"));
     q.addBindValue(parsed.toString());
     q.addBindValue(title.isNull() ? QStringLiteral("") : title);
     q.addBindValue(when);
     q.exec();
+    fill();
 }
 
 void HistoryStore::setTitle(const QString &url, const QString &title)
@@ -48,10 +79,11 @@ void HistoryStore::setTitle(const QString &url, const QString &title)
     if (title.isEmpty())
         return;
     QSqlQuery q(m_db);
-    q.prepare(QStringLiteral("UPDATE pages SET title = ? WHERE url = ?"));
+    q.prepare(QStringLiteral("UPDATE pages SET title = ?, fold = NULL WHERE url = ?"));
     q.addBindValue(title);
     q.addBindValue(url);
     q.exec();
+    fill();
 }
 
 int HistoryStore::merge(const QList<Visit> &visits)
@@ -61,7 +93,7 @@ int HistoryStore::merge(const QList<Visit> &visits)
     QSqlQuery q(m_db);
     q.prepare(QStringLiteral("INSERT INTO pages(url, title, visits, last) VALUES(?, ?, ?, ?) ON CONFLICT(url) DO UPDATE SET "
                              "visits = MAX(visits, excluded.visits), last = MAX(last, excluded.last), "
-                             "title = CASE WHEN title = '' THEN excluded.title ELSE title END"));
+                             "title = CASE WHEN title = '' THEN excluded.title ELSE title END, fold = NULL"));
     for (const Visit &v : visits) {
         QUrl parsed(v.url);
         if (parsed.scheme() != QLatin1String("https") && parsed.scheme() != QLatin1String("http"))
@@ -74,7 +106,10 @@ int HistoryStore::merge(const QList<Visit> &visits)
         if (q.exec())
             ++taken;
     }
-    return m_db.commit() ? taken : 0;
+    if (!m_db.commit())
+        return 0;
+    fill();
+    return taken;
 }
 
 QVariantList HistoryStore::search(const QString &text, int limit) const
@@ -85,12 +120,11 @@ QVariantList HistoryStore::search(const QString &text, int limit) const
         q.prepare(QStringLiteral("SELECT url, title FROM pages ORDER BY last DESC, rowid DESC LIMIT ?"));
     } else {
         // % and _ typed by the user mean themselves
-        QString like = wanted;
+        QString like = searchFold(wanted);
         like.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('%'), QStringLiteral("\\%")).replace(QLatin1Char('_'), QStringLiteral("\\_"));
         like = QLatin1Char('%') + like + QLatin1Char('%');
-        q.prepare(QStringLiteral("SELECT url, title FROM pages WHERE url LIKE ? ESCAPE '\\' OR title LIKE ? ESCAPE '\\' "
+        q.prepare(QStringLiteral("SELECT url, title FROM pages WHERE fold LIKE ? ESCAPE '\\' "
                                  "ORDER BY visits DESC, last DESC LIMIT ?"));
-        q.addBindValue(like);
         q.addBindValue(like);
     }
     q.addBindValue(limit);

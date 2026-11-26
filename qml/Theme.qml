@@ -14,7 +14,7 @@ QtObject {
     property int hour: new Date().getHours()
     readonly property string shown: web ? (hour >= 7 && hour < 19 ? "cybercore" : "night")
                                         : palette === "custom" && custom.length === 15 ? "custom"
-                                        : palette === "cybercore" || palette === "night" || !(palette === "desktop" || palettes[palette]) ? "lucid" : palette
+                                        : palette === "cybercore" || palette === "night" || !(palette === "desktop" || Object.prototype.hasOwnProperty.call(palettes, palette)) ? "lucid" : palette
     readonly property bool night: web && shown === "night"
     property Timer clock: Timer { interval: 30000; running: true; repeat: true; onTriggered: theme.hour = new Date().getHours() }
     property string accentChoice: ""       // "" keeps the palette's own accent
@@ -152,14 +152,16 @@ QtObject {
         return { palette: palette, colors: custom, accent: accentChoice, roundness: roundness, density: density, tabShape: tabShape,
                  font: fontFamily, headFont: headFamily, left: barLeft, right: barRight, css: css, glass: glass }
     }
+    // is `key` a name of `map` itself? ("constructor" and the like are not)
+    function known(map, key) { return Object.prototype.hasOwnProperty.call(map, key) }
     // takes over what is valid in `d` and leaves the rest alone
     function applyBundle(d) {
         if (!d || typeof d !== "object")
             return
         const has = keepColors(d.colors)
-        if (typeof d.palette === "string" && (palettes[d.palette] || d.palette === "desktop" || (d.palette === "custom" && has)))
+        if (typeof d.palette === "string" && (known(palettes, d.palette) || d.palette === "desktop" || (d.palette === "custom" && has)))
             palette = d.palette
-        if (d.accent === "" || accents[d.accent] !== undefined)
+        if (d.accent === "" || known(accents, d.accent))
             accentChoice = d.accent
         if (typeof d.roundness === "number")
             roundness = Math.max(0, Math.min(1.6, d.roundness))

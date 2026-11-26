@@ -385,6 +385,35 @@ private slots:
         QCOMPARE(graphics::cursorPixels("uint32 x", 2), 0);
     }
 
+    void argumentsThatAreFiles()
+    {
+        QTemporaryDir dir;
+        QFile page(dir.filePath("bir sayfa.html"));
+        QVERIFY(page.open(QIODevice::WriteOnly));
+        page.close();
+        const QUrl file = address::fromArgument(page.fileName());
+        QVERIFY(file.isLocalFile());
+        QCOMPARE(file.toLocalFile(), page.fileName());
+        // handed to a running Velum it stays whole, spaces and all
+        QCOMPARE(Instance::accepted(file.toString(QUrl::FullyEncoded).toUtf8()), QStringList{file.toString(QUrl::FullyEncoded)});
+        const QString before = QDir::currentPath();
+        QVERIFY(QDir::setCurrent(dir.path()));
+        QVERIFY(address::fromArgument("bir sayfa.html").isLocalFile());
+        QDir::setCurrent(before);
+        QCOMPARE(address::fromArgument("example.com"), QUrl("https://example.com"));
+    }
+
+    void turkishSearch()
+    {
+        HistoryStore store(":memory:");
+        store.add("https://a.example/", QString::fromUtf8("İzmir ÇAY Şehir IŞIK"), 1);
+        for (const char *typed : {"izmir", "İZMİR", "çay", "şehir", "ışık", "Işık"})
+            QVERIFY2(store.search(QString::fromUtf8(typed), 5).size() == 1, typed);
+        store.setTitle("https://a.example/", "Ankara");
+        QCOMPARE(store.search("izmir", 5).size(), 0);
+        QCOMPARE(store.search("ankara", 5).size(), 1);
+    }
+
     void accelerationSetting()
     {
         QCOMPARE(graphics::engineFlags(false, false, true), QByteArray("--disable-gpu"));

@@ -48,7 +48,7 @@ Window {
             if (!v) return false;
             if (v.paused) { v.play(); return false }
             v.pause(); return true;
-        })()`, result => mini.paused = result === true)
+        })()`, WebEngineScript.ApplicationWorld, result => mini.paused = result === true)
     }
 
     // Compositors recognise this title (Firefox uses it) and float and pin the window.

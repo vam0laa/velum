@@ -17,8 +17,8 @@ AbstractButton {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 1
-            Text { Layout.fillWidth: true; text: choice.label; color: choice.enabled ? Theme.text : Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight }
-            Text { Layout.fillWidth: true; text: choice.note; visible: text !== ""; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(14); elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: choice.label; textFormat: Text.PlainText; color: choice.enabled ? Theme.text : Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: choice.note; textFormat: Text.PlainText; visible: text !== ""; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(14); elide: Text.ElideRight }
         }
         Rectangle {
             implicitWidth: 36

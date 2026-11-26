@@ -16,19 +16,18 @@ Popup {
     padding: 18
     enter: PopIn {}
     exit: PopOut {}
-    background: WindowBackground { title: Lang.t("onay", "confirm"); stripe: Theme.danger }
-    topPadding: 42
+    background: Rectangle { radius: 16; color: "#171a20"; border.color: "#ff8a8a" }
 
     ColumnLayout {
         anchors { left: parent.left; right: parent.right }
         spacing: 12
-        Text { Layout.fillWidth: true; text: dialog.heading; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(20); font.weight: Font.Normal; wrapMode: Text.WordWrap }
-        Text { Layout.fillWidth: true; text: dialog.detail; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(17); wrapMode: Text.WordWrap }
+        Text { Layout.fillWidth: true; text: dialog.heading; textFormat: Text.PlainText; color: "#eef0f4"; font.family: Theme.sansFont.name; font.pixelSize: Theme.size(20); font.weight: Font.Normal; wrapMode: Text.WordWrap }
+        Text { Layout.fillWidth: true; text: dialog.detail; textFormat: Text.PlainText; color: "#a8aebb"; font.family: Theme.sansFont.name; font.pixelSize: Theme.size(17); wrapMode: Text.WordWrap }
         RowLayout {
             Layout.alignment: Qt.AlignRight
             spacing: 8
-            TextButton { text: Lang.t("Vazgeç", "Cancel"); onClicked: dialog.close() }
-            TextButton { text: dialog.action; strong: true; onClicked: { dialog.close(); dialog.confirmed() } }
+            SafeButton { text: Lang.t("Vazgeç", "Cancel"); onClicked: dialog.close() }
+            SafeButton { text: dialog.action; strong: true; onClicked: { dialog.close(); dialog.confirmed() } }
         }
     }
 }

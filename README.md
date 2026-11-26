@@ -33,6 +33,8 @@ Settings → Appearance: pick a theme or make your own in the Theme Studio (four
 
 Twenty-three open licensed letterings come along (see data/fonts/extra). Ctrl+Shift+0 resets the look.
 
+A site cannot open a window without a click unless you allow it, and files that can run programs are held until you say yes (Settings → Downloads can ask about every file).
+
 ## Speed
 
 Three modes in the menu and in Settings → Performance: balanced, game (background tabs freeze within seconds, no animations) and saver. A memory limit puts the longest unseen tabs to sleep. Graphics acceleration is one switch (on unless you switch it off), also asked on the welcome pages. Shortcuts can be changed in Settings → Shortcuts.

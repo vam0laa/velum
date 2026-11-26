@@ -51,6 +51,10 @@ Rectangle {
     property bool showBookmarkBar
     signal startChanged(string name, var value)      // a property of the window and its new value
     signal designRequested()
+    property bool askDownloads
+    signal askDownloadsChosen(bool on)
+    property bool canUndoImport
+    signal undoImport()
     signal resetLook()
     signal openStudio()
     signal exportTheme(url file)
@@ -418,6 +422,7 @@ Rectangle {
                     wanted: !Theme.web && page.shows("look", "paylaş kaydet yükle dosya share export import tema")
                     heading: Lang.t("Görünümünü paylaş", "Share your look")
                     symbol: "download"
+                    TextButton { visible: page.canUndoImport; Layout.fillWidth: true; implicitHeight: 38; strong: true; text: Lang.t("Yüklenen temayı geri al", "Undo the loaded theme"); onClicked: page.undoImport() }
                     Note { text: Lang.t("Renkler, şekil, CSS ve ana sayfa tasarımın tek dosyada. Yer imlerin, görevlerin, notun ve geçmişin dosyaya girmez.", "Colours, shape, style sheets and the home page design in one file. Bookmarks, tasks, your note and history stay out of it.") }
                     RowLayout {
                         Layout.fillWidth: true
@@ -539,6 +544,7 @@ Rectangle {
                     wanted: page.shows("downloads", "indirme klasör download folder")
                     heading: Lang.t("İndirme klasörü", "Downloads folder")
                     symbol: "folder"
+                    Toggle { label: Lang.t("Her indirmeden önce sor", "Ask before every download"); note: Lang.t("Program çalıştırabilen dosyalar için her zaman sorulur", "Files that can run programs are always asked about"); on: page.askDownloads; onClicked: page.askDownloadsChosen(!page.askDownloads) }
                     note: Lang.t("Velum indirilen bir dosyayı hiçbir zaman kendiliğinden açmaz.", "Velum never opens a downloaded file by itself.")
                     Line {
                         label: page.folderShown

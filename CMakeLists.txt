@@ -96,6 +96,7 @@ qt_add_qml_module(velum
         qml/ThemeStudio.qml
         qml/StudioPicker.qml
         qml/StudioCard.qml
+        qml/SafeButton.qml
         qml/ShapeEditor.qml
         qml/CssEditor.qml
         qml/Toggle.qml

@@ -64,6 +64,14 @@ Shield::Shield(QObject *parent) : QWebEngineUrlRequestInterceptor(parent)
     m_blockCookies = settings.value(QStringLiteral("shield/blockThirdPartyCookies"), true).toBool();
     m_forget = settings.value(QStringLiteral("shield/forgetOnExit"), false).toBool();
     m_forgettingThisRun = m_forget;
+    // what sites keep besides cookies; removed before the engine opens it
+    if (m_forget) {
+        const QString engine = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/QtWebEngine/velum/");
+        for (const char *kept : {"Local Storage", "IndexedDB", "Session Storage", "Service Worker", "databases", "File System", "Visited Links"}) {
+            const QString path = engine + QLatin1String(kept);
+            QFileInfo(path).isDir() ? void(QDir(path).removeRecursively()) : void(QFile::remove(path));
+        }
+    }
     m_total = settings.value(QStringLiteral("shield/total"), 0).toLongLong();
     const QStringList allowed = settings.value(QStringLiteral("shield/allowed")).toStringList();
     m_allowed = QSet<QString>(allowed.begin(), allowed.end());

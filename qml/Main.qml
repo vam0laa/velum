@@ -111,8 +111,19 @@ ApplicationWindow {
     function exportTheme(file) {
         say(Files.write(file, themeText()) ? Lang.t("Tema kaydedildi.", "The theme was saved.") : Lang.t("Tema kaydedilemedi.", "The theme could not be saved."))
     }
+    property string beforeImport: ""        // the look as it was before a file replaced it
     function importTheme(file) {
-        say(applyThemeText(Files.read(file)) ? Lang.t("Tema yüklendi.", "The theme was loaded.") : Lang.t("Bu dosya bir Velum teması değil.", "This file is not a Velum theme."))
+        const before = themeText()
+        if (!applyThemeText(Files.read(file))) {
+            say(Lang.t("Bu dosya bir Velum teması değil.", "This file is not a Velum theme."))
+            return
+        }
+        beforeImport = before
+        say(Lang.t("Tema yüklendi. Ayarlar → Görünüm'den geri alabilirsin.", "The theme was loaded. You can undo it in Settings → Appearance."))
+    }
+    function undoImport() {
+        if (beforeImport !== "" && applyThemeText(beforeImport))
+            beforeImport = ""
     }
 
     // a switch in the settings
@@ -136,6 +147,7 @@ ApplicationWindow {
     property alias mainMenu: mainMenu
     property alias startPage: start
     property alias topToolbar: topBar
+    readonly property alias tabCount: views.count
     // tiling desktops draw no title bar; Windows does, with its own buttons
     readonly property bool ownButtons: Qt.platform.os !== "windows"
     readonly property bool bookmarked: view !== null && shortcuts.some(s => s.url === String(view.url))
@@ -241,7 +253,7 @@ ApplicationWindow {
     readonly property var ask: asks.find(a => a.page === view) ?? null
     // the page of the current tab; "views.count" and "moves" make this update when tabs change
     readonly property WebEngineView view: (moves, views.count > 0) ? views.itemAt(current) as WebEngineView : null
-    readonly property bool onStartPage: view !== null && !onSettings && (view.url.toString() === "" || view.url.toString() === "about:blank") && !view.loading
+    readonly property bool onStartPage: view !== null && !onSettings && !view.popup && (view.url.toString() === "" || view.url.toString() === "about:blank") && !view.loading
 
     width: 1280
     height: 800
@@ -295,7 +307,7 @@ ApplicationWindow {
             const session = readSession(saved.session)
             for (const p of session.tabs)
                 appendTab(p.url, p.title ?? "", true, spaces.some(s => s.id === p.space) ? p.space : spaces[0].id)
-            if (session.tabs.length > 0)
+            if (session.tabs.length > 0 || session.current < pinnedCount)
                 chosen = Math.max(0, Math.min(session.current, tabs.count - 1))
         }
         if (startUrls.length > 0) {
@@ -331,6 +343,10 @@ ApplicationWindow {
     function saveSession() {
         if (!restored)
             return
+        if (Shield.forgetOnExit) {      // nothing about this visit is written down
+            saved.session = "{}"
+            return
+        }
         const list = []
         let at = 0
         for (let i = 0; i < tabs.count; i++) {
@@ -349,7 +365,20 @@ ApplicationWindow {
     function touchSession() { sessionTimer.restart() }
     onCurrentChanged: { followCurrent(); touchSession() }
     onMovesChanged: touchSession()
-    onClosing: { closeMini(); saveSession() }
+    onClosing: { closeMini(); saveSession(); forgetNow() }
+    // quitting goes the same way as closing the window
+    function quit() {
+        close()
+        Qt.quit()
+    }
+    function forgetNow() {
+        if (!Shield.forgetOnExit)
+            return
+        closedTabs = []
+        saved.session = "{}"
+        History.clear()
+        Shield.clearData(profile)
+    }
 
     // addresses handed over by a second start of Velum
     function openExternal(urls) {
@@ -392,6 +421,7 @@ ApplicationWindow {
         property alias restoreSession: window.restoreSession
         property alias downloadFolder: window.downloadFolder
         property alias sleepMode: window.sleepMode
+        property alias askDownloads: window.askDownloads
         property alias powerMode: window.powerMode
         property alias memoryLimit: window.memoryLimit
         property alias compactSidebar: window.compactSidebar
@@ -444,6 +474,10 @@ ApplicationWindow {
         if (index < 0 || index >= tabs.count)
             return
         const closing = views.itemAt(index) as WebEngineView
+        if (closing && closing === fullPage)
+            leavePageFull()
+        if (closing && closing === findPage)
+            findPage = null
         if (closing && closing === miniPage)
             closeMini()
         if (closing && (closing === splitLeft || closing === splitRight))
@@ -651,17 +685,41 @@ ApplicationWindow {
             addShortcut(url, view.title)
     }
 
+    property bool askDownloads: false       // ask before every download, not only risky ones
+    property var waiting: []                // downloads waiting for your answer
+    // kinds that run when opened
+    function risky(name) {
+        return /\.(exe|msi|msix|bat|cmd|com|scr|ps1|vbs|vbe|js|jse|wsf|hta|lnk|reg|jar|apk|appimage|deb|rpm|sh|bash|run|desktop|dmg|pkg|iso)$/i.test(String(name).trim())
+    }
     function startDownload(request) {
         if (downloadFolder !== "")
             request.downloadDirectory = downloadFolder
         request.accept()            // saved into your downloads folder, never opened
+        if (askDownloads || risky(request.downloadFileName)) {
+            request.pause()         // nothing more arrives until you answer
+            waiting = waiting.concat([request])
+        } else {
+            keepDownload(request)
+        }
+        // a tab that a page opened only to fetch the file is closed again
+        const from = request.view
+        if (from && from.popup && from.url.toString() === "")
+            closeTab(tabIndexOf(from))
+    }
+    function keepDownload(request) {
         downloads = [request].concat(downloads)
         openDownloads()
-        // a tab that was opened only to fetch the file is closed again
-        for (let i = tabs.count - 1; i >= 0 && tabs.count > 1; i--) {
-            const page = views.itemAt(i) as WebEngineView
-            if (page && page === view && tabs.get(i).pageUrl === "" && tabs.get(i).kind === "")
-                closeTab(i)
+    }
+    function answerDownload(yes) {
+        const request = waiting[0]
+        if (!request)
+            return
+        waiting = waiting.slice(1)
+        if (yes) {
+            request.resume()
+            keepDownload(request)
+        } else {
+            request.cancel()
         }
     }
 
@@ -872,7 +930,7 @@ ApplicationWindow {
             missing()
             return
         }
-        page.runJavaScript(miniPlayer.enterScript, found => {
+        page.runJavaScript(miniPlayer.enterScript, WebEngineScript.ApplicationWorld, found => {
             if (!found) {
                 missing()
                 return
@@ -892,7 +950,7 @@ ApplicationWindow {
         const page = miniPlayer.page
         if (!page)
             return
-        page.runJavaScript(miniPlayer.leaveScript)
+        page.runJavaScript(miniPlayer.leaveScript, WebEngineScript.ApplicationWorld)
         page.parent = pagesArea
         miniPlayer.page = null
         miniPlayer.hide()
@@ -1245,11 +1303,43 @@ ApplicationWindow {
     }
 
     function findInPage() {
-        if (!onStartPage && !onSettings)
+        if (!onStartPage && !onSettings) {
+            findPage = view
             findBar.open()
+        }
     }
-    // the box belongs to the page it was opened on
-    onViewChanged: findBar.close()
+    // the box belongs to the page it was opened on, and so do its marks
+    property WebEngineView findPage: null
+    onViewChanged: {
+        if (findPage && findPage !== view) {
+            findPage.findText("")
+            findPage = null
+        }
+        findBar.close()
+        if (pageFullScreen && fullPage !== view)
+            leavePageFull()
+    }
+
+    // sites you let open windows by themselves, until Velum is closed
+    property var popupSites: []
+    // A page asks for a new window: it becomes a tab. Without a click of yours you are
+    // asked first. `fill` puts the request's page into the new tab.
+    function newWindowFrom(from, clicked, background, fill) {
+        const site = hostOf(from.url)
+        if (!clicked && !popupSites.includes(site)) {
+            if (!asks.some(a => a.page === from && a.popup))
+                asks = asks.concat([{ page: from, popup: true, site: site, wish: Lang.t("Açılır pencere açmak istedi. İzin verirsen bir daha dene.", "tried to open a window. If you allow it, try again."),
+                                      permission: { grant: () => popupSites = popupSites.concat([site]), deny: () => {} } }])
+            return null
+        }
+        const here = view
+        const page = openTab("")
+        page.popup = true       // an empty address here is its content, not the home page
+        fill(page)
+        if (background && here)
+            current = tabIndexOf(here)
+        return page
+    }
 
     // Goes to the settings tab of this workspace, making one if there is none.
     function openSettings(section) {
@@ -1299,7 +1389,7 @@ ApplicationWindow {
         case WebEnginePermission.PermissionType.MediaAudioVideoCapture: return Lang.t("Kameranı ve mikrofonunu kullanmak istiyor.", "wants to use your camera and microphone.")
         case WebEnginePermission.PermissionType.Geolocation: return Lang.t("Konumunu öğrenmek istiyor.", "wants to know your location.")
         case WebEnginePermission.PermissionType.ClipboardReadWrite: return Lang.t("Panonu okumak ve değiştirmek istiyor.", "wants to read and change your clipboard.")
-        case WebEnginePermission.PermissionType.Notifications: return Lang.t("Sana bildirim göndermek istiyor.", "wants to send you notifications.")
+        case WebEnginePermission.PermissionType.Notifications: return Qt.platform.os === "windows" ? "" : Lang.t("Sana bildirim göndermek istiyor.", "wants to send you notifications.")     // not shown on Windows yet
         case WebEnginePermission.PermissionType.MouseLock: return Lang.t("Fare imlecini kilitlemek istiyor.", "wants to lock the mouse pointer.")
         }
         return ""
@@ -1535,6 +1625,7 @@ ApplicationWindow {
                             required property bool lazy
                             required property string kind
                             property bool started: false
+                            property bool popup: false          // opened by a page
                             property bool crashed: false
                             property string loginOrigin: ""     // set while a login form is shown
                             property var accounts: []           // saved logins that fit it
@@ -1698,7 +1789,8 @@ ApplicationWindow {
                             }
 
                             // links that ask for a new window become tabs
-                            onNewWindowRequested: request => request.openIn(window.openTab(""))
+                            onNewWindowRequested: request => window.newWindowFrom(web, request.userInitiated,
+                                request.destination === WebEngineNewWindowRequest.InNewBackgroundTab, page => request.openIn(page))
                             onWindowCloseRequested: window.closeTab(index)
 
                             onFullScreenRequested: request => {
@@ -1706,12 +1798,11 @@ ApplicationWindow {
                                     request.reject()
                                     return
                                 }
-                                window.pageFullScreen = request.toggleOn
-                                if (request.toggleOn)
-                                    window.showFullScreen()
-                                else
-                                    window.showNormal()
                                 request.accept()
+                                if (request.toggleOn)
+                                    window.enterPageFull(web)
+                                else if (window.fullPage === web)
+                                    window.leavePageFull()
                             }
 
                             // Camera, microphone, location and the like: you are asked.
@@ -1881,7 +1972,7 @@ ApplicationWindow {
                     Shadow { radius: Theme.radius }
                     color: Theme.styled("notice", "background", Theme.raised)
                     border.color: Theme.styled("notice", "border-color", Theme.line)
-                    Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.styled("notice", "color", Theme.text); font.family: Theme.styled("notice", "font-family", Theme.ui); font.pixelSize: Theme.styled("notice", "font-size", Theme.size(17)); elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+                    Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; textFormat: Text.PlainText; color: Theme.styled("notice", "color", Theme.text); font.family: Theme.styled("notice", "font-family", Theme.ui); font.pixelSize: Theme.styled("notice", "font-size", Theme.size(17)); elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
                 }
 
                 // made the first time it is opened, then kept
@@ -1897,6 +1988,10 @@ ApplicationWindow {
                     sourceComponent: Component {
                         SettingsPage {
                             sleepMode: window.sleepMode
+                    askDownloads: window.askDownloads
+                    onAskDownloadsChosen: on => window.askDownloads = on
+                    canUndoImport: window.beforeImport !== ""
+                    onUndoImport: window.undoImport()
                             powerMode: window.powerMode
                             memoryLimit: window.memoryLimit
                             memoryUsed: window.memoryUsed
@@ -2024,6 +2119,19 @@ ApplicationWindow {
     }
 
     ConfirmDialog {
+        id: downloadDialog
+        readonly property var item: window.waiting[0] ?? null
+        heading: item && window.risky(item.downloadFileName) ? Lang.t("Bu dosya program çalıştırabilir. İndirilsin mi?", "This file can run programs. Download it?") : Lang.t("Dosya indirilsin mi?", "Download this file?")
+        detail: item ? item.downloadFileName + "\n" + window.hostOf(item.url) + Lang.t("\nYalnızca güvendiğin yerden gelen dosyaları indir.", "\nOnly download files from places you trust.") : ""
+        action: Lang.t("İndir", "Download")
+        // answered by a button, or closed another way: then the file is not fetched
+        property bool yes: false
+        onConfirmed: yes = true
+        onClosed: Qt.callLater(() => { const said = yes; yes = false; window.answerDownload(said) })
+    }
+    onWaitingChanged: if (waiting.length > 0 && !downloadDialog.opened) Qt.callLater(() => { if (window.waiting.length > 0) downloadDialog.open() })
+
+    ConfirmDialog {
         id: extensionDialog
         heading: Lang.t("Bu eklenti kurulsun mu?", "Install this extension?")
         detail: Lang.t("Eklentiler gezdiğin sayfaları okuyup değiştirebilir, yazdığın parolaları da görebilir. Yalnızca güvendiğini kur.", "Extensions can read and change the pages you visit, including passwords you type. Install only what you trust.")
@@ -2092,15 +2200,43 @@ ApplicationWindow {
             { name: Lang.t("Gezinme verilerini sil", "Delete browsing data"), keys: Keymap.text("clear"), run: () => clearDialog.open() },
             { name: Lang.t("Ayarlar", "Settings"), keys: Keymap.text("settings"), run: () => Qt.callLater(window.openSettings) },
             { name: Lang.t("Tam ekran", "Full screen"), keys: Keymap.text("fullScreen"), run: () => window.toggleWindowFullScreen() },
-            { name: Lang.t("Velum'dan çık", "Quit Velum"), keys: Keymap.text("quit"), run: () => Qt.quit() }
+            { name: Lang.t("Velum'dan çık", "Quit Velum"), keys: Keymap.text("quit"), run: () => window.quit() }
         ].concat(window.spaces.map((s, i) => ({ name: Lang.t("Çalışma alanı: ", "Workspace: ") + window.spaceName(s), keys: "Alt+" + (i + 1), run: () => window.switchSpace(s.id) })))
         onOpened: (target, inNewTab) => window.navigate(target, inNewTab)
         onTabChosen: i => window.current = i
         onDismissed: if (window.view && !window.onStartPage) window.view.forceActiveFocus()
     }
 
+    // the window as it was before it filled the screen, to give it back that way
+    property int beforeFull: Window.Windowed
+    property int beforePageFull: Window.Windowed
+    property WebEngineView fullPage: null       // the page filling the screen, if one does
     function toggleWindowFullScreen() {
-        visibility === Window.FullScreen ? showNormal() : showFullScreen()
+        if (visibility === Window.FullScreen) {
+            visibility = beforeFull
+        } else {
+            beforeFull = visibility
+            showFullScreen()
+        }
+    }
+    function enterPageFull(page) {
+        if (!pageFullScreen)
+            beforePageFull = visibility
+        fullPage = page
+        pageFullScreen = true
+        showFullScreen()
+        // said by the browser, with the real address, so a page cannot pretend to be it
+        say(hostOf(page.url) + Lang.t(" tam ekranda · çıkmak için Esc", " is full screen · Esc to leave"))
+    }
+    function leavePageFull() {
+        if (!pageFullScreen)
+            return
+        const page = fullPage
+        fullPage = null
+        pageFullScreen = false
+        visibility = beforePageFull
+        if (page)
+            page.triggerWebAction(WebEngineView.ExitFullScreen)
     }
 
     PageMenu {
@@ -2147,7 +2283,7 @@ ApplicationWindow {
         AppMenuItem { text: (window.powerMode === "saver" ? "✓  " : "") + Lang.t("Tasarruf modu", "Saver mode"); onTriggered: window.setPowerMode(window.powerMode === "saver" ? "balanced" : "saver") }
         AppMenuLine {}
         AppMenuItem { text: Lang.t("Ayarlar", "Settings"); keys: Keymap.text("settings"); onTriggered: window.openSettings() }
-        AppMenuItem { text: Lang.t("Velum'dan çık", "Quit Velum"); keys: Keymap.text("quit"); onTriggered: Qt.quit() }
+        AppMenuItem { text: Lang.t("Velum'dan çık", "Quit Velum"); keys: Keymap.text("quit"); onTriggered: window.quit() }
     }
 
     // choosing between several saved accounts; five are offered
@@ -2220,9 +2356,9 @@ ApplicationWindow {
     Shortcut { sequences: Keymap.sequences("zoomIn"); onActivated: window.view.zoomFactor = Math.min(3, window.view.zoomFactor + 0.1) }
     Shortcut { sequences: Keymap.sequences("zoomOut"); onActivated: window.view.zoomFactor = Math.max(0.5, window.view.zoomFactor - 0.1) }
     Shortcut { sequences: Keymap.sequences("zoomReset"); onActivated: window.view.zoomFactor = 1 }
-    Shortcut { sequence: "Escape"; enabled: window.pageFullScreen; onActivated: window.view.triggerWebAction(WebEngineView.ExitFullScreen) }
+    Shortcut { sequence: "Escape"; enabled: window.pageFullScreen; onActivated: window.leavePageFull() }
     Shortcut { sequences: Keymap.sequences("fullScreen"); onActivated: window.toggleWindowFullScreen() }
-    Shortcut { sequences: Keymap.sequences("quit"); onActivated: Qt.quit() }
+    Shortcut { sequences: Keymap.sequences("quit"); onActivated: window.quit() }
     Shortcut { sequences: Keymap.sequences("resetLook"); onActivated: window.resetLook() }
     Shortcut { sequences: Keymap.sequences("gameMode"); onActivated: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game") }
 }
