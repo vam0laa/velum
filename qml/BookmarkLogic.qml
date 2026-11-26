@@ -16,6 +16,10 @@ QtObject {
     }
 
     function keepBookmarks(list) {
+        if (app.secondary) {        // the first window keeps them; ours follow
+            app.primary.keepBookmarks(list)
+            return
+        }
         app.shortcuts = list
         app.saved.shortcuts = JSON.stringify(list)
     }
@@ -82,6 +86,10 @@ QtObject {
 
     // removals are remembered, so that synchronising does not bring them back
     function keepRemoved(list) {
+        if (app.secondary) {
+            app.primary.keepRemoved(list)
+            return
+        }
         app.removedBookmarks = list
         app.saved.removedBookmarks = JSON.stringify(list)
     }

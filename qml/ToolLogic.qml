@@ -87,7 +87,7 @@ QtObject {
         else
             all[host] = next
         app.siteZoom = all
-        if (!Shield.forgetOnExit)
+        if (!Shield.forgetOnExit && !app.isPrivate)
             app.saved.siteZoom = JSON.stringify(all)
         for (let i = 0; i < app.tabs.count; i++) {       // every open page of that site follows
             const other = app.pageViewAt(i)

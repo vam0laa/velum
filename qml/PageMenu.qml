@@ -19,6 +19,7 @@ AppMenu {
     signal savePage()
     signal viewSource()
     signal inspect()
+    signal openInWindow(string url, bool hidden)
 
     // takes what the engine reports about the click
     function describe(request) {
@@ -32,6 +33,8 @@ AppMenu {
     function act(action) { view.triggerWebAction(action) }
 
     AppMenuItem { shown: menu.link !== ""; text: Lang.t("Bağlantıyı yeni sekmede aç", "Open link in a new tab"); onTriggered: menu.openInTab(menu.link) }
+    AppMenuItem { shown: menu.link !== ""; text: Lang.t("Bağlantıyı yeni pencerede aç", "Open link in a new window"); onTriggered: menu.openInWindow(menu.link, false) }
+    AppMenuItem { shown: menu.link !== ""; text: Lang.t("Bağlantıyı gizli pencerede aç", "Open link in a private window"); onTriggered: menu.openInWindow(menu.link, true) }
     AppMenuItem { shown: menu.link !== ""; text: Lang.t("Bağlantıyı kopyala", "Copy link"); onTriggered: menu.act(WebEngineView.CopyLinkToClipboard) }
     AppMenuItem { shown: menu.link !== ""; text: Lang.t("Bağlantıyı indir", "Download link"); onTriggered: menu.act(WebEngineView.DownloadLinkToDisk) }
     AppMenuLine { shown: menu.link !== "" && (menu.image || menu.selection !== "" || menu.editable) }

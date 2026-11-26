@@ -5,8 +5,9 @@ import http.server
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         # a script that opens a window without any click, and a file that can run programs
-        extra = {"/pop": ("text/html", b"<title>pop</title><script>setTimeout(() => window.open('/page'), 200)</script>", {}),
-                 "/tool.sh": ("application/octet-stream", b"#!/bin/sh\n" + b"x" * 300000, {"Content-Disposition": "attachment; filename=tool.sh"})}.get(self.path)
+        extra = {"/ok": ("text/html", b"<title>Fine</title><p>fine</p>", {}),
+                 "/pop": ("text/html", b"<title>pop</title><script>setTimeout(() => window.open('/page'), 200)</script>", {}),
+                 "/tool.sh": ("application/octet-stream", b"#!/bin/sh\n" + b"x" * 300000, {"Content-Disposition": "attachment; filename=tool.sh"})}.get(self.path.split("?")[0])
         if extra:
             kind, data, headers = extra
             self.send_response(200)

@@ -97,6 +97,7 @@ qt_add_qml_module(velum
         qml/StudioPicker.qml
         qml/StudioCard.qml
         qml/SafeButton.qml
+        qml/WindowLogic.qml
         qml/TabLogic.qml
         qml/TabSearch.qml
         qml/GroupMenu.qml

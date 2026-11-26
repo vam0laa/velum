@@ -752,6 +752,48 @@ Item {
             t.check("then it gets its real name", Files.settled.join() === "release tool.sh.velum-hold")
             w.downloads = []; w.pastDownloads = []
             w.closeTab(w.current)
+            // more windows, with the real engine
+            const before = History.pages.length
+            t.pagesBefore = before
+            const plain = w.openWindow(false, ["http://127.0.0.1:8766/ok?w"])
+            t.check("a second window opens and shares the profile", plain !== null && plain.secondary && plain.profile === w.profile && w.others.length === 1)
+            plain.addShortcut("https://second.example", "ikinci")
+            t.check("a bookmark made there is the first window's too", w.shortcuts.some(s => s.title === "ikinci") && plain.shortcuts.length === w.shortcuts.length)
+            w.removeShortcut(w.shortcuts.length - 1)
+            plain.close()
+            History.added = []
+            t.hidden = w.openWindow(true, ["http://127.0.0.1:8766/ok?secret"])
+            t.check("a private window has a profile of its own that keeps nothing", t.hidden.isPrivate && t.hidden.profile !== w.profile && t.hidden.profile.offTheRecord)
+            privateStep.start()
+        }
+    }
+    property int pagesBefore: 0
+    property var hidden: null
+    property var seen: null
+    Timer {
+        id: privateStep; interval: 2000
+        onTriggered: {
+            const w = t.w, hidden = t.hidden
+            t.check("the closed window is gone", w.others.length === 1 && Files.discarded.length === 1)
+            t.check("its page loaded", String(hidden.view.url).indexOf("secret") > 0 && hidden.view.title === "Fine")
+            t.check("but is in no history", !History.added.some(u => u.indexOf("secret") >= 0))
+            const normal = w.openWindow(false, ["http://127.0.0.1:8766/ok?seen"]); t.seen = normal
+            hidden.saveSession(); w.saveSession()
+            t.check("nor in the saved session", JSON.stringify(w.readSession(w.saved.session)).indexOf("secret") < 0)
+            hidden.recordDownload({ name: "x", folder: "/d", url: "u", size: 1, ok: true, when: 1 })
+            t.check("nor does it remember downloads", hidden.saved.pastDownloads === "[]")
+            hidden.close()
+            closedStep.interval = 2500
+            closedStep.start()
+        }
+    }
+    Timer {
+        id: closedStep; interval: 500
+        onTriggered: {
+            const w = t.w
+            t.check("an ordinary window's pages are remembered", History.added.some(u => u.indexOf("seen") >= 0))
+            t.seen.close()
+            t.check("closing windows leaves nothing behind", w.others.length === 0)
             // the everyday tools, with the real engine
             w.openTab("http://127.0.0.1:8766/page")
             toolStep.start()

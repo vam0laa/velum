@@ -12,6 +12,11 @@ QtObject {
     }
 
     function startDownload(request) {
+        const owner = app.ownerOfDownload(request)
+        if (owner) {
+            owner.startDownload(request)
+            return
+        }
         if (app.downloadFolder !== "")
             request.downloadDirectory = app.downloadFolder
         const ask = app.askDownloads || app.risky(request.downloadFileName)
@@ -90,6 +95,8 @@ QtObject {
         writeDownloads()
     }
     function writeDownloads() {
+        if (app.isPrivate)
+            return
         app.saved.pastDownloads = Shield.forgetOnExit ? "[]" : JSON.stringify(app.pastDownloads)
     }
     function readDownloads() {

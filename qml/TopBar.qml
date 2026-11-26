@@ -50,6 +50,7 @@ Item {
     signal backMenu(bool forward, Item at)
     signal muteToggled(int index)
     property var groups: []
+    property bool privateMode: false
     signal selected(int index, bool stretch)
     signal groupToggled(int id)
     signal groupMenu(int id, Item at)
@@ -128,6 +129,16 @@ Item {
                 Word { x: -2; color: Theme.night ? "#3a9fb8" : "#3ff5ff" }
                 Word { x: 2; color: Theme.night ? "#b0479c" : "#ff3fd0" }
                 Word { id: logo; color: Theme.night ? "#dfe8ff" : "#ffffff" }
+            }
+            // said plainly: this window keeps nothing
+            Rectangle {
+                visible: bar.privateMode
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: hidden.implicitWidth + 20
+                implicitHeight: 26
+                radius: Theme.round(13)
+                color: "#5b3fa0"
+                Text { id: hidden; anchors.centerIn: parent; text: Lang.t("Gizli pencere", "Private"); color: "#ffffff"; font.family: Theme.ui; font.pixelSize: 12 }
             }
             SpaceBar {
                 visible: bar.spaces.length > 1

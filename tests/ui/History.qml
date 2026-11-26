@@ -3,7 +3,8 @@ import QtQuick
 // Stand-in for the C++ history, which has its own tests.
 QtObject {
     property var pages: []
-    function add(u, t) {}
+    property var added: []
+    function add(u, t) { added.push(String(u)) }
     function setTitle(u, t) {}
     function search(text, limit) { return pages.filter(p => (p.url + p.title).indexOf(text) >= 0).slice(0, limit) }
     property int merged: 0

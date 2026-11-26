@@ -11,5 +11,9 @@ QtObject {
     function release(folder, file) { settled.push("release " + file); return file.replace(".velum-hold", "") }
     function discard(folder, file) { settled.push("discard " + file); return true }
     function freePath(folder, title, suffix) { return folder + "/" + String(title).replace(/\//g, " ") + "." + suffix }
+    property int scratch: 0
+    property var discarded: []
+    function scratchFile() { return Qt.resolvedUrl("../data/window-" + (++scratch) + ".ini") }
+    function discardScratch(url) { discarded.push(String(url)) }
     function toPath(url) { return decodeURIComponent(String(url).replace("file://", "")) }
 }

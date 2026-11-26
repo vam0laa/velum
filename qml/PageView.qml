@@ -18,7 +18,7 @@ WebEngineView {
     // how the watcher inside the page talks to Velum
     property QtObject loginBridge: QtObject {
         WebChannel.id: "velum"
-        function offer(origin, user, password) { app.offerPassword(String(origin), String(user), String(password)) }
+        function offer(origin, user, password) { if (!app.isPrivate) app.offerPassword(String(origin), String(user), String(password)) }
         function form(origin, present) {
             web.loginOrigin = present ? String(origin) : ""
             app.findAccounts(web)
@@ -134,11 +134,13 @@ WebEngineView {
             return
         app.tabs.setProperty(index, "title", url.toString() === "about:blank" ? "" : title)
         app.touchSession()
-        History.setTitle(String(url), title)
+        if (!app.isPrivate)
+            History.setTitle(String(url), title)
     }
     onIconChanged: {
         app.tabs.setProperty(index, "siteIcon", String(icon))
-        app.keepIcon(url, icon)
+        if (!app.isPrivate)
+            app.keepIcon(url, icon)
     }
     onLoadingChanged: info => {
         app.tabs.setProperty(index, "loading", loading)
@@ -154,7 +156,8 @@ WebEngineView {
         }
         if (info.status === WebEngineView.LoadSucceededStatus) {
             zoomFactor = app.zoomOf(url)
-            History.add(String(url), title)
+            if (!app.isPrivate)
+                History.add(String(url), title)
             web.runJavaScript(app.reader.probe, WebEngineScript.ApplicationWorld, found => web.readable = found === true)
         }
         // -3 means "stopped": by you, or because another page was asked for

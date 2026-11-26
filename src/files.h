@@ -1,5 +1,9 @@
 #pragma once
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
+#include <QStandardPaths>
+#include <QTemporaryFile>
 #include <QObject>
 #include <QSaveFile>
 #include <QUrl>
@@ -23,6 +27,21 @@ public:
 
     // a name in `folder` for a new file called after `title`; nothing existing is named
     Q_INVOKABLE QString freePath(const QString &folder, const QString &title, const QString &suffix) const { return held::freePath(folder, title, suffix); }
+
+    // a new file for the notes of an extra window, in the system's temporary folder
+    Q_INVOKABLE QUrl scratchFile() const
+    {
+        const QString runtime = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
+        QTemporaryFile file((runtime.isEmpty() ? QDir::tempPath() : runtime) + QStringLiteral("/velum-window-XXXXXX.ini"));
+        file.setAutoRemove(false);
+        return file.open() ? QUrl::fromLocalFile(file.fileName()) : QUrl();
+    }
+    Q_INVOKABLE void discardScratch(const QUrl &url) const
+    {
+        const QString path = url.isLocalFile() ? url.toLocalFile() : QString();
+        if (QFileInfo(path).fileName().startsWith(QLatin1String("velum-window-")) && path.endsWith(QLatin1String(".ini")))
+            QFile::remove(path);
+    }
 
     // downloads waiting for your word (see held.h)
     Q_INVOKABLE QString heldEnding() const { return held::ending; }

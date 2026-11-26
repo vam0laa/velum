@@ -39,6 +39,8 @@ QtObject {
         { id: "devTools", keys: "F12", also: "Ctrl+Shift+I", name: Lang.t("Geliştirici araçları", "Developer tools") },
         { id: "mute", keys: "Ctrl+M", name: Lang.t("Sekmenin sesini kapat ya da aç", "Mute or unmute the tab") },
         { id: "tabSearch", keys: "Ctrl+Shift+A", name: Lang.t("Sekmelerde ara", "Search tabs") },
+        { id: "newWindow", keys: "Ctrl+N", name: Lang.t("Yeni pencere", "New window") },
+        { id: "privateWindow", keys: "Ctrl+Shift+N", name: Lang.t("Yeni gizli pencere", "New private window") },
         { id: "resetLook", keys: "Ctrl+Shift+0", name: Lang.t("Görünümü sıfırla", "Reset the look") },
         { id: "clear", keys: "Ctrl+Shift+Del", name: Lang.t("Gezinme verilerini sil", "Delete browsing data") },
         { id: "fullScreen", keys: "F11", name: Lang.t("Tam ekran", "Full screen") },

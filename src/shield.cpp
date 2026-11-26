@@ -268,7 +268,9 @@ void Shield::attach(QObject *profile)
     });
     if (m_forget)
         quick->cookieStore()->deleteAllCookies();
-    // a list of the cookies, for the settings
+    // a list of the cookies, for the settings; private windows are left out of it
+    if (m_cookieStore || quick->isOffTheRecord())
+        return;
     m_cookieStore = quick->cookieStore();
     connect(m_cookieStore, &QWebEngineCookieStore::cookieAdded, this, [this](const QNetworkCookie &c) {
         auto &list = m_cookies[c.domain().startsWith(QLatin1Char('.')) ? c.domain().mid(1) : c.domain()];

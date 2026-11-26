@@ -11,7 +11,7 @@ QtObject {
 
     function keepGroups(list) {
         app.groups = list
-        app.saved.groups = Shield.forgetOnExit ? "[]" : JSON.stringify(list)
+        app.saved.groups = Shield.forgetOnExit || app.isPrivate ? "[]" : JSON.stringify(list)
     }
     function readGroups() {
         try {

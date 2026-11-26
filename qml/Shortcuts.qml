@@ -57,4 +57,6 @@ Item {
     Shortcut { sequence: "Ctrl+8"; onActivated: app.goToTab(8) }
     Shortcut { sequence: "Ctrl+9"; onActivated: app.goToTab(9) }
     Shortcut { sequences: Keymap.sequences("tabSearch"); onActivated: app.openTabSearch() }
+    Shortcut { sequences: Keymap.sequences("newWindow"); onActivated: app.openWindow(false) }
+    Shortcut { sequences: Keymap.sequences("privateWindow"); onActivated: app.openWindow(true) }
 }

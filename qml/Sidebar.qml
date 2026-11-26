@@ -39,6 +39,7 @@ Panel {
     signal backMenu(bool forward, Item at)
     signal muteToggled(int index)
     property var groups: []
+    property bool privateMode: false
     signal selected(int index, bool stretch)
     signal groupToggled(int id)
     signal groupMenu(int id, Item at)
@@ -82,6 +83,15 @@ Panel {
                 hintBeside: side.compact
                 onClicked: side.view.loading ? side.view.stop() : side.view.reload()
             }
+        }
+
+        Rectangle {
+            visible: side.privateMode
+            Layout.fillWidth: true
+            implicitHeight: 24
+            radius: Theme.round(12)
+            color: "#5b3fa0"
+            Text { anchors.centerIn: parent; text: side.compact ? "◐" : Lang.t("Gizli pencere", "Private"); color: "#ffffff"; font.family: Theme.ui; font.pixelSize: 12 }
         }
 
         AddressField {

@@ -70,6 +70,17 @@ ApplicationWindow {
         mainMenu.popup(Math.max(8, place.x), Math.max(8, Math.min(place.y, height - mainMenu.implicitHeight - 8)))
     }
     property bool greet: false              // show the welcome pages if they were never seen
+    // ---- more than one window ----
+    property bool secondary: false          // not the first window: borrows from "primary"
+    property bool isPrivate: false          // nothing of it reaches the disk
+    property var primary: null
+    property var sharedProfile: null
+    property url settingsFile               // where an extra window notes things, for as long as it lives
+    property var others: []                 // the extra windows (kept by the first)
+    function openWindow(hidden, urls) { return windowLogic.openWindow(hidden, urls) }
+    function ownerOfDownload(request) { return windowLogic.ownerOf(request) }
+    function windowClosed(window) { windowLogic.windowClosed(window) }
+    function tabToWindow(index, hidden) { return windowLogic.tabToWindow(index, hidden) }
     property bool welcomed: false
     property var welcome: null          // made when first shown
     function showWelcome() {
@@ -181,7 +192,7 @@ ApplicationWindow {
     visible: true
     color: Theme.frameBack
     font.family: Theme.ui
-    title: view && view.title !== "" && !onStartPage ? view.title + " - Velum" : "Velum"
+    title: (view && view.title !== "" && !onStartPage ? view.title + " - Velum" : "Velum") + (isPrivate ? Lang.t(" (Gizli)", " (Private)") : "")
 
     // Cookies and logins are kept on this computer, in Velum's own folder.
     WebEngineProfilePrototype {
@@ -194,11 +205,16 @@ ApplicationWindow {
     property WebEngineProfile profile
 
     Component.onCompleted: {
-        profile = prototype.instance()
-        Shield.attach(profile)          // every request now passes through the shield
-        profile.downloadRequested.connect(startDownload)
-        profile.presentNotification.connect(n => Notifier.show(n))
-        Notifier.activated.connect(() => { window.show(); window.raise(); window.requestActivate() })
+        profile = sharedProfile ?? (isPrivate ? privateProfile.createObject(window) : prototype.instance())
+        const ownProfile = sharedProfile === null
+        if (ownProfile) {
+            Shield.attach(profile)          // every request now passes through the shield
+            profile.downloadRequested.connect(startDownload)
+        }
+        if (!secondary) {
+            profile.presentNotification.connect(n => Notifier.show(n))
+            Notifier.activated.connect(() => { window.show(); window.raise(); window.requestActivate() })
+        }
         // Present Velum as the Chrome engine it is. Some sites refuse names they do not know.
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
         shortcuts = readList(saved.shortcuts)
@@ -214,12 +230,19 @@ ApplicationWindow {
         }
         neverSave = readStrings(saved.neverSave)
         iconNames = readStrings(saved.iconNames)
-        watchLogins()
-        const manager = profile.extensionManager
-        manager.installFinished.connect(extensionInstalled)
-        manager.uninstallFinished.connect(() => Qt.callLater(refreshExtensions))
-        manager.loadFinished.connect(() => Qt.callLater(refreshExtensions))
-        refreshExtensions()
+        if (ownProfile)
+            watchLogins()
+        if (!secondary) {
+            const manager = profile.extensionManager
+            manager.installFinished.connect(extensionInstalled)
+            manager.uninstallFinished.connect(() => Qt.callLater(refreshExtensions))
+            manager.loadFinished.connect(() => Qt.callLater(refreshExtensions))
+            refreshExtensions()
+        } else {
+            // bookmarks are the first window's, and follow it
+            shortcuts = Qt.binding(() => primary.shortcuts)
+            removedBookmarks = Qt.binding(() => primary.removedBookmarks)
+        }
         spaces = readSpaces(saved.spaces)
         if (!spaces.some(s => s.id === space))
             space = spaces[0].id
@@ -275,7 +298,7 @@ ApplicationWindow {
 
     // Writes down the open tabs, a moment after they last changed.
     function saveSession() {
-        if (!restored)
+        if (!restored || secondary)
             return
         if (Shield.forgetOnExit) {      // nothing about this visit is written down
             saved.session = "{}"
@@ -299,10 +322,22 @@ ApplicationWindow {
     function touchSession() { sessionTimer.restart() }
     onCurrentChanged: { followCurrent(); touchSession(); if (restored && groups.length > 0) Qt.callLater(refreshGroups) }
     onMovesChanged: touchSession()
-    onClosing: { closeMini(); saveSession(); forgetNow() }
+    onClosing: {
+        closeMini()
+        if (secondary) {
+            if (tools.devWindow)
+                tools.devWindow.close()
+            primary.windowClosed(window)
+            return
+        }
+        windowLogic.closeOtherWindows()
+        saveSession()
+        forgetNow()
+    }
     // quitting goes the same way as closing the window
     function quit() {
-        close()
+        const keeper = primary ?? window
+        keeper.close()
         Qt.quit()
     }
     function forgetNow() {
@@ -340,7 +375,7 @@ ApplicationWindow {
     }
 
     function savePinned() {
-        if (!restored)
+        if (!restored || secondary)
             return
         const list = []
         for (let i = 0; i < pinnedCount; i++)
@@ -351,6 +386,7 @@ ApplicationWindow {
     // remembered between starts
     Settings {
         id: saved
+        location: window.settingsFile     // empty: the usual settings file
         property string pinned: "[]"
         property string shortcuts: "[]"
         property string session: "{}"
@@ -402,6 +438,8 @@ ApplicationWindow {
     SiteLogic { id: siteLogic; app: window }
     AskLogic { id: askLogic; app: window }
     DemoLogic { id: demoLogic; app: window }
+    WindowLogic { id: windowLogic; app: window }
+    Component { id: privateProfile; WebEngineProfile { offTheRecord: true; persistentCookiesPolicy: WebEngineProfile.NoPersistentCookies; persistentPermissionsPolicy: WebEngineProfile.StoreInMemory } }
     TabLogic { id: tabLogic; app: window }
     TabSearch { id: tabSearch; app: window }
     GroupMenu { id: groupMenu; app: window; parent: window.Overlay.overlay }
@@ -788,6 +826,12 @@ ApplicationWindow {
 
     // Goes to the settings tab of this workspace, making one if there is none.
     function openSettings(section) {
+        if (secondary) {
+            primary.openSettings(section)
+            primary.raise()
+            primary.requestActivate()
+            return
+        }
         prefsLoader.wanted = true
         if (section)
             prefs.section = section
@@ -884,6 +928,7 @@ ApplicationWindow {
                 onMoved: (from, to) => window.moveTab(from, to)
                 onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
                 onMuteToggled: i => window.toggleMute(i)
+                privateMode: window.isPrivate
                 groups: window.groups
                 onSelected: (i, stretch) => window.selectTab(i, stretch)
                 onGroupToggled: id => window.toggleGroup(id)
@@ -918,6 +963,7 @@ ApplicationWindow {
                 onMoved: (from, to) => window.moveTab(from, to)
                 onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
                 onMuteToggled: i => window.toggleMute(i)
+                privateMode: window.isPrivate
                 groups: window.groups
                 onSelected: (i, stretch) => window.selectTab(i, stretch)
                 onGroupToggled: id => window.toggleGroup(id)
@@ -1403,6 +1449,7 @@ ApplicationWindow {
         onSavePage: window.savePage()
         onViewSource: window.viewSource()
         onInspect: window.inspect(view)
+        onOpenInWindow: (url, hidden) => window.openWindow(hidden, [url])
     }
 
     // a newer version has been fetched and will be installed when Velum is closed
@@ -1415,7 +1462,7 @@ ApplicationWindow {
         parent: window.Overlay.overlay
         z: 100000
         target: window.welcome?.opened ? window.welcome.contentItem : scene
-        Component.onCompleted: Theme.washer = themeWash.run
+        Component.onCompleted: if (!window.secondary) Theme.washer = themeWash.run
         Component.onDestruction: if (Theme.washer === themeWash.run) Theme.washer = null
     }
 

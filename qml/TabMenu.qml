@@ -20,6 +20,8 @@ AppMenu {
     AppMenuItem { shown: tabMenu.many.length > 1; text: Lang.t(tabMenu.many.length + " sekmeyi kapat", "Close " + tabMenu.many.length + " tabs"); onTriggered: app.closeMany(tabMenu.many) }
     AppMenuLine {}
     AppMenuItem { text: tabMenu.pinned ? Lang.t("Sabitlemeyi kaldır", "Unpin") : Lang.t("Sabitle", "Pin"); onTriggered: app.togglePin(tabMenu.index) }
+    AppMenuItem { text: Lang.t("Yeni pencereye taşı", "Move to a new window"); onTriggered: app.tabToWindow(tabMenu.index, false) }
+    AppMenuItem { text: Lang.t("Gizli pencerede aç", "Open in a private window"); onTriggered: app.tabToWindow(tabMenu.index, true) }
     AppMenuItem { text: Lang.t("Çoğalt", "Duplicate"); onTriggered: app.openTab(app.tabs.get(tabMenu.index).pageUrl) }
     AppMenuItem { text: Lang.t("Yenile", "Reload"); onTriggered: (app.views.itemAt(tabMenu.index) as WebEngineView).reload() }
     AppMenuItem { text: Lang.t("Sesi kapat ya da aç", "Mute or unmute"); onTriggered: app.toggleMute(tabMenu.index) }
