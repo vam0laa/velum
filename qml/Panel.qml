@@ -17,6 +17,8 @@ Item {
     property alias videoButton: bar.videoButton
     property alias videoOut: bar.videoOut
     signal video()
+    property alias keyButton: bar.keyButton
+    signal fill()
     property alias readerButton: bar.readerButton
     property alias readerOn: bar.readerOn
     signal reader()
@@ -31,6 +33,7 @@ Item {
         onCloseRequested: panel.closeRequested()
         onVideo: panel.video()
         onReader: panel.reader()
+        onFill: panel.fill()
     }
     // a hairline under the title
     Rectangle { visible: panel.chrome; anchors { left: parent.left; right: parent.right; top: bar.bottom; leftMargin: 1; rightMargin: 1 } height: 1; color: Theme.line; opacity: 0.6 }

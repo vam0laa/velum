@@ -294,6 +294,55 @@ Item {
         }
     }
     Timer {
+        id: formStep; interval: 2500
+        onTriggered: {
+            const w = t.w
+            t.check("a login form is noticed", w.view.loginOrigin === "https://login.example" && w.view.accounts.length === 0)
+            w.view.runJavaScript("typeof QWebChannel === 'undefined' && !(window.qt && window.qt.webChannelTransport)", hidden => t.check("the page's own code cannot reach the channel", hidden === true))
+            w.view.runJavaScript("document.getElementById('u').value = 'ali@x.test'; document.getElementById('p').value = 'cok gizli'; document.getElementById('p').focus()", () => {
+                // the page presses its own button: not a person, so nothing must happen
+                w.view.runJavaScript("document.querySelector('button').click()", () => offerStep.start())
+            })
+        }
+    }
+    Timer {
+        id: offerStep; interval: 300
+        onTriggered: {
+            const w = t.w
+            t.check("a click made by the page does not make Velum offer to save", w.passwordOffer === null)
+            w.offerPassword("https://login.example", "ali@x.test", "cok gizli")
+            t.check("a new login is offered", w.passwordOffer !== null && !w.passwordOffer.changed)
+            w.savePassword("ali@x.test")
+            t.check("saving stores it and the form knows", Passwords.store.length === 1 && w.passwordOffer === null && w.view.accounts.length === 1)
+            w.offerPassword("https://login.example", "ali@x.test", "cok gizli")
+            t.check("a saved login is not asked about again", w.passwordOffer === null)
+            w.offerPassword("https://login.example", "ali@x.test", "yeni")
+            t.check("a changed password is offered as an update", w.passwordOffer.changed); w.passwordOffer = null
+            w.offerPassword("http://login.example", "a", "b"); w.offerPassword("https://login.example/path", "a", "b")
+            t.check("only proper secure origins are accepted", w.passwordOffer === null)
+            w.neverFor("https://never.example"); w.offerPassword("https://never.example", "a", "b")
+            t.check("a site can be left alone", w.passwordOffer === null && w.neverSave.length === 1)
+            w.askAgainFor("https://never.example"); t.check("and asked on again", w.neverSave.length === 0)
+            w.view.runJavaScript("document.getElementById('u').value = ''; document.getElementById('p').value = ''; seen = 0", () => { w.fillPassword(); filledStep.start() })
+        }
+    }
+    Timer {
+        id: filledStep; interval: 700
+        onTriggered: {
+            const w = t.w
+            w.view.runJavaScript("[document.getElementById('u').value, document.getElementById('p').value, document.getElementById('trap').value, seen > 0]", r => {
+                t.check("filling puts name and password in, and the page hears it", r[0] === "ali@x.test" && r[1] === "cok gizli" && r[3] === true)
+                t.check("hidden fields are not filled", r[2] === "")
+                Passwords.store = [{ origin: "https://other.example", user: "o", password: "p" }]
+                w.view.runJavaScript(w.loginScript.fill("https://other.example", "o", "p"), WebEngineScript.ApplicationWorld, done => {
+                    t.check("another site's password is refused by the page script too", done === false)
+                    console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
+                    Qt.exit(t.failed)
+                })
+            })
+        }
+    }
+    Timer {
         id: shownStep; interval: 800
         onTriggered: {
             const w = t.w
@@ -311,8 +360,10 @@ Item {
                     w.toggleReader()
                     w.view.runJavaScript("document.getElementById('velum-reader') === null && document.documentElement.style.overflow === ''", gone => {
                         t.check("leaving restores the page", gone === true && !w.view.reading)
-                        console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
-                        Qt.exit(t.failed)
+                        Passwords.store = []
+                        w.view.loadHtml('<form onsubmit="return false"><input type="email" id="u" autocomplete="username"><input type="password" id="p"><input type="password" id="trap" style="opacity:0;width:0"><button>Gir</button></form>'
+                            + '<script>window.seen = 0; document.getElementById("p").addEventListener("input", () => seen++)</scr' + 'ipt>', "https://login.example/giris")
+                        formStep.start()
                     })
                 })
             })

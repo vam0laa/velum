@@ -15,6 +15,10 @@ Popup {
     signal restoreSessionChosen(bool on)
     signal downloadFolderChosen(string folder)
     signal clearRequested()
+    property var neverSites: []
+    signal askAgain(string origin)
+    onSectionChanged: if (opened && section === 4) passwordList.refresh()
+    onOpened: if (section === 4) passwordList.refresh()
 
     readonly property string folderShown: downloadFolder !== "" ? downloadFolder
         : decodeURIComponent(String(StandardPaths.writableLocation(StandardPaths.DownloadLocation)).replace("file://", ""))
@@ -55,7 +59,7 @@ Popup {
             Layout.margins: 12
             spacing: 4
             Repeater {
-                model: [Lang.t("Genel", "General"), Lang.t("Sekmeler", "Tabs"), Lang.t("Gizlilik", "Privacy"), Lang.t("Hakkında", "About")]
+                model: [Lang.t("Genel", "General"), Lang.t("Sekmeler", "Tabs"), Lang.t("Gizlilik", "Privacy"), Lang.t("Hakkında", "About"), Lang.t("Parolalar", "Passwords")]
                 AbstractButton {
                     id: entry
                     required property int index
@@ -162,6 +166,13 @@ Popup {
                     Text { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; text: Lang.t("Sakin ve gizlilik odaklı bir tarayıcı. Motor: Qt WebEngine (Chromium). Engelleyici: Brave adblock-rust.", "A calm, private browser. Engine: Qt WebEngine (Chromium). Blocker: Brave adblock-rust.") }
                     Text { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12; text: Lang.t("Varsayılan tarayıcı yapmak için: xdg-settings set default-web-browser velum.desktop", "To make it the default browser: xdg-settings set default-web-browser velum.desktop") }
                     Item { Layout.fillHeight: true }
+                }
+
+                // Passwords
+                PasswordList {
+                    id: passwordList
+                    neverSites: page.neverSites
+                    onAllow: origin => page.askAgain(origin)
                 }
             }
         }

@@ -8,7 +8,7 @@ Measured memory use is in [docs/olcum.md](docs/olcum.md).
 
 ## Build and run
 
-Needs Qt 6.9 or newer (base with the SQLite driver, declarative, webengine), CMake, Ninja and Rust (cargo).
+Needs Qt 6.9 or newer (base with the SQLite driver, declarative, webengine, webchannel), libsecret, CMake, Ninja and Rust (cargo).
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -35,6 +35,7 @@ Install for your user: `cmake --install build --prefix ~/.local`
 | Ctrl+, | settings |
 | Ctrl+\ | split view: two tabs side by side (also in the tab menu) |
 | Ctrl+Shift+O | bookmark manager: folders, search, edit, reorder, undo |
+| Ctrl+Shift+L | fill in a saved password |
 | Alt+R | reading mode: the article alone, in Velum's colours (button in the title bar on article pages) |
 | Alt+P | the video in a small window that stays on top (button in the title bar while a page plays sound) |
 | Alt+1…6 | workspaces: separate sets of tabs (pinned tabs and logins are shared) |
@@ -46,6 +47,8 @@ Install for your user: `cmake --install build --prefix ~/.local`
 | Ctrl + / - / 0 | zoom |
 | F11 | full screen |
 | Ctrl+Q | quit |
+
+Passwords are kept in the system keyring (Secret Service: GNOME Keyring, KeePassXC and the like), never in a file of Velum's. Velum asks before saving, and fills a form only when you ask, on https pages whose address matches exactly. Forms inside frames are not filled.
 
 Import in the bookmark manager takes bookmarks (with folders) and the last 90 days of history from Firefox, Zen, LibreWolf, Chromium, Chrome, Brave, Helium, Vivaldi or Edge. Only when you ask, from copies of their files; passwords and cookies are not touched.
 

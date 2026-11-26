@@ -2,6 +2,7 @@ import QtCore
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtWebChannel
 import QtWebEngine
 
 ApplicationWindow {
@@ -43,6 +44,8 @@ ApplicationWindow {
     readonly property WebEngineView miniPage: miniPlayer.page   // the tab in the small window
     property string notice: ""        // a short message over the page
     property int readerSize: 18       // letter size in reading mode
+    property var passwordOffer: null  // a login waiting for "save?": { origin, user, password, changed }
+    property var neverSave: []        // sites you do not want to be asked on
     property var asks: []             // unanswered permission requests: [{ page, permission, site, wish }]
     // the question for the page being looked at, if it has one
     readonly property var ask: asks.find(a => a.page === view) ?? null
@@ -76,6 +79,8 @@ ApplicationWindow {
         // Present Velum as the Chrome engine it is. Some sites refuse names they do not know.
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
         shortcuts = readList(saved.shortcuts)
+        neverSave = readStrings(saved.neverSave)
+        watchLogins()
         spaces = readSpaces(saved.spaces)
         if (!spaces.some(s => s.id === space))
             space = spaces[0].id
@@ -189,6 +194,7 @@ ApplicationWindow {
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
         property alias readerSize: window.readerSize
+        property string neverSave: "[]"
         property string spaces: "[]"
         property alias space: window.space
         property alias width: window.width
@@ -376,6 +382,10 @@ ApplicationWindow {
 
     function openBookmarks() { bookmarksPage.open() }
     function openImport() { importPanel.open() }
+    function openPasswords() {
+        settings.section = 4
+        settings.open()
+    }
 
     // Takes bookmarks (and history) of another browser. Returns the sentence to show.
     function importFrom(path, withHistory) {
@@ -697,6 +707,114 @@ ApplicationWindow {
 
     Reader { id: reader }
 
+    // ---- passwords ----
+    LoginScript { id: login }
+    property alias loginScript: login
+
+    // every page gets the watcher, in the separate world only Velum's code runs in
+    function watchLogins() {
+        const channel = WebEngine.script()
+        channel.name = "velum-channel"
+        channel.sourceUrl = "qrc:///qtwebchannel/qwebchannel.js"
+        channel.injectionPoint = WebEngineScript.DocumentCreation
+        channel.worldId = WebEngineScript.ApplicationWorld
+        const watch = WebEngine.script()
+        watch.name = "velum-login"
+        watch.sourceCode = login.watch
+        watch.injectionPoint = WebEngineScript.DocumentReady
+        watch.worldId = WebEngineScript.ApplicationWorld
+        profile.userScripts.collection = [channel, watch]
+    }
+
+    function readStrings(text) {
+        try {
+            const list = JSON.parse(text)
+            return Array.isArray(list) ? list.filter(x => typeof x === "string") : []
+        } catch (e) {
+            return []
+        }
+    }
+
+    // a login was sent: ask whether to keep it
+    function offerPassword(origin, user, password) {
+        if (origin === "" || Passwords.origin(origin) !== origin || password === "" || neverSave.includes(origin))
+            return
+        Passwords.check(origin, user, password, state => {
+            if (state === "new" || state === "changed")
+                passwordOffer = { origin: origin, user: user, password: password, changed: state === "changed" }
+        })
+    }
+
+    function savePassword(user) {
+        const offer = passwordOffer
+        if (!offer)
+            return
+        passwordOffer = null
+        Passwords.save(offer.origin, user, offer.password, ok => {
+            say(ok ? Lang.t("Parola anahtarlığa kaydedildi.", "The password is in the keyring.")
+                   : Lang.t("Parola kaydedilemedi. Anahtarlığın kilidi açık mı?", "The password could not be saved. Is the keyring unlocked?"))
+            for (let i = 0; i < tabs.count; i++)
+                findAccounts(pageViewAt(i))
+        })
+    }
+
+    function neverFor(origin) {
+        passwordOffer = null
+        if (!neverSave.includes(origin)) {
+            neverSave = neverSave.concat([origin])
+            saved.neverSave = JSON.stringify(neverSave)
+        }
+    }
+
+    function askAgainFor(origin) {
+        neverSave = neverSave.filter(o => o !== origin)
+        saved.neverSave = JSON.stringify(neverSave)
+    }
+
+    // which saved logins fit the form on this page, if it has one
+    function findAccounts(page) {
+        if (!page || page.loginOrigin === "") {
+            if (page)
+                page.accounts = []
+            return
+        }
+        const origin = page.loginOrigin
+        Passwords.accounts(origin, found => {
+            if (page.loginOrigin === origin)
+                page.accounts = found ?? []
+        })
+    }
+
+    // Ctrl+Shift+L and the title bar button; with several accounts you pick one
+    function fillPassword() {
+        const page = view
+        if (!page || page.accounts.length === 0) {
+            say(Lang.t("Bu sayfa için kayıtlı parola ya da giriş formu yok.", "No saved password or login form for this page."))
+            return
+        }
+        if (page.accounts.length === 1)
+            fillAccount(page, page.accounts[0].user)
+        else
+            accountMenu.popup(card.width + side.width - accountMenu.width, 40)
+    }
+
+    function fillAccount(page, user) {
+        const origin = page.loginOrigin
+        // the address bar's page and the form's page must be the same site
+        if (origin === "" || Passwords.origin(page.url) !== origin)
+            return
+        Passwords.password(origin, user, secret => {
+            if (secret === null) {
+                say(Lang.t("Parola anahtarlıktan okunamadı.", "The password could not be read from the keyring."))
+                return
+            }
+            page.runJavaScript(login.fill(origin, user, secret), WebEngineScript.ApplicationWorld, done => {
+                if (done !== true)
+                    say(Lang.t("Doldurulacak giriş formu bulunamadı.", "No login form to fill was found."))
+            })
+        })
+    }
+
     function say(text) {
         notice = text
         noticeTimer.restart()
@@ -818,6 +936,10 @@ ApplicationWindow {
         }
         else if (action === "allow" && ask)
             answer(ask, true)
+        else if (action === "passwords")
+            openPasswords()
+        else if (action === "offer")
+            passwordOffer = { origin: "https://ornek.example", user: "vamola", password: "deneme", changed: false }
         else if (action === "reader")
             toggleReader()
         else if (action === "import")
@@ -899,6 +1021,8 @@ ApplicationWindow {
             onMinimize: window.compactSidebar = !window.compactSidebar
             onMaximize: window.toggleWindowFullScreen()
             onCloseRequested: window.closeTab(window.current)
+            keyButton: !window.onStartPage && (window.view?.accounts.length ?? 0) > 0
+            onFill: window.fillPassword()
             readerButton: !window.onStartPage && window.view !== null && window.view !== window.miniPage && (window.view.readable || window.view.reading)
             readerOn: window.view?.reading ?? false
             onReader: window.toggleReader()
@@ -921,6 +1045,19 @@ ApplicationWindow {
                         required property bool lazy
                         property bool started: false
                         property bool crashed: false
+                        property string loginOrigin: ""     // set while a login form is shown
+                        property var accounts: []           // saved logins that fit it
+                        // how the watcher inside the page talks to Velum
+                        property QtObject loginBridge: QtObject {
+                            WebChannel.id: "velum"
+                            function offer(origin, user, password) { window.offerPassword(String(origin), String(user), String(password)) }
+                            function form(origin, present) {
+                                web.loginOrigin = present ? String(origin) : ""
+                                window.findAccounts(web)
+                            }
+                        }
+                        webChannel: WebChannel { registeredObjects: [web.loginBridge] }
+                        webChannelWorld: WebEngineScript.ApplicationWorld
                         property bool readable: false       // there is an article here
                         property bool reading: false        // and it is shown in reading mode
                         property var failure: null          // { url, text, certificate }
@@ -1033,6 +1170,8 @@ ApplicationWindow {
                                     window.closeMini()
                                 readable = false
                                 reading = false
+                                loginOrigin = ""
+                                accounts = []
                                 crashed = false
                                 failure = null
                             }
@@ -1195,6 +1334,16 @@ ApplicationWindow {
                 }
             }
 
+            PasswordBar {
+                anchors { top: parent.top; right: parent.right; margins: 12 }
+                z: 4
+                visible: offer !== null
+                offer: window.passwordOffer
+                onAccepted: user => window.savePassword(user)
+                onLater: window.passwordOffer = null
+                onNever: window.neverFor(window.passwordOffer.origin)
+            }
+
             // a short message at the bottom of the page
             Rectangle {
                 anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 18 }
@@ -1239,6 +1388,8 @@ ApplicationWindow {
         onRestoreSessionChosen: on => window.restoreSession = on
         onDownloadFolderChosen: folder => window.downloadFolder = folder
         onClearRequested: clearDialog.open()
+        neverSites: window.neverSave
+        onAskAgain: origin => window.askAgainFor(origin)
     }
 
     ResourcePanel {
@@ -1308,6 +1459,8 @@ ApplicationWindow {
             { name: Lang.t("Diğer sekmeleri kapat", "Close other tabs"), keys: "", run: () => window.closeOthers(window.current) },
             { name: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"), keys: "Ctrl+\\", run: () => window.toggleSplit() },
             { name: Lang.t("Videoyu küçük pencereye al ya da geri getir", "Video in a small window, or back"), keys: "Alt+P", run: () => window.toggleMini() },
+            { name: Lang.t("Parolayı doldur", "Fill in the password"), keys: "Ctrl+Shift+L", run: () => window.fillPassword() },
+            { name: Lang.t("Kayıtlı parolalar", "Saved passwords"), keys: "", run: () => Qt.callLater(window.openPasswords) },
             { name: Lang.t("Okuma modu", "Reading mode"), keys: "Alt+R", run: () => window.toggleReader() },
             { name: Lang.t("Yeni çalışma alanı", "New workspace"), keys: "", run: () => spaceDialog.show(0, "", false) },
             { name: Lang.t("Sayfada ara", "Find in page"), keys: "Ctrl+F", run: () => Qt.callLater(window.findInPage) },
@@ -1331,6 +1484,16 @@ ApplicationWindow {
         onOpenInTab: url => window.openTab(url)
         onSearchFor: text => window.openTab(String(Address.search(text)))
         onFind: window.findInPage()
+    }
+
+    // choosing between several saved accounts; five are offered
+    AppMenu {
+        id: accountMenu
+        AppMenuItem { readonly property var account: window.view?.accounts[0]; shown: account !== undefined; text: account ? account.user || Lang.t("(adsız)", "(no name)") : ""; onTriggered: window.fillAccount(window.view, account.user) }
+        AppMenuItem { readonly property var account: window.view?.accounts[1]; shown: account !== undefined; text: account ? account.user || Lang.t("(adsız)", "(no name)") : ""; onTriggered: window.fillAccount(window.view, account.user) }
+        AppMenuItem { readonly property var account: window.view?.accounts[2]; shown: account !== undefined; text: account ? account.user || Lang.t("(adsız)", "(no name)") : ""; onTriggered: window.fillAccount(window.view, account.user) }
+        AppMenuItem { readonly property var account: window.view?.accounts[3]; shown: account !== undefined; text: account ? account.user || Lang.t("(adsız)", "(no name)") : ""; onTriggered: window.fillAccount(window.view, account.user) }
+        AppMenuItem { readonly property var account: window.view?.accounts[4]; shown: account !== undefined; text: account ? account.user || Lang.t("(adsız)", "(no name)") : ""; onTriggered: window.fillAccount(window.view, account.user) }
     }
 
     AppMenu {
@@ -1366,6 +1529,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+D"; onActivated: window.toggleBookmark() }
     Shortcut { sequences: [StandardKey.Find]; onActivated: window.findInPage() }
     Shortcut { sequence: "Ctrl+Shift+O"; onActivated: window.openBookmarks() }
+    Shortcut { sequence: "Ctrl+Shift+L"; onActivated: window.fillPassword() }
     Shortcut { sequence: "Alt+R"; onActivated: window.toggleReader() }
     Shortcut { sequence: "Alt+P"; onActivated: window.toggleMini() }
     Shortcut { sequence: "Alt+1"; onActivated: window.switchSpace(window.spaces[0]?.id) }

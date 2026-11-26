@@ -320,6 +320,22 @@ Pencerenin başlığı `Picture-in-Picture`: Hyprland kuralları bu başlığı 
 
 Betik `ApplicationWorld`'de çalışır: sayfanın kendi kodu onun değişkenlerine karışamaz.
 
+## 7v. Parolalar
+
+```
+src/passwords.cpp      sistem anahtarlığı (libsecret): kaydet, listele, oku, sil
+src/passwordbridge.h   aynısı QML için; her iş ayrı bir iş parçacığında
+qml/LoginScript.qml    sayfanın içinde: giriş formunu fark eder, gönderileni bildirir, doldurur
+```
+Güvenlik kuralları:
+- Parola dosyaya yazılmaz; anahtarlık şifreler.
+- Sayfa betiği `ApplicationWorld`'de çalışır ve Velum'la `QWebChannel` üzerinden konuşur. Sitenin kendi kodu bu kanala erişemez.
+- Köken (`https://site`) birebir eşleşmeli; http siteler (kendi bilgisayarın dışında) hiç izlenmez.
+- Doldurma yalnızca sen isteyince, yalnızca görünen alana. Betik doldururken sayfanın hâlâ aynı site olduğunu bir daha kontrol eder.
+- Panoya kopyalanan parola 30 saniye sonra silinir.
+
+Test (`tests/run-keyring.sh`) kendi geçici anahtarlığını açar; seninkine dokunamaz.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

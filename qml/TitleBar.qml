@@ -15,6 +15,8 @@ Item {
     property bool videoButton: false      // there is a video that can go to the small window
     property bool videoOut: false
     signal video()
+    property bool keyButton: false        // a saved login fits the form on the page
+    signal fill()
     property bool readerButton: false     // there is an article that can be read
     property bool readerOn: false
     signal reader()
@@ -67,6 +69,13 @@ Item {
             color: bar.stripe
             font.family: Theme.pixel
             font.pixelSize: 18
+        }
+        Pill {
+            visible: bar.keyButton
+            symbol: "key"
+            text: Lang.t("parolayı doldur", "fill password")
+            hint: "Ctrl+Shift+L"
+            onPressed: bar.fill()
         }
         Pill {
             visible: bar.readerButton

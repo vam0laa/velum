@@ -16,6 +16,7 @@
 #include "importer.h"
 #include "instance.h"
 #include "palette.h"
+#include "passwords.h"
 #include "widevine.h"
 
 class CoreTest : public QObject
@@ -242,6 +243,48 @@ private slots:
         marks.write("{broken");
         marks.close();
         QVERIFY(!importer::read(sources.first(), -1).ok);
+    }
+
+    void passwordOrigins()
+    {
+        QCOMPARE(passwords::origin(QUrl("https://Site.example/login?x=1")), "https://site.example");
+        QCOMPARE(passwords::origin(QUrl("https://user:pw@site.example:443/")), "https://site.example");
+        QCOMPARE(passwords::origin(QUrl("https://site.example:8443/")), "https://site.example:8443");
+        QCOMPARE(passwords::origin(QUrl("http://localhost:3000/a")), "http://localhost:3000");
+        QCOMPARE(passwords::origin(QUrl("http://[::1]/")), "http://[::1]");
+        for (const char *no : {"http://site.example/", "http://192.168.1.1/", "file:///tmp/a", "about:blank", "data:text/html,x", ""})
+            QCOMPARE(passwords::origin(QUrl(no)), "");
+        QVERIFY(passwords::origin(QUrl("https://xn--pple-43d.com/")) != passwords::origin(QUrl("https://apple.com/")));
+    }
+
+    // runs only through tests/run-keyring.sh, which gives it an empty keyring of its own
+    void keyring()
+    {
+        const QByteArray sandbox = qgetenv("VELUM_TEST_KEYRING");
+        if (sandbox.isEmpty() || sandbox != qgetenv("HOME"))
+            QSKIP("needs the throwaway keyring of tests/run-keyring.sh");
+        const auto empty = passwords::accounts({});
+        QVERIFY(empty.has_value());
+        QVERIFY(empty->isEmpty());
+        const QString a = "https://a.example", b = "https://b.example";
+        const QString secret = QString::fromUtf8("g\xc4\xb1zli \"\\ parola");
+        QVERIFY(passwords::save(a, "ali", secret));
+        QVERIFY(passwords::save(a, "veli", "two"));
+        QVERIFY(passwords::save(b, "", "three"));
+        QVERIFY(!passwords::save(a, "x", ""));
+        QVERIFY(!passwords::save("", "x", "y"));
+        QCOMPARE(passwords::accounts(a)->size(), 2);
+        QCOMPARE(passwords::accounts({})->size(), 3);
+        QCOMPARE(passwords::password(a, "ali").value_or("?"), secret);
+        QCOMPARE(passwords::password(b, "").value_or("?"), "three");
+        QVERIFY(!passwords::password(a, "nobody").has_value());
+        QVERIFY(!passwords::password("https://c.example", "ali").has_value());
+        QVERIFY(passwords::save(a, "ali", "new"));
+        QCOMPARE(passwords::accounts(a)->size(), 2);
+        QCOMPARE(passwords::password(a, "ali").value_or("?"), "new");
+        QVERIFY(!passwords::remove("", ""));
+        QVERIFY(passwords::remove(a, "ali"));
+        QCOMPARE(passwords::accounts({})->size(), 2);
     }
 
     void processes()

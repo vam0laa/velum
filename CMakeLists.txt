@@ -4,7 +4,9 @@ project(velum VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.9 REQUIRED COMPONENTS DBus Network Sql Quick QuickControls2 WebEngineQuick Test)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SECRET REQUIRED IMPORTED_TARGET libsecret-1)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Concurrent DBus Network Sql Quick QuickControls2 WebEngineQuick Test)
 qt_standard_project_setup(REQUIRES 6.9)
 
 # The blocking engine is written in Rust (blocker/) and linked in as a static library.
@@ -20,10 +22,10 @@ add_custom_command(
 add_custom_target(blocker_build DEPENDS ${BLOCKER_LIB})
 
 # The parts that have no window live in a small library, so tests can use them alone.
-add_library(velumcore STATIC src/blocker.cpp src/historystore.cpp src/importer.cpp src/instance.cpp src/lists.cpp src/notice.cpp src/procinfo.cpp src/address.cpp src/graphics.cpp src/palette.cpp src/widevine.cpp)
+add_library(velumcore STATIC src/blocker.cpp src/historystore.cpp src/importer.cpp src/instance.cpp src/lists.cpp src/notice.cpp src/passwords.cpp src/procinfo.cpp src/address.cpp src/graphics.cpp src/palette.cpp src/widevine.cpp)
 target_include_directories(velumcore PUBLIC src)
 add_dependencies(velumcore blocker_build)
-target_link_libraries(velumcore PUBLIC Qt6::Core Qt6::Network Qt6::Sql ${BLOCKER_LIB} ${CMAKE_DL_LIBS} pthread m)
+target_link_libraries(velumcore PUBLIC Qt6::Core Qt6::Network Qt6::Sql PkgConfig::SECRET ${BLOCKER_LIB} ${CMAKE_DL_LIBS} pthread m)
 
 qt_add_executable(velum src/main.cpp src/shield.cpp)
 set_source_files_properties(qml/Theme.qml qml/Lang.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
@@ -66,22 +68,27 @@ qt_add_qml_module(velum
         qml/BookmarksPage.qml
         qml/ImportPanel.qml
         qml/Reader.qml
+        qml/LoginScript.qml
+        qml/PasswordBar.qml
+        qml/PasswordList.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
     RESOURCES data/velum.svg data/fonts/GoogleSansFlex.woff data/fonts/VT323-Regular.ttf
-    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h src/importbridge.h
+    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h src/importbridge.h src/passwordbridge.h
     IMPORTS QtQuick
 )
 set_target_properties(velum PROPERTIES QT_QML_MODULE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Velum)
 target_compile_definitions(velum PRIVATE VELUM_VERSION="${PROJECT_VERSION}")
 target_include_directories(velum PRIVATE src)
-target_link_libraries(velum PRIVATE velumcore Qt6::DBus Qt6::Quick Qt6::QuickControls2 Qt6::WebEngineQuick)
+target_link_libraries(velum PRIVATE velumcore Qt6::Concurrent Qt6::DBus Qt6::Quick Qt6::QuickControls2 Qt6::WebEngineQuick)
 
 enable_testing()
 add_executable(test_core tests/test_core.cpp)
 target_link_libraries(test_core PRIVATE velumcore Qt6::Test)
 add_test(NAME core COMMAND test_core)
+add_test(NAME keyring COMMAND ${CMAKE_SOURCE_DIR}/tests/run-keyring.sh $<TARGET_FILE:test_core>)
+set_tests_properties(keyring PROPERTIES SKIP_RETURN_CODE 77)
 add_test(NAME ui COMMAND ${CMAKE_SOURCE_DIR}/tests/run-ui.sh)
 
 include(GNUInstallDirs)
