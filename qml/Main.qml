@@ -2003,32 +2003,32 @@ ApplicationWindow {
         shortcuts: window.shortcuts
         history: History
         commands: [
-            { name: Lang.t("Sekmeyi sabitle ya da çöz", "Pin or unpin the tab"), keys: "Ctrl+Shift+P", run: () => window.togglePin(window.current) },
-            { name: Lang.t("Kapatılan sekmeyi geri aç", "Reopen the closed tab"), keys: "Ctrl+Shift+T", run: () => window.reopenClosed() },
-            { name: Lang.t("Yer imi ekle ya da kaldır", "Add or remove a bookmark"), keys: "Ctrl+D", run: () => window.toggleBookmark() },
-            { name: Lang.t("Yer imleri: düzenle, klasörle", "Bookmarks: edit and sort"), keys: "Ctrl+Shift+O", run: () => Qt.callLater(window.openBookmarks) },
+            { name: Lang.t("Sekmeyi sabitle ya da çöz", "Pin or unpin the tab"), keys: Keymap.text("pin"), run: () => window.togglePin(window.current) },
+            { name: Lang.t("Kapatılan sekmeyi geri aç", "Reopen the closed tab"), keys: Keymap.text("reopen"), run: () => window.reopenClosed() },
+            { name: Lang.t("Yer imi ekle ya da kaldır", "Add or remove a bookmark"), keys: Keymap.text("bookmark"), run: () => window.toggleBookmark() },
+            { name: Lang.t("Yer imleri: düzenle, klasörle", "Bookmarks: edit and sort"), keys: Keymap.text("bookmarks"), run: () => Qt.callLater(window.openBookmarks) },
             { name: Lang.t("Başka tarayıcıdan aktar", "Import from another browser"), keys: "", run: () => Qt.callLater(window.openImport) },
             { name: Lang.t("Eklentiler", "Extensions"), keys: "", run: () => window.openSettings("extensions") },
-            { name: Lang.t("Geçmiş", "History"), keys: "Ctrl+H", run: () => Qt.callLater(window.showCommandHistory) },
-            { name: Lang.t("İndirmeler", "Downloads"), keys: "Ctrl+J", run: () => window.openDownloads() },
+            { name: Lang.t("Geçmiş", "History"), keys: Keymap.text("history"), run: () => Qt.callLater(window.showCommandHistory) },
+            { name: Lang.t("İndirmeler", "Downloads"), keys: Keymap.text("downloads"), run: () => window.openDownloads() },
             { name: window.horizontalTabs ? Lang.t("Dikey sekmelere geç", "Move the tabs to the side") : Lang.t("Yatay sekmelere geç", "Move the tabs to the top"), keys: "", run: () => window.horizontalTabs = !window.horizontalTabs },
-            { name: Lang.t("Kaynaklar: hangi sekme ne kadar yiyor", "Resources: what each tab uses"), keys: "Shift+Esc", run: () => resources.open() },
+            { name: Lang.t("Kaynaklar: hangi sekme ne kadar yiyor", "Resources: what each tab uses"), keys: Keymap.text("resources"), run: () => resources.open() },
             { name: Lang.t("Diğer sekmeleri uyut", "Put other tabs to sleep"), keys: "", run: () => window.sleepOthers() },
-            { name: Lang.t("Yan paneli daralt ya da genişlet", "Narrow or widen the side bar"), keys: "Ctrl+B", run: () => window.compactSidebar = !window.compactSidebar },
-            { name: Lang.t("Sekmeyi kapat", "Close the tab"), keys: "Ctrl+W", run: () => window.closeTab(window.current) },
+            { name: Lang.t("Yan paneli daralt ya da genişlet", "Narrow or widen the side bar"), keys: Keymap.text("sidebar"), run: () => window.compactSidebar = !window.compactSidebar },
+            { name: Lang.t("Sekmeyi kapat", "Close the tab"), keys: Keymap.text("closeTab"), run: () => window.closeTab(window.current) },
             { name: Lang.t("Diğer sekmeleri kapat", "Close other tabs"), keys: "", run: () => window.closeOthers(window.current) },
-            { name: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"), keys: "Ctrl+\\", run: () => window.toggleSplit() },
-            { name: Lang.t("Videoyu küçük pencereye al ya da geri getir", "Video in a small window, or back"), keys: "Alt+P", run: () => window.toggleMini() },
-            { name: Lang.t("Parolayı doldur", "Fill in the password"), keys: "Ctrl+Shift+L", run: () => window.fillPassword() },
+            { name: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"), keys: Keymap.text("split"), run: () => window.toggleSplit() },
+            { name: Lang.t("Videoyu küçük pencereye al ya da geri getir", "Video in a small window, or back"), keys: Keymap.text("mini"), run: () => window.toggleMini() },
+            { name: Lang.t("Parolayı doldur", "Fill in the password"), keys: Keymap.text("fill"), run: () => window.fillPassword() },
             { name: Lang.t("Kayıtlı parolalar", "Saved passwords"), keys: "", run: () => Qt.callLater(window.openPasswords) },
-            { name: Lang.t("Okuma modu", "Reading mode"), keys: "Alt+R", run: () => window.toggleReader() },
+            { name: Lang.t("Okuma modu", "Reading mode"), keys: Keymap.text("reader"), run: () => window.toggleReader() },
             { name: Lang.t("Yeni çalışma alanı", "New workspace"), keys: "", run: () => spaceDialog.show(0, "", false) },
-            { name: Lang.t("Sayfada ara", "Find in page"), keys: "Ctrl+F", run: () => Qt.callLater(window.findInPage) },
+            { name: Lang.t("Sayfada ara", "Find in page"), keys: Keymap.text("find"), run: () => Qt.callLater(window.findInPage) },
             { name: window.restoreSession ? Lang.t("Açılışta sekmeleri geri getirme", "Do not reopen tabs at start") : Lang.t("Açılışta sekmeleri geri getir", "Reopen tabs at start"), keys: "", run: () => window.restoreSession = !window.restoreSession },
-            { name: Lang.t("Gezinme verilerini sil", "Delete browsing data"), keys: "Ctrl+Shift+Delete", run: () => clearDialog.open() },
-            { name: Lang.t("Ayarlar", "Settings"), keys: "Ctrl+,", run: () => Qt.callLater(window.openSettings) },
-            { name: Lang.t("Tam ekran", "Full screen"), keys: "F11", run: () => window.toggleWindowFullScreen() },
-            { name: Lang.t("Velum'dan çık", "Quit Velum"), keys: "Ctrl+Q", run: () => Qt.quit() }
+            { name: Lang.t("Gezinme verilerini sil", "Delete browsing data"), keys: Keymap.text("clear"), run: () => clearDialog.open() },
+            { name: Lang.t("Ayarlar", "Settings"), keys: Keymap.text("settings"), run: () => Qt.callLater(window.openSettings) },
+            { name: Lang.t("Tam ekran", "Full screen"), keys: Keymap.text("fullScreen"), run: () => window.toggleWindowFullScreen() },
+            { name: Lang.t("Velum'dan çık", "Quit Velum"), keys: Keymap.text("quit"), run: () => Qt.quit() }
         ].concat(window.spaces.map((s, i) => ({ name: Lang.t("Çalışma alanı: ", "Workspace: ") + window.spaceName(s), keys: "Alt+" + (i + 1), run: () => window.switchSpace(s.id) })))
         onOpened: (target, inNewTab) => window.navigate(target, inNewTab)
         onTabChosen: i => window.current = i
@@ -2063,27 +2063,27 @@ ApplicationWindow {
     // the menu behind the three lines
     AppMenu {
         id: mainMenu
-        AppMenuItem { text: Lang.t("Yeni sekme", "New tab"); keys: "Ctrl+T"; onTriggered: window.newTab() }
+        AppMenuItem { text: Lang.t("Yeni sekme", "New tab"); keys: Keymap.text("newTab"); onTriggered: window.newTab() }
         AppMenuItem { text: Lang.t("Yeni çalışma alanı", "New workspace"); onTriggered: spaceDialog.show(0, "", false) }
         AppMenuLine {}
-        AppMenuItem { text: Lang.t("Yer imleri", "Bookmarks"); keys: "Ctrl+Shift+O"; onTriggered: window.openBookmarks() }
-        AppMenuItem { text: Lang.t("Geçmiş", "History"); keys: "Ctrl+H"; onTriggered: Qt.callLater(window.showCommandHistory) }
-        AppMenuItem { text: Lang.t("İndirilenler", "Downloads"); keys: "Ctrl+J"; onTriggered: Qt.callLater(window.openDownloads) }
+        AppMenuItem { text: Lang.t("Yer imleri", "Bookmarks"); keys: Keymap.text("bookmarks"); onTriggered: window.openBookmarks() }
+        AppMenuItem { text: Lang.t("Geçmiş", "History"); keys: Keymap.text("history"); onTriggered: Qt.callLater(window.showCommandHistory) }
+        AppMenuItem { text: Lang.t("İndirilenler", "Downloads"); keys: Keymap.text("downloads"); onTriggered: Qt.callLater(window.openDownloads) }
         AppMenuItem { text: Lang.t("Parolalar", "Passwords"); onTriggered: window.openPasswords() }
         AppMenuItem { text: Lang.t("Eklentiler", "Extensions"); onTriggered: window.openSettings("extensions") }
         AppMenuLine {}
-        AppMenuItem { text: Lang.t("Sayfada ara", "Find in page"); keys: "Ctrl+F"; enabled: !window.onStartPage && !window.onSettings; onTriggered: window.findInPage() }
-        AppMenuItem { text: Lang.t("Yakınlaştır", "Zoom in"); keys: "Ctrl++"; onTriggered: window.view.zoomFactor = Math.min(3, window.view.zoomFactor + 0.1) }
-        AppMenuItem { text: Lang.t("Uzaklaştır", "Zoom out"); keys: "Ctrl+-"; onTriggered: window.view.zoomFactor = Math.max(0.5, window.view.zoomFactor - 0.1) }
-        AppMenuItem { text: Lang.t("Okuma modu", "Reading mode"); keys: "Alt+R"; enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleReader() }
-        AppMenuItem { text: Lang.t("Küçük video penceresi", "Mini video window"); keys: "Alt+P"; enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleMini() }
-        AppMenuItem { text: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"); keys: "Ctrl+\\"; onTriggered: window.toggleSplit() }
+        AppMenuItem { text: Lang.t("Sayfada ara", "Find in page"); keys: Keymap.text("find"); enabled: !window.onStartPage && !window.onSettings; onTriggered: window.findInPage() }
+        AppMenuItem { text: Lang.t("Yakınlaştır", "Zoom in"); keys: Keymap.text("zoomIn"); onTriggered: window.view.zoomFactor = Math.min(3, window.view.zoomFactor + 0.1) }
+        AppMenuItem { text: Lang.t("Uzaklaştır", "Zoom out"); keys: Keymap.text("zoomOut"); onTriggered: window.view.zoomFactor = Math.max(0.5, window.view.zoomFactor - 0.1) }
+        AppMenuItem { text: Lang.t("Okuma modu", "Reading mode"); keys: Keymap.text("reader"); enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleReader() }
+        AppMenuItem { text: Lang.t("Küçük video penceresi", "Mini video window"); keys: Keymap.text("mini"); enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleMini() }
+        AppMenuItem { text: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"); keys: Keymap.text("split"); onTriggered: window.toggleSplit() }
         AppMenuLine {}
-        AppMenuItem { text: (window.powerMode === "game" ? "✓  " : "") + Lang.t("Oyun modu", "Game mode"); onTriggered: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game") }
+        AppMenuItem { keys: Keymap.text("gameMode"); text: (window.powerMode === "game" ? "✓  " : "") + Lang.t("Oyun modu", "Game mode"); onTriggered: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game") }
         AppMenuItem { text: (window.powerMode === "saver" ? "✓  " : "") + Lang.t("Tasarruf modu", "Saver mode"); onTriggered: window.setPowerMode(window.powerMode === "saver" ? "balanced" : "saver") }
         AppMenuLine {}
-        AppMenuItem { text: Lang.t("Ayarlar", "Settings"); keys: "Ctrl+,"; onTriggered: window.openSettings() }
-        AppMenuItem { text: Lang.t("Velum'dan çık", "Quit Velum"); keys: "Ctrl+Q"; onTriggered: Qt.quit() }
+        AppMenuItem { text: Lang.t("Ayarlar", "Settings"); keys: Keymap.text("settings"); onTriggered: window.openSettings() }
+        AppMenuItem { text: Lang.t("Velum'dan çık", "Quit Velum"); keys: Keymap.text("quit"); onTriggered: Qt.quit() }
     }
 
     // choosing between several saved accounts; five are offered
@@ -2123,40 +2123,41 @@ ApplicationWindow {
     }
 
     // keyboard
-    Shortcut { sequences: [StandardKey.AddTab]; onActivated: window.newTab() }
-    Shortcut { sequence: "Ctrl+Shift+T"; onActivated: window.reopenClosed() }
-    Shortcut { sequence: "Ctrl+Shift+P"; onActivated: window.togglePin(window.current) }
-    Shortcut { sequence: "Ctrl+D"; onActivated: window.toggleBookmark() }
-    Shortcut { sequences: [StandardKey.Find]; onActivated: window.findInPage() }
-    Shortcut { sequence: "Ctrl+Shift+O"; onActivated: window.openBookmarks() }
-    Shortcut { sequence: "Ctrl+Shift+L"; onActivated: window.fillPassword() }
-    Shortcut { sequence: "Alt+R"; onActivated: window.toggleReader() }
-    Shortcut { sequence: "Alt+P"; onActivated: window.toggleMini() }
+    Shortcut { sequences: Keymap.sequences("newTab"); onActivated: window.newTab() }
+    Shortcut { sequences: Keymap.sequences("reopen"); onActivated: window.reopenClosed() }
+    Shortcut { sequences: Keymap.sequences("pin"); onActivated: window.togglePin(window.current) }
+    Shortcut { sequences: Keymap.sequences("bookmark"); onActivated: window.toggleBookmark() }
+    Shortcut { sequences: Keymap.sequences("find"); onActivated: window.findInPage() }
+    Shortcut { sequences: Keymap.sequences("bookmarks"); onActivated: window.openBookmarks() }
+    Shortcut { sequences: Keymap.sequences("fill"); onActivated: window.fillPassword() }
+    Shortcut { sequences: Keymap.sequences("reader"); onActivated: window.toggleReader() }
+    Shortcut { sequences: Keymap.sequences("mini"); onActivated: window.toggleMini() }
     Shortcut { sequence: "Alt+1"; onActivated: window.switchSpace(window.spaces[0]?.id) }
     Shortcut { sequence: "Alt+2"; onActivated: window.switchSpace(window.spaces[1]?.id ?? 0) }
     Shortcut { sequence: "Alt+3"; onActivated: window.switchSpace(window.spaces[2]?.id ?? 0) }
     Shortcut { sequence: "Alt+4"; onActivated: window.switchSpace(window.spaces[3]?.id ?? 0) }
     Shortcut { sequence: "Alt+5"; onActivated: window.switchSpace(window.spaces[4]?.id ?? 0) }
     Shortcut { sequence: "Alt+6"; onActivated: window.switchSpace(window.spaces[5]?.id ?? 0) }
-    Shortcut { sequence: "Ctrl+\\"; onActivated: window.toggleSplit() }
-    Shortcut { sequence: "Ctrl+,"; onActivated: window.openSettings() }
-    Shortcut { sequence: "Shift+Escape"; onActivated: resources.open() }
-    Shortcut { sequence: "Ctrl+H"; onActivated: window.showCommandHistory() }
-    Shortcut { sequence: "Ctrl+J"; onActivated: window.openDownloads() }
-    Shortcut { sequence: "Ctrl+Shift+Del"; onActivated: clearDialog.open() }
-    Shortcut { sequence: "Ctrl+K"; onActivated: commandBar.show(false, "") }
-    Shortcut { sequence: "Ctrl+W"; onActivated: window.closeTab(window.current) }
-    Shortcut { sequences: ["Ctrl+L", "Alt+D"]; onActivated: window.editAddress() }
-    Shortcut { sequence: "Ctrl+Tab"; onActivated: window.step(1) }
-    Shortcut { sequences: ["Ctrl+Shift+Tab", "Ctrl+Shift+Backtab"]; onActivated: window.step(-1) }
-    Shortcut { sequences: ["Ctrl+R", "F5"]; onActivated: window.view.reload() }
-    Shortcut { sequence: "Alt+Left"; onActivated: window.view.goBack() }
-    Shortcut { sequence: "Alt+Right"; onActivated: window.view.goForward() }
-    Shortcut { sequence: "Ctrl+B"; onActivated: window.compactSidebar = !window.compactSidebar }
-    Shortcut { sequences: ["Ctrl++", "Ctrl+="]; onActivated: window.view.zoomFactor = Math.min(3, window.view.zoomFactor + 0.1) }
-    Shortcut { sequence: "Ctrl+-"; onActivated: window.view.zoomFactor = Math.max(0.5, window.view.zoomFactor - 0.1) }
-    Shortcut { sequence: "Ctrl+0"; onActivated: window.view.zoomFactor = 1 }
+    Shortcut { sequences: Keymap.sequences("split"); onActivated: window.toggleSplit() }
+    Shortcut { sequences: Keymap.sequences("settings"); onActivated: window.openSettings() }
+    Shortcut { sequences: Keymap.sequences("resources"); onActivated: resources.open() }
+    Shortcut { sequences: Keymap.sequences("history"); onActivated: window.showCommandHistory() }
+    Shortcut { sequences: Keymap.sequences("downloads"); onActivated: window.openDownloads() }
+    Shortcut { sequences: Keymap.sequences("clear"); onActivated: clearDialog.open() }
+    Shortcut { sequences: Keymap.sequences("commandBox"); onActivated: commandBar.show(false, "") }
+    Shortcut { sequences: Keymap.sequences("closeTab"); onActivated: window.closeTab(window.current) }
+    Shortcut { sequences: Keymap.sequences("address"); onActivated: window.editAddress() }
+    Shortcut { sequences: Keymap.sequences("nextTab"); onActivated: window.step(1) }
+    Shortcut { sequences: Keymap.sequences("previousTab"); onActivated: window.step(-1) }
+    Shortcut { sequences: Keymap.sequences("reload"); onActivated: window.view.reload() }
+    Shortcut { sequences: Keymap.sequences("back"); onActivated: window.view.goBack() }
+    Shortcut { sequences: Keymap.sequences("forward"); onActivated: window.view.goForward() }
+    Shortcut { sequences: Keymap.sequences("sidebar"); onActivated: window.compactSidebar = !window.compactSidebar }
+    Shortcut { sequences: Keymap.sequences("zoomIn"); onActivated: window.view.zoomFactor = Math.min(3, window.view.zoomFactor + 0.1) }
+    Shortcut { sequences: Keymap.sequences("zoomOut"); onActivated: window.view.zoomFactor = Math.max(0.5, window.view.zoomFactor - 0.1) }
+    Shortcut { sequences: Keymap.sequences("zoomReset"); onActivated: window.view.zoomFactor = 1 }
     Shortcut { sequence: "Escape"; enabled: window.pageFullScreen; onActivated: window.view.triggerWebAction(WebEngineView.ExitFullScreen) }
-    Shortcut { sequence: "F11"; onActivated: window.toggleWindowFullScreen() }
-    Shortcut { sequences: [StandardKey.Quit]; onActivated: Qt.quit() }
+    Shortcut { sequences: Keymap.sequences("fullScreen"); onActivated: window.toggleWindowFullScreen() }
+    Shortcut { sequences: Keymap.sequences("quit"); onActivated: Qt.quit() }
+    Shortcut { sequences: Keymap.sequences("gameMode"); onActivated: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game") }
 }

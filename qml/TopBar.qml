@@ -138,11 +138,11 @@ Item {
                 Accessible.name: Lang.t("Yeni sekme", "New tab")
                 background: Rectangle { color: add.hovered ? Qt.alpha("#ffffff", 0.25) : "transparent" }
                 contentItem: Icon { name: "plus"; size: 20; color: Theme.web ? Theme.barInk : Theme.text }
-                Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: add.hovered; y: add.height + 6 }
+                Hint { text: Lang.t("Yeni sekme", "New tab") + Keymap.hint("newTab"); shown: add.hovered; y: add.height + 6 }
             }
             Item { Layout.fillWidth: true }
-            WindowButton { visible: Qt.platform.os !== "windows"; kind: "max"; hint: Lang.t("Tam ekran (F11)", "Full screen (F11)"); onClicked: bar.maximize() }
-            WindowButton { visible: Qt.platform.os !== "windows"; kind: "close"; hint: Lang.t("Velum'u kapat (Ctrl+Q)", "Quit Velum (Ctrl+Q)"); onClicked: bar.quitRequested() }
+            WindowButton { visible: Qt.platform.os !== "windows"; kind: "max"; hint: Lang.t("Tam ekran", "Full screen") + Keymap.hint("fullScreen"); onClicked: bar.maximize() }
+            WindowButton { visible: Qt.platform.os !== "windows"; kind: "close"; hint: Lang.t("Velum'u kapat", "Quit Velum") + Keymap.hint("quit"); onClicked: bar.quitRequested() }
         }
     }
 
@@ -162,7 +162,7 @@ Item {
             IconButton { symbol: "forward"; hint: Lang.t("İleri (Alt+Sağ)", "Forward (Alt+Right)"); enabled: bar.view?.canGoForward ?? false; onClicked: bar.view.goForward() }
             IconButton {
                 symbol: bar.view?.loading ? "stop" : "reload"
-                hint: bar.view?.loading ? Lang.t("Durdur", "Stop") : Lang.t("Yenile (Ctrl+R)", "Reload (Ctrl+R)")
+                hint: bar.view?.loading ? Lang.t("Durdur", "Stop") : Lang.t("Yenile", "Reload") + Keymap.hint("reload")
                 onClicked: bar.view.loading ? bar.view.stop() : bar.view.reload()
             }
             IconButton { symbol: "home"; hint: Lang.t("Ana sayfa", "Home page"); onClicked: bar.home() }
@@ -198,7 +198,7 @@ Item {
                     symbol: "star"
                     filled: bar.bookmarked
                     tone: bar.bookmarked ? Theme.accent : Theme.dim
-                    hint: bar.bookmarked ? Lang.t("Yer imini kaldır (Ctrl+D)", "Remove the bookmark (Ctrl+D)") : Lang.t("Yer imlerine ekle (Ctrl+D)", "Bookmark this page (Ctrl+D)")
+                    hint: (bar.bookmarked ? Lang.t("Yer imini kaldır", "Remove the bookmark") : Lang.t("Yer imlerine ekle", "Bookmark this page")) + Keymap.hint("bookmark")
                     onClicked: bar.toggleBookmark()
                 }
             }

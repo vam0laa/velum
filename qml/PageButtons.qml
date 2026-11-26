@@ -34,7 +34,7 @@ Row {
     }
 
     Pill { visible: row.storeButton; symbol: "puzzle"; text: Lang.t("Velum'a ekle", "add to Velum"); hint: Lang.t("Bu eklentiyi kur", "Install this extension"); onClicked: row.store() }
-    Pill { visible: row.keyButton; symbol: "key"; text: Lang.t("parolayı doldur", "fill password"); hint: "Ctrl+Shift+L"; onClicked: row.fill() }
-    Pill { visible: row.readerButton; symbol: "book"; text: row.readerOn ? Lang.t("sayfaya dön", "back to page") : Lang.t("okuma modu", "reader"); hint: "Alt+R"; onClicked: row.reader() }
-    Pill { visible: row.videoButton; symbol: "pip"; text: row.videoOut ? Lang.t("videoyu geri al", "bring video back") : Lang.t("küçük pencere", "mini player"); hint: "Alt+P"; onClicked: row.video() }
+    Pill { visible: row.keyButton; symbol: "key"; text: Lang.t("parolayı doldur", "fill password"); hint: Keymap.text("fill"); onClicked: row.fill() }
+    Pill { visible: row.readerButton; symbol: "book"; text: row.readerOn ? Lang.t("sayfaya dön", "back to page") : Lang.t("okuma modu", "reader"); hint: Keymap.text("reader"); onClicked: row.reader() }
+    Pill { visible: row.videoButton; symbol: "pip"; text: row.videoOut ? Lang.t("videoyu geri al", "bring video back") : Lang.t("küçük pencere", "mini player"); hint: Keymap.text("mini"); onClicked: row.video() }
 }

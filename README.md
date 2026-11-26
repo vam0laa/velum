@@ -27,6 +27,10 @@ Logos of search engines, extensions and flags in `data/logos` belong to their ow
 
 "Design" on the home page (or in Settings) adds, removes and orders widgets (big clock, date, calendar, shield counter, task list, focus timer, note), changes the headline and its changing words, and takes a style sheet. It is a small part of CSS made for this page: the selectors `.page .headline .pill .chip .search .tile .clock .widget .date .calendar .shield .note .tasks .timer` and the properties `background color border-color border-width border-radius opacity font-size font-weight font-family display`. It cannot load anything or run anything.
 
+## Speed
+
+Three modes in the menu and in Settings → Performance: balanced, game (background tabs freeze within seconds, no animations) and saver. A memory limit puts the longest unseen tabs to sleep. Graphics acceleration can be forced or switched off. Shortcuts can be changed in Settings → Shortcuts.
+
 ## Windows (beta)
 
 The Windows version is built on GitHub (`.github/workflows/windows.yml`) and published with `scripts/release.sh VERSION`, which signs the release on the maintainer's computer with a key that is never uploaded. Releases are at [velum-releases](https://github.com/vam0laa/velum-releases). Velum looks for a newer one, downloads it, checks its signature and installs it when you close Velum. The installer is not code signed yet, so Windows SmartScreen warns the first time. Passwords go to the Windows Credential Manager; site notifications are not shown yet.

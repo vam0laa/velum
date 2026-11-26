@@ -53,7 +53,7 @@ Panel {
             IconButton {
                 Layout.alignment: Qt.AlignHCenter
                 symbol: "panel"
-                hint: side.compact ? Lang.t("Paneli genişlet (Ctrl+B)", "Widen the side bar (Ctrl+B)") : Lang.t("Paneli daralt (Ctrl+B)", "Narrow the side bar (Ctrl+B)")
+                hint: (side.compact ? Lang.t("Paneli genişlet", "Widen the side bar") : Lang.t("Paneli daralt", "Narrow the side bar")) + Keymap.hint("sidebar")
                 hintBeside: side.compact
                 onClicked: side.toggle()
             }
@@ -70,7 +70,7 @@ Panel {
             IconButton {
                 Layout.alignment: Qt.AlignHCenter
                 symbol: side.view?.loading ? "stop" : "reload"
-                hint: side.view?.loading ? Lang.t("Durdur", "Stop") : Lang.t("Yenile (Ctrl+R)", "Reload (Ctrl+R)")
+                hint: side.view?.loading ? Lang.t("Durdur", "Stop") : Lang.t("Yenile", "Reload") + Keymap.hint("reload")
                 hintBeside: side.compact
                 onClicked: side.view.loading ? side.view.stop() : side.view.reload()
             }
@@ -87,7 +87,7 @@ Panel {
             Layout.alignment: Qt.AlignHCenter
             visible: side.compact
             symbol: "search"
-            hint: Lang.t("Adres (Ctrl+L)", "Address (Ctrl+L)")
+            hint: Lang.t("Adres", "Address") + Keymap.hint("address")
             hintBeside: true
             onClicked: side.search()
         }
@@ -121,9 +121,9 @@ Panel {
             contentItem: Item {
                 Icon { x: side.compact ? (parent.width - width) / 2 : 14; anchors.verticalCenter: parent.verticalCenter; name: "plus"; color: Theme.accent; size: 17 }
                 Text { x: 42; visible: !side.compact; anchors.verticalCenter: parent.verticalCenter; text: Lang.t("Yeni sekme", "New tab"); color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); font.weight: Font.Normal }
-                Text { visible: !side.compact; anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter } text: "Ctrl+T"; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(14) }
+                Text { visible: !side.compact; anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter } text: Keymap.text("newTab"); color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(14) }
             }
-            Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
+            Hint { text: Lang.t("Yeni sekme", "New tab") + Keymap.hint("newTab"); shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
         }
 
         ListView {

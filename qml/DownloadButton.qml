@@ -11,7 +11,7 @@ IconButton {
     signal clearFinished()
     function show() { panel.open() }
     symbol: "download"
-    hint: Lang.t("İndirmeler (Ctrl+J)", "Downloads (Ctrl+J)")
+    hint: Lang.t("İndirmeler", "Downloads") + Keymap.hint("downloads")
     hintBeside: beside
     onClicked: panel.open()
     Rectangle {

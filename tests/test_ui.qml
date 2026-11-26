@@ -233,6 +233,15 @@ Item {
             w.memoryLimit = 1; w.keepUnderLimit(); t.check("the limit measures memory", w.memoryUsed >= 0); w.memoryLimit = 0
             w.openSettings("speed"); t.check("performance settings open", w.prefs.section === "speed" && !w.prefs.nothingFound)
             w.closeTab(w.current)
+            // your own shortcuts
+            t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
+            t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")
+            t.check("plain letters and workspace keys are refused", Keymap.fromEvent(Qt.Key_Y, Qt.NoModifier) === "" && Keymap.fromEvent(Qt.Key_Y, Qt.ShiftModifier) === "" && Keymap.fromEvent(Qt.Key_2, Qt.AltModifier) === "" && Keymap.fromEvent(Qt.Key_Control, Qt.ControlModifier) === "")
+            const lost = Keymap.assign("reader", "Ctrl+T")
+            t.check("a taken key moves, and says from where", lost !== "" && Keymap.text("reader") === "Ctrl+T" && Keymap.sequences("newTab").length === 0)
+            Keymap.reset("newTab"); t.check("resetting takes the usual key back", Keymap.text("newTab") === "Ctrl+T" && Keymap.text("reader") === "" && Keymap.changed.newTab === undefined)
+            Keymap.resetAll(); t.check("everything can be reset", Keymap.text("reader") === "Alt+R")
+            w.openSettings("keys"); t.check("the shortcut settings open", w.prefs.section === "keys"); w.closeTab(w.current)
             // designing the home page
             w.keepWidgets(["clock", "tasks", "timer", "tasks", "bogus"])
             t.check("widgets are kept once, known ones only", w.homeWidgets.join() === "clock,tasks,timer")

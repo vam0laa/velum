@@ -149,7 +149,7 @@ ItemDelegate {
             implicitHeight: 22
             iconSize: 13
             symbol: "close"
-            hint: Lang.t("Sekmeyi kapat (Ctrl+W)", "Close the tab (Ctrl+W)")
+            hint: Lang.t("Sekmeyi kapat", "Close the tab") + Keymap.hint("closeTab")
             visible: !row.compact && !row.pinned && (row.hovered || row.current)
             onClicked: row.closed(row.index)
         }

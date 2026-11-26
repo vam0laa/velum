@@ -54,7 +54,7 @@ add_dependencies(velumcore blocker_build)
 target_link_libraries(velumcore PUBLIC Qt6::Core Qt6::Network Qt6::Sql OpenSSL::Crypto ${BLOCKER_LIB} ${SYSTEM_LIBS})
 
 qt_add_executable(velum src/main.cpp src/shield.cpp)
-set_source_files_properties(qml/Theme.qml qml/Lang.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(qml/Theme.qml qml/Lang.qml qml/Keymap.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(velum
     URI Velum
     VERSION 1.0
@@ -89,6 +89,8 @@ qt_add_qml_module(velum
         qml/FindBar.qml
         qml/ProblemPage.qml
         qml/Lang.qml
+        qml/Keymap.qml
+        qml/KeyList.qml
         qml/Toggle.qml
         qml/Segments.qml
         qml/SettingsPage.qml

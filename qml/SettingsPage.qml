@@ -349,7 +349,7 @@ Rectangle {
                             onChosen: key => page.layoutChosen(key)
                         }
                     }
-                    Toggle { visible: !page.horizontalTabs; label: Lang.t("Yan paneli daralt", "Narrow side bar"); note: Lang.t("Yalnızca simgeler (Ctrl+B)", "Icons only (Ctrl+B)"); on: page.compactSidebar; onClicked: page.compactChosen(!page.compactSidebar) }
+                    Toggle { visible: !page.horizontalTabs; label: Lang.t("Yan paneli daralt", "Narrow side bar"); note: Lang.t("Yalnızca simgeler", "Icons only") + Keymap.hint("sidebar"); on: page.compactSidebar; onClicked: page.compactChosen(!page.compactSidebar) }
                     Toggle { visible: page.horizontalTabs && !Theme.web; label: Lang.t("Yer imi çubuğu", "Bookmarks bar"); on: page.showBookmarkBar; onClicked: page.startChanged("showBookmarkBar", !page.showBookmarkBar) }
                     Toggle { label: Lang.t("Cam görünüm", "Glass look"); note: Lang.t("Saydam pencereler", "See-through windows"); on: Theme.glass; onClicked: Theme.glass = !Theme.glass }
                     Line {
@@ -538,29 +538,7 @@ Rectangle {
                     wanted: page.shows("keys", "kısayol klavye shortcut keyboard ctrl")
                     heading: Lang.t("Klavye kısayolları", "Keyboard shortcuts")
                     symbol: "command"
-                    Repeater {
-                        model: [
-                            ["Ctrl+T", Lang.t("Yeni sekme", "New tab")], ["Ctrl+K", Lang.t("Komut kutusu", "Command box")], ["Ctrl+L", Lang.t("Adres", "Address")],
-                            ["Ctrl+W", Lang.t("Sekmeyi kapat", "Close the tab")], ["Ctrl+Shift+T", Lang.t("Kapatılanı geri aç", "Reopen closed tab")], ["Ctrl+Tab", Lang.t("Sonraki sekme", "Next tab")],
-                            ["Ctrl+Shift+P", Lang.t("Sekmeyi sabitle", "Pin the tab")], ["Alt+1 … 6", Lang.t("Çalışma alanları", "Workspaces")], ["Ctrl+\\", Lang.t("Bölünmüş ekran", "Split view")],
-                            ["Ctrl+D", Lang.t("Yer imi", "Bookmark")], ["Ctrl+Shift+O", Lang.t("Yer imi yöneticisi", "Bookmark manager")], ["Ctrl+H", Lang.t("Geçmiş", "History")],
-                            ["Ctrl+J", Lang.t("İndirmeler", "Downloads")], ["Alt+R", Lang.t("Okuma modu", "Reading mode")], ["Alt+P", Lang.t("Küçük video penceresi", "Mini video window")],
-                            ["Ctrl+Shift+L", Lang.t("Parolayı doldur", "Fill the password")], ["Ctrl+F", Lang.t("Sayfada ara", "Find in page")], ["Shift+Esc", Lang.t("Kaynaklar", "Resources")],
-                            ["Ctrl+B", Lang.t("Yan paneli daralt", "Narrow the side bar")], ["F11", Lang.t("Tam ekran", "Full screen")], ["Ctrl+Q", Lang.t("Çıkış", "Quit")]
-                        ]
-                        Line {
-                            id: shortcut
-                            required property var modelData
-                            label: modelData[1]
-                            Rectangle {
-                                implicitWidth: key.implicitWidth + 22
-                                implicitHeight: 28
-                                radius: Theme.radius
-                                color: Theme.raised
-                                Text { id: key; anchors.centerIn: parent; text: shortcut.modelData[0]; color: Theme.accent; font.family: Theme.ui; font.pixelSize: Theme.web ? 17 : 13; font.variableAxes: Theme.axes(600) }
-                            }
-                        }
-                    }
+                    KeyList { Layout.fillWidth: true }
                 }
 
                 // ---- about ----

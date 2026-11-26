@@ -428,6 +428,12 @@ scripts/release.sh    derlemeyi indirir, burada imzalar, yayınlar
 - `qml/HomeBox.qml`, `HomeText.qml`: görünümünü o stile soran kutu ve yazı.
 - `qml/HomeWidget.qml`: widget'lar; `HomeEditor.qml`: düzenleme paneli.
 
+## Performans ve kısayollar
+
+- Modlar `Main.qml` içinde: `freezeAfter`, `discardAfter`, `Theme.calm`. `pickToSleep` bellek sınırı aşılınca hangi sekmelerin uyutulacağını seçer.
+- `src/graphics.cpp` + `gpubridge.h`: ekran kartı ayarı; "Zorla" ile açılış yarıda kalırsa bir sonrakinde otomatiğe döner.
+- `qml/Keymap.qml`: kısayolların tek listesi ve senin değişikliklerin; `KeyList.qml` ayarlardaki düzenleyici.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

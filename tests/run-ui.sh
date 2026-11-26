@@ -11,8 +11,8 @@ cp "$here"/../qml/*.qml "$here"/ui/*.qml "$work/ui/"
 cp "$here/test_ui.qml" "$work/" && cp -r "$here/extension" "$work/"
 mkdir -p "$work/data" && cp -r "$here/../data/velum.svg" "$here/../data/fonts" "$here/../data/sky.jpg" "$here/../data/sky-night.jpg" "$here/../data/logos" "$here/../data/scanline.png" "$work/data/"
 {
-    for f in Theme Lang Address DesktopColors Shield History Resources Notifier Importer Passwords WebStore DefaultBrowser Files Updater Gpu; do echo "singleton $f $f.qml"; done
-    for f in "$here"/../qml/*.qml; do n=$(basename "$f" .qml); [ "$n" = Theme ] || [ "$n" = Lang ] || echo "$n $n.qml"; done
+    for f in Theme Lang Keymap Address DesktopColors Shield History Resources Notifier Importer Passwords WebStore DefaultBrowser Files Updater Gpu; do echo "singleton $f $f.qml"; done
+    for f in "$here"/../qml/*.qml; do n=$(basename "$f" .qml); [ "$n" = Theme ] || [ "$n" = Lang ] || [ "$n" = Keymap ] || echo "$n $n.qml"; done
 } > "$work/ui/qmldir"
 XDG_CONFIG_HOME="$work/config" XDG_DATA_HOME="$work/data" QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
 QT_QUICK_CONTROLS_STYLE=Basic QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true" \
