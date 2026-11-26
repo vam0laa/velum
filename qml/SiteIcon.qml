@@ -1,7 +1,7 @@
 import QtQuick
 
-// A bookmark's picture: the site's own icon once it has been visited, else its first
-// letter. Icons come from pages you opened; the start page never asks the network.
+// A bookmark's picture: the site's own icon (fetched when you add it, or taken from a
+// page you opened), else its first letter. Drawing the start page never asks the network.
 Item {
     id: mark
     property string title

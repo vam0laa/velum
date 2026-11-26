@@ -48,7 +48,7 @@ add_custom_command(
 add_custom_target(blocker_build DEPENDS ${BLOCKER_LIB})
 
 # The parts that have no window live in a small library, so tests can use them alone.
-add_library(velumcore STATIC src/blocker.cpp src/crx.cpp src/historystore.cpp src/importer.cpp src/instance.cpp src/lists.cpp src/notice.cpp src/passwords_common.cpp src/ai.cpp src/library.cpp src/held.cpp src/update.cpp ${SYSTEM_SOURCES} src/address.cpp src/graphics.cpp src/palette.cpp src/widevine.cpp)
+add_library(velumcore STATIC src/blocker.cpp src/crx.cpp src/historystore.cpp src/importer.cpp src/instance.cpp src/lists.cpp src/notice.cpp src/passwords_common.cpp src/library.cpp src/scriptlets.cpp src/held.cpp src/update.cpp ${SYSTEM_SOURCES} src/address.cpp src/graphics.cpp src/palette.cpp src/widevine.cpp)
 target_include_directories(velumcore PUBLIC src)
 add_dependencies(velumcore blocker_build)
 target_link_libraries(velumcore PUBLIC Qt6::Core Qt6::Network Qt6::Sql OpenSSL::Crypto ${BLOCKER_LIB} ${SYSTEM_LIBS})
@@ -99,8 +99,6 @@ qt_add_qml_module(velum
         qml/SafeButton.qml
         qml/SyncLogic.qml
         qml/SyncCard.qml
-        qml/AiLogic.qml
-        qml/AiPanel.qml
         qml/Access.qml
         qml/WindowLogic.qml
         qml/TabLogic.qml
@@ -121,6 +119,7 @@ qt_add_qml_module(velum
         qml/Shortcuts.qml
         qml/CommandList.qml
         qml/HomeLogic.qml
+        qml/BookmarkDialog.qml
         qml/BookmarkLogic.qml
         qml/DownloadLogic.qml
         qml/SpaceLogic.qml
@@ -219,7 +218,7 @@ qt_add_qml_module(velum
         data/fonts/extra/sora-OFL.txt
         data/fonts/extra/spacegrotesk-OFL.txt
         data/fonts/extra/syne-OFL.txt
-    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h ${NOTIFIER_HEADER} src/files.h src/gpubridge.h src/aibridge.h src/librarybridge.h src/updatebridge.h src/importbridge.h src/passwordbridge.h src/storebridge.h src/defaultbrowser.h
+    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h ${NOTIFIER_HEADER} src/files.h src/gpubridge.h src/librarybridge.h src/updatebridge.h src/importbridge.h src/passwordbridge.h src/storebridge.h src/defaultbrowser.h
     IMPORTS QtQuick
 )
 set_target_properties(velum PROPERTIES QT_QML_MODULE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Velum)

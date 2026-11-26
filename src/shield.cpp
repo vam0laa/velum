@@ -1,4 +1,7 @@
 #include "shield.h"
+#include "scriptlets.h"
+#include <QJsonDocument>
+#include <QJsonArray>
 #include "library.h"
 #include <QWebEngineGlobalSettings>
 
@@ -94,12 +97,16 @@ Shield::Shield(QObject *parent) : QWebEngineUrlRequestInterceptor(parent)
         emit countsChanged();
     });
 
-    load();
+    offerConverter();
+    // the first time before any page loads, or the pages restored at start would go unprotected
+    load(true);
     // tests set VELUM_NO_UPDATES so that they never touch the network
     if (!qEnvironmentVariableIsSet("VELUM_NO_UPDATES")) {
         const QFileInfo first(folder() + QLatin1Char('/') + lists::sources().constFirst().file);
         if (!first.exists() || first.lastModified().secsTo(QDateTime::currentDateTime()) > freshFor)
             updateLists();
+        else if (!QFileInfo::exists(folder() + QStringLiteral("/ubo-scriptlets.json")) && m_converter.isEmpty())
+            fetchScriptlets();
     }
 }
 
@@ -131,11 +138,13 @@ QString Shield::statusText(bool turkish, int, const QString &) const
     return t("Filtre listeleri henüz yok", "No filter lists yet");
 }
 
-// Reads the lists on disk and builds the engine on a worker thread, so the window never stalls.
-void Shield::load()
+// Reads the lists on disk and builds the engine, later on a worker thread so the window never stalls.
+void Shield::load(bool wait)
 {
-    if (m_loading)
+    if (m_loading) {
+        m_again = true;
         return;
+    }
     QList<Blocker::List> found;
     QByteArray resources;
     for (const lists::Source &source : lists::sources()) {
@@ -152,23 +161,43 @@ void Shield::load()
         else
             found.append({file.readAll(), source.trusted});
     }
+    // uBlock Origin's page scripts, once converted, join Brave's
+    QFile ubo(folder() + QStringLiteral("/ubo-scriptlets.json"));
+    if (ubo.open(QIODevice::ReadOnly)) {
+        QJsonArray all = QJsonDocument::fromJson(resources).array();
+        for (const auto &one : QJsonDocument::fromJson(ubo.readAll()).array())
+            all.append(one);
+        resources = QJsonDocument(all).toJson(QJsonDocument::Compact);
+    }
     if (found.isEmpty()) {
         setStatus(QStringLiteral("none"));
         return;
     }
-    m_loading = true;
-    setStatus(QStringLiteral("loading"));
-    QThread *worker = QThread::create([this, found, resources] {
+    const int count = found.size();
+    const auto build = [found, resources] {
         QElapsedTimer timer;
         timer.start();
         auto built = Blocker::build(found, resources);
         qCDebug(shieldLog) << "engine built from" << found.size() << "lists and" << resources.size() << "bytes of scripts in" << timer.elapsed() << "ms";
-        QMetaObject::invokeMethod(this, [this, built, count = found.size()] {
-            m_loading = false;
-            if (built)
-                m_blocker = built;
-            setStatus(built ? QStringLiteral("ready") : QStringLiteral("failed"), count);
-        });
+        return built;
+    };
+    const auto use = [this, count](const std::shared_ptr<Blocker> &built) {
+        m_loading = false;
+        if (built)
+            m_blocker = built;
+        setStatus(built ? QStringLiteral("ready") : QStringLiteral("failed"), count);
+        if (std::exchange(m_again, false))
+            load();
+    };
+    m_loading = true;
+    if (wait) {
+        use(build());
+        return;
+    }
+    setStatus(QStringLiteral("loading"));
+    QThread *worker = QThread::create([this, build, use] {
+        auto built = build();
+        QMetaObject::invokeMethod(this, [use, built] { use(built); });
     });
     connect(worker, &QThread::finished, worker, &QObject::deleteLater);
     worker->start();
@@ -181,6 +210,7 @@ void Shield::updateLists()
     QDir().mkpath(folder());
     m_failed = 0;
     setStatus(QStringLiteral("downloading"));
+    fetchScriptlets();
     for (const lists::Source &source : lists::sources()) {
         QNetworkRequest request(source.url);
         request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -206,6 +236,78 @@ void Shield::updateLists()
             }
         });
     }
+}
+
+void Shield::fetchScriptlets()
+{
+    if (m_waitingModules > 0)
+        return;
+    QDir().mkpath(folder());
+    m_modules.clear();
+    m_modulesFailed = false;
+    fetchModule(QString::fromLatin1(scriptlets::entry));
+}
+
+void Shield::fetchModule(const QString &path)
+{
+    QNetworkRequest request(QUrl(QString::fromLatin1(scriptlets::root) + path));
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("Velum"));
+    request.setTransferTimeout(30000);
+    QNetworkReply *reply = m_network.get(request);
+    ++m_waitingModules;
+    m_modules.insert(path, QString());
+    connect(reply, &QNetworkReply::finished, this, [this, reply, path] {
+        reply->deleteLater();
+        const QByteArray data = reply->readAll();
+        if (reply->error() != QNetworkReply::NoError || data.isEmpty() || data.startsWith('<') || data.size() > 2 * 1024 * 1024) {
+            m_modulesFailed = true;
+        } else {
+            const QString source = QString::fromUtf8(data);
+            m_modules.insert(path, source);
+            for (const QString &needed : scriptlets::imports(path, source))
+                if (!m_modules.contains(needed) && m_modules.size() < 80)
+                    fetchModule(needed);
+        }
+        if (--m_waitingModules > 0)
+            return;
+        // all or nothing: half a set of scripts is worse than the last whole one
+        const QString script = m_modulesFailed ? QString() : scriptlets::converter(m_modules);
+        m_modules.clear();
+        if (script.isEmpty())
+            return;
+        QSaveFile file(folder() + QStringLiteral("/ubo-converter.js"));
+        const QByteArray bytes = script.toUtf8();
+        if (file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit())
+            offerConverter();
+    });
+}
+
+// a converter on disk has not given its answer yet
+void Shield::offerConverter()
+{
+    QFile file(folder() + QStringLiteral("/ubo-converter.js"));
+    const QString script = file.open(QIODevice::ReadOnly) ? QString::fromUtf8(file.readAll()) : QString();
+    if (script != m_converter) {
+        m_converter = script;
+        emit converterChanged();
+    }
+}
+
+void Shield::takeScriptlets(const QString &json)
+{
+    const QByteArray bytes = json.toUtf8();
+    const bool good = scriptlets::plausible(bytes);
+    qCDebug(shieldLog) << "page scripts converted:" << good << bytes.size() << "bytes";
+    if (good) {
+        QSaveFile file(folder() + QStringLiteral("/ubo-scriptlets.json"));
+        if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit())
+            return;
+    }
+    QFile::remove(folder() + QStringLiteral("/ubo-converter.js"));
+    offerConverter();
+    if (good)
+        load();
 }
 
 void Shield::interceptRequest(QWebEngineUrlRequestInfo &info)
@@ -427,7 +529,27 @@ void Shield::setAllowed(const QString &host, bool allow)
     emit changed();
 }
 
+QStringList Shield::earlySites() const
+{
+    return {QStringLiteral("www.youtube.com"), QStringLiteral("m.youtube.com"), QStringLiteral("music.youtube.com"),
+            QStringLiteral("youtube.com"), QStringLiteral("www.youtube-nocookie.com")};
+}
+
+QString Shield::earlyScript(const QString &host) const
+{
+    const QString script = scriptFor(QUrl(QStringLiteral("https://") + host + QLatin1Char('/')));
+    if (script.isEmpty())
+        return {};
+    // the engine reads these lines and runs the script on that site only
+    return QStringLiteral("// ==UserScript==\n// @match https://") + host + QStringLiteral("/*\n// ==/UserScript==\n") + script;
+}
+
 QString Shield::pageScript(const QUrl &url) const
+{
+    return earlySites().contains(url.host()) ? QString() : scriptFor(url);
+}
+
+QString Shield::scriptFor(const QUrl &url) const
 {
     if (!m_enabled || !m_blocker || m_allowed.contains(url.host())
         || (url.scheme() != QLatin1String("https") && url.scheme() != QLatin1String("http")))

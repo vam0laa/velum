@@ -209,6 +209,7 @@ ApplicationWindow {
         const ownProfile = sharedProfile === null
         if (ownProfile) {
             Shield.attach(profile)          // every request now passes through the shield
+            guardEarly()
             profile.downloadRequested.connect(startDownload)
         }
         if (!secondary) {
@@ -442,7 +443,6 @@ ApplicationWindow {
     AskLogic { id: askLogic; app: window }
     DemoLogic { id: demoLogic; app: window }
     SyncLogic { id: syncLogic; app: window }
-    AiLogic { id: aiLogic; app: window }
     WindowLogic { id: windowLogic; app: window }
     Component { id: privateProfile; WebEngineProfile { offTheRecord: true; persistentCookiesPolicy: WebEngineProfile.NoPersistentCookies; persistentPermissionsPolicy: WebEngineProfile.StoreInMemory } }
     TabLogic { id: tabLogic; app: window }
@@ -711,6 +711,34 @@ ApplicationWindow {
     LoginScript { id: login }
     property alias loginScript: login
 
+    // the shield's scripts that must be in place before a site's first page
+    property var earlyGiven: ({})
+    function guardEarly() {
+        for (const host of Shield.earlySites()) {
+            const name = "velum-early-" + host, source = Shield.earlyScript(host)
+            const there = profile.userScripts.find(name)
+            if (source === (earlyGiven[host] ?? "") && (there.length > 0) === (source !== ""))
+                continue
+            for (const old of there)
+                profile.userScripts.remove(old)
+            earlyGiven[host] = source
+            if (source === "")
+                continue
+            const script = WebEngine.script()
+            script.name = name
+            script.sourceCode = source
+            script.injectionPoint = WebEngineScript.DocumentCreation
+            script.worldId = WebEngineScript.MainWorld
+            profile.userScripts.insert(script)
+        }
+    }
+    // new lists, protection switched off, or a site let through
+    Connections {
+        target: Shield
+        function onChanged() { window.guardEarly() }
+        function onCountsChanged() { window.guardEarly() }
+    }
+
     function watchLogins() { return passwordLogic.watchLogins() }
 
     function readStrings(text) {
@@ -758,6 +786,14 @@ ApplicationWindow {
     onOnStartPageChanged: if (onStartPage) refreshFrequent()
 
     function iconName(url) { return siteLogic.iconName(url) }
+    function noteIcon(name) {
+        if (!iconNames.includes(name)) {
+            iconNames = iconNames.concat([name])
+            saved.iconNames = JSON.stringify(iconNames)
+        }
+        iconRevision++
+    }
+    function fetchIcon(url) { siteLogic.fetchIcon(url) }
     function iconFor(url) { return siteLogic.iconFor(url) }
     function keepIcon(pageUrl, icon) { return siteLogic.keepIcon(pageUrl, icon) }
     // draws an icon out of sight and writes the picture down
@@ -774,11 +810,7 @@ ApplicationWindow {
                 if (status === Image.Ready)
                     Qt.callLater(() => grab.grabToImage(result => {
                         if (result.saveToFile(window.iconFolder + "/" + grab.name + ".png")) {
-                            if (!window.iconNames.includes(grab.name)) {
-                                window.iconNames = window.iconNames.concat([grab.name])
-                                saved.iconNames = JSON.stringify(window.iconNames)
-                            }
-                            window.iconRevision++
+                            window.noteIcon(grab.name)
                         }
                         grab.destroy()
                     }))
@@ -823,10 +855,6 @@ ApplicationWindow {
     }
 
     // sites you let open windows by themselves, until Velum is closed
-    property bool aiOpen: false           // the assistant beside the page
-    function toggleAssistant() { aiLogic.toggle() }
-    function askAssistant(question, withPage) { aiLogic.ask(question, withPage) }
-    function explain(selection) { aiLogic.explain(selection) }
     property string syncFolder: ""        // "" = not synchronised
     property alias sync: syncLogic
     onShortcutsChanged: if (restored) syncLogic.changed()
@@ -1044,22 +1072,9 @@ ApplicationWindow {
                 onVideo: window.toggleMini()
 
                 PageOverlay { app: window; anchors.fill: pagesArea; z: 2; visible: !window.pageFullScreen }
-                // made when first opened
-                Loader {
-                    id: aiLoader
-                    anchors { top: pagesArea.top; bottom: pagesArea.bottom; right: parent.right }
-                    width: Math.min(360, parent.width * 0.5)
-                    active: window.aiOpen && Assistant.enabled && !window.pageFullScreen
-                    visible: active
-                    z: 3
-                    sourceComponent: Component { AiPanel { app: window } }
-                }
-
                 Item {
                     id: pagesArea
                     anchors.fill: parent
-                    // the page makes room for the assistant
-                    anchors.rightMargin: aiLoader.active ? aiLoader.width : 0
 
                     Repeater {
                         id: views
@@ -1346,7 +1361,7 @@ ApplicationWindow {
                     iconFor: window.iconNames.length >= 0 && window.iconRevision >= 0 ? url => window.iconFor(url) : url => ""
                     onNoteEdited: text => window.note = text
                     onCustomize: window.openSettings("look")
-                    onAddShortcut: typed => window.addShortcut(typed)
+                    onAskShortcut: bookmarkDialog.show()
                     onRemoveShortcut: i => window.removeShortcut(i)
                     onGo: target => {
                         window.view.url = target
@@ -1459,6 +1474,32 @@ ApplicationWindow {
         run: (path, withHistory) => window.importFrom(path, withHistory)
     }
 
+    BookmarkDialog {
+        id: bookmarkDialog
+        save: (title, address) => window.saveBookmark(-1, title, address, "")
+    }
+
+    // turns downloaded blocking scripts into the shield's form, on an empty page of its own
+    Loader {
+        active: !window.secondary && Shield.converter !== ""
+        sourceComponent: Component {
+            WebEngineView {
+                visible: false
+                url: "about:blank"
+                onLoadingChanged: info => {
+                    if (info.status === WebEngineView.LoadSucceededStatus)
+                        runJavaScript(Shield.converter, answer => Shield.takeScriptlets(String(answer ?? "")))
+                }
+            }
+        }
+    }
+
+    // a bookmark's icon, fetched when it was added, has arrived
+    Connections {
+        target: Library
+        function onIconSaved(file) { window.noteIcon(String(file).replace(/^.*[\/\\]|\.png$/g, "")) }
+    }
+
     MiniPlayer {
         id: miniPlayer
         onBackRequested: window.closeMini()
@@ -1501,7 +1542,6 @@ ApplicationWindow {
         onSavePage: window.savePage()
         onViewSource: window.viewSource()
         onInspect: window.inspect(view)
-        onExplain: selection => window.explain(selection)
         onOpenInWindow: (url, hidden) => window.openWindow(hidden, [url])
     }
 

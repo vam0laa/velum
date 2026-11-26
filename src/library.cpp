@@ -275,4 +275,40 @@ std::optional<QByteArray> unseal(const QByteArray &sealed, const QString &passwo
     return out;
 }
 
+QList<QUrl> iconLinks(const QByteArray &html, const QUrl &page)
+{
+    static const QRegularExpression tag(QStringLiteral("<link\\b[^>]{0,2000}>"), QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression part(QStringLiteral("([a-z-]+)\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s\"'>]+))"),
+                                         QRegularExpression::CaseInsensitiveOption);
+    QList<std::pair<int, QUrl>> found;
+    auto tags = tag.globalMatch(QString::fromUtf8(html.left(1024 * 1024)));
+    while (tags.hasNext() && found.size() < 20) {
+        QHash<QString, QString> values;
+        auto parts = part.globalMatch(tags.next().captured());
+        while (parts.hasNext()) {
+            const auto m = parts.next();
+            values.insert(m.captured(1).toLower(), m.captured(2) + m.captured(3) + m.captured(4));
+        }
+        const QStringList rel = values.value(QStringLiteral("rel")).toLower().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        const bool touch = rel.contains(QStringLiteral("apple-touch-icon"));
+        if (!touch && !rel.contains(QStringLiteral("icon")))
+            continue;
+        const QUrl url = page.resolved(QUrl(values.value(QStringLiteral("href")).replace(QStringLiteral("&amp;"), QStringLiteral("&"))));
+        if (url.scheme() != QLatin1String("https") && url.scheme() != QLatin1String("http"))
+            continue;
+        const int size = values.value(QStringLiteral("sizes")).section(QLatin1Char('x'), 0, 0).toInt();
+        // 64 pixels and more are sharp enough; among those the declared icon comes before the phone one
+        found.append({(size >= 64 ? 3 : touch ? 2 : size >= 32 || size == 0 ? 1 : 0), url});
+    }
+    std::stable_sort(found.begin(), found.end(), [](const auto &a, const auto &b) { return a.first > b.first; });
+    QList<QUrl> out;
+    for (const auto &[rank, url] : std::as_const(found))
+        if (!out.contains(url) && out.size() < 4)
+            out.append(url);
+    const QUrl usual = page.resolved(QUrl(QStringLiteral("/favicon.ico")));
+    if (!out.contains(usual))
+        out.append(usual);
+    return out;
+}
+
 }

@@ -29,6 +29,8 @@ class Shield : public QWebEngineUrlRequestInterceptor
     // the value forgetOnExit had at start: the engine accepts its cookie setting only once
     Q_PROPERTY(bool forgettingThisRun READ forgettingThisRun CONSTANT)
     Q_PROPERTY(bool ready READ ready NOTIFY changed)
+    // a script waiting to be run on an empty page; its answer goes to takeScriptlets()
+    Q_PROPERTY(QString converter READ converter NOTIFY converterChanged)
     // refuse sites on the list of known harmful ones (abuse.ch URLhaus)
     Q_PROPERTY(bool safeBrowsing READ safeBrowsing WRITE setSafeBrowsing NOTIFY changed)
     // "off": the system looks names up; "cloudflare" or "quad9": only over an encrypted line
@@ -55,6 +57,8 @@ public:
     bool forgettingThisRun() const { return m_forgettingThisRun; }
     bool ready() const { return m_blocker != nullptr; }
     QString statusCode() const { return m_status; }
+    QString converter() const { return m_converter; }
+    Q_INVOKABLE void takeScriptlets(const QString &json);
     // the arguments after `turkish` only make interface bindings re-read the text
     Q_INVOKABLE QString statusText(bool turkish, int revision = 0, const QString &code = {}) const;
     int revision() const { return m_revision; }
@@ -66,6 +70,10 @@ public:
     Q_INVOKABLE bool allowed(const QString &host, int /*revision*/ = 0) const { return m_allowed.contains(host); }
     Q_INVOKABLE void setAllowed(const QString &host, bool allow);   // "do not block on this site"
     Q_INVOKABLE QString pageScript(const QUrl &url) const;
+    // Sites whose script must be there before their first page: it is given to the whole
+    // profile in advance, and pageScript() leaves them out.
+    Q_INVOKABLE QStringList earlySites() const;
+    Q_INVOKABLE QString earlyScript(const QString &host) const;
     Q_INVOKABLE void updateLists();
     Q_INVOKABLE void clearData(QObject *profile);                   // cookies and cached files
     bool safeBrowsing() const { return m_safe; }
@@ -85,9 +93,18 @@ signals:
     void changed();
     void countsChanged();
     void cookiesChanged();
+    void converterChanged();
 
 private:
-    void load();
+    void load(bool wait = false);
+    QString scriptFor(const QUrl &url) const;
+    void fetchScriptlets();
+    void fetchModule(const QString &path);
+    void offerConverter();
+    QHash<QString, QString> m_modules;                     // path -> source, while downloading
+    QString m_converter;
+    int m_waitingModules = 0;
+    bool m_modulesFailed = false;
     void applyDns();
     void setStatus(const QString &code, int count = 0);
     QString folder() const;
@@ -119,4 +136,5 @@ private:
     bool m_enabled = true;
     bool m_httpsFirst = true;
     bool m_loading = false;
+    bool m_again = false;        // something changed while the engine was being built
 };

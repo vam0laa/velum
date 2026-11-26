@@ -66,6 +66,6 @@ QString Blocker::pageScript(const QUrl &url) const
     }
     const QString script = found.value(QStringLiteral("script")).toString();
     if (!script.isEmpty())
-        out += QStringLiteral("(()=>{\n") + script + QStringLiteral("\n})();");
+        out += QStringLiteral("(()=>{\nconst scriptletGlobals = {};\n") + script + QStringLiteral("\n})();");
     return out;
 }

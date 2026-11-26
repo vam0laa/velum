@@ -32,6 +32,13 @@ QtObject {
         return app.iconFolder === "" || !app.iconNames.includes(name) ? "" : String(Files.toUrl(app.iconFolder + "/" + name + ".png")) + "#" + app.iconRevision
     }
 
+    // A bookmark added by hand gets its icon at once, from the site itself.
+    function fetchIcon(url) {
+        const name = app.iconName(url)
+        if (!app.isPrivate && app.iconFolder !== "" && name !== "" && !app.iconNames.includes(name))
+            Library.fetchIcon(url, app.iconFolder + "/" + name + ".png")
+    }
+
     function keepIcon(pageUrl, icon) {
         const name = app.iconName(pageUrl)
         if (app.iconFolder === "" || name === "" || String(icon) === "" || app.iconsSaved[name] === String(icon)

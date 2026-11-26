@@ -55,10 +55,6 @@ Tabs can be grouped (right click → new group; a group has a name and a colour,
 
 Ctrl+N opens another window, Ctrl+Shift+N a private one; a tab can be moved to either (it loads again there). Bookmarks and settings belong to the first window; closing it closes all. A private window has its own in-memory profile: no history, cookies, saved session, download list or site zoom reach the disk, and passwords are not offered to be saved. Files you download stay, and your network still sees what you visit.
 
-## Assistant
-
-Off until you switch it on in Settings → Assistant. It talks only to an [Ollama](https://ollama.com) server on this computer: summarising the page, explaining a selection, answering a question (with the page's text only if you leave that ticked). The text is marked as untrusted material, answers are shown as plain words, and it cannot do anything on pages. Models can be wrong.
-
 ## Synchronisation
 
 There is no server. Settings → General writes your bookmarks, locked with a password, into a file in a folder you choose; let Syncthing or a cloud program carry that folder, and choose it on the other computer with the same password. Bookmarks of both are merged and removed ones stay removed. Passwords, history and tabs are not synchronised.
@@ -108,7 +104,6 @@ Import in the bookmark manager takes bookmarks (with folders) and the last 90 da
 
 ## What it does not do yet
 
-- **Video ads on YouTube are not blocked yet** (see below).
 - The download list lasts until Velum closes. Interrupted downloads cannot be resumed.
 - Screen sharing is refused.
 
@@ -122,7 +117,7 @@ History stays in an SQLite file on this computer (readable only by you), is kept
 
 Velum downloads the lists from easylist.to and GitHub on the first start and again when they are older than four days. This is the one connection it makes by itself.
 
-Limit: filters that need uBlock Origin's page scripts (among them the ones for YouTube video ads) have no effect yet, because only Brave's own script collection is loaded.
+Filters that need page scripts (among them the ones for YouTube video ads) use uBlock Origin's own scripts (GPLv3), downloaded from its repository together with the lists and prepared on your computer. YouTube changes often; an ad may get through until the lists catch up.
 
 ## Tabs, links and problems
 

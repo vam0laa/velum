@@ -18,6 +18,10 @@ QtObject {
     function allowed(h) { return false }
     function setAllowed(h, a) {}
     function pageScript(u) { return "" }
+    function earlySites() { return [] }
+    function earlyScript(h) { return "" }
+    property string converter: ""
+    function takeScriptlets(j) {}
     function updateLists() {}
     property bool safeBrowsing: true
     property string secureDns: "off"

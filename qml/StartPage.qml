@@ -91,7 +91,7 @@ Rectangle {
     readonly property var locale_: Qt.locale(Lang.turkish ? "tr_TR" : "en_US")
     signal go(url target)
     signal removeShortcut(int index)
-    signal addShortcut(string typed)
+    signal askShortcut()
     signal manage()
     signal noteEdited(string text)
     signal customize()

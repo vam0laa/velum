@@ -86,7 +86,6 @@ Rectangle {
         { key: "passwords", icon: "key", label: Lang.t("Parolalar", "Passwords") },
         { key: "tabs", icon: "panel", label: Lang.t("Sekmeler", "Tabs") },
         { key: "speed", icon: "gauge", label: Lang.t("Performans", "Performance") },
-        { key: "assistant", icon: "book", label: Lang.t("Yapay zekâ", "Assistant") },
         { key: "downloads", icon: "download", label: Lang.t("İndirilenler", "Downloads") },
         { key: "extensions", icon: "puzzle", label: Lang.t("Eklentiler", "Extensions"), divided: true },
         { key: "bookmarks", icon: "star", label: Lang.t("Yer imleri", "Bookmarks") },
@@ -100,7 +99,7 @@ Rectangle {
         const q = query.trim().toLocaleLowerCase()
         return q === "" ? section === key : String(words).toLocaleLowerCase().indexOf(q) >= 0
     }
-    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, ai1, backup1, sync1, privacy3, privacy4, privacy5, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
+    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, backup1, sync1, privacy3, privacy4, privacy5, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
 
     color: Theme.styled("settings", "background", Theme.sheetBack)
 
@@ -526,44 +525,6 @@ Rectangle {
                         onAllow: origin => page.askAgain(origin)
                     }
                     onVisibleChanged: if (visible) page.refresh()
-                }
-
-                Group {
-                    id: ai1
-                    wanted: page.shows("assistant", "yapay zekâ yardımcı ollama model özet ai assistant summary")
-                    heading: Lang.t("Yerel yardımcı", "Local assistant")
-                    symbol: "book"
-                    Note { text: Lang.t("Bilgisayarında çalışan bir Ollama sunucusuyla sayfa özetler ve sorularını yanıtlar. Metin bilgisayarından çıkmaz; yalnızca sen isteyince gönderilir. Sayfada hiçbir işlem yapamaz. Model çalıştırmak bilgisayarı ısıtır; küçük bir modelle başla.", "Summarises pages and answers questions with an Ollama server running on this computer. Text does not leave your computer and is sent only when you ask. It cannot act on pages. Running a model heats the computer; start with a small one.") }
-                    Toggle { label: Lang.t("Yardımcıyı aç", "Switch the assistant on"); note: Keymap.text("assistant"); on: Assistant.enabled; onClicked: { Assistant.enabled = !Assistant.enabled; Assistant.look() } }
-                    Line {
-                        visible: Assistant.enabled
-                        label: Lang.t("Sunucu adresi", "Server address")
-                        TextField {
-                            id: server
-                            implicitWidth: 240
-                            implicitHeight: 32
-                            leftPadding: 10
-                            text: Assistant.address
-                            color: Theme.text
-                            font.family: "monospace"; font.pixelSize: 12
-                            background: Rectangle { radius: Theme.radius; color: Theme.surface; border.color: server.activeFocus ? Theme.accent : Theme.line }
-                            onEditingFinished: { Assistant.address = text; text = Qt.binding(() => Assistant.address); Assistant.look() }
-                        }
-                    }
-                    Line {
-                        visible: Assistant.enabled && Assistant.models.length > 0
-                        label: Lang.t("Model", "Model")
-                        Dropdown { implicitWidth: 240; options: Assistant.models.map(m => ({ key: m, label: m })); current: Assistant.model; onChosen: key => Assistant.model = key }
-                    }
-                    Note {
-                        visible: Assistant.enabled
-                        color: Assistant.server === "unreachable" ? Theme.danger : Theme.dim
-                        text: Assistant.server === "unreachable" ? Lang.t("Sunucuya ulaşılamadı. Ollama'yı kur (ollama.com) ve çalıştır, sonra \"Yeniden bak\".", "The server cannot be reached. Install Ollama (ollama.com), run it, then \"Look again\".")
-                            : Assistant.server === "ok" && Assistant.models.length === 0 ? Lang.t("Sunucu çalışıyor ama model yok. Örnek: ollama pull qwen3:4b", "The server runs but has no model. Example: ollama pull qwen3:4b")
-                            : Assistant.server === "ok" ? Lang.t("Sunucu hazır.", "The server is ready.") : ""
-                    }
-                    TextButton { visible: Assistant.enabled; Layout.fillWidth: true; implicitHeight: 36; text: Lang.t("Yeniden bak", "Look again"); onClicked: Assistant.look() }
-                    onVisibleChanged: if (visible) Assistant.look()
                 }
 
                 // ---- performance ----

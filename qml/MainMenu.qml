@@ -17,7 +17,6 @@ AppMenu {
     AppMenuItem { text: Lang.t("Parolalar", "Passwords"); onTriggered: app.openPasswords() }
     AppMenuItem { text: Lang.t("Eklentiler", "Extensions"); onTriggered: app.openSettings("extensions") }
     AppMenuLine {}
-    AppMenuItem { text: Lang.t("Yapay zekâ yardımcısı", "Assistant"); keys: Keymap.text("assistant"); onTriggered: app.toggleAssistant() }
     AppMenuItem { text: Lang.t("Sayfada ara", "Find in page"); keys: Keymap.text("find"); enabled: !app.onStartPage && !app.onSettings; onTriggered: app.findInPage() }
     AppMenuItem { text: Lang.t("Yakınlaştır", "Zoom in"); keys: Keymap.text("zoomIn"); onTriggered: app.zoom(1) }
     AppMenuItem { text: Lang.t("Uzaklaştır", "Zoom out"); keys: Keymap.text("zoomOut"); onTriggered: app.zoom(-1) }

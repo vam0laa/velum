@@ -19,6 +19,7 @@ QtObject {
         watch.injectionPoint = WebEngineScript.DocumentReady
         watch.worldId = WebEngineScript.ApplicationWorld
         app.profile.userScripts.collection = [channel, watch]
+        app.guardEarly()
     }
 
     // a login was sent: ask whether to keep it

@@ -12,6 +12,7 @@ QtObject {
             return false
         const name = title || Address.display(url).replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0]
         app.keepBookmarks(app.shortcuts.concat([{ title: name, url: url, added: Date.now() }]))
+        app.fetchIcon(url)
         return true
     }
 
@@ -43,6 +44,7 @@ QtObject {
         else
             list[index] = item
         app.keepBookmarks(list)
+        app.fetchIcon(url)
         return true
     }
 

@@ -197,7 +197,7 @@ Item {
                         implicitHeight: 98
                         hoverEnabled: true
                         visible: root.page.shortcuts.length < 10
-                        onClicked: { adding.visible = true; adding.forceActiveFocus() }
+                        onClicked: root.page.askShortcut()
                         Accessible.name: Lang.t("Yer imi ekle", "Add a bookmark")
                         background: Rectangle { radius: root.page.css(["tile"], "border-radius", Theme.round(22)); color: plus.hovered ? Theme.raised : "transparent"; border.color: Theme.line; border.width: 1.5 }
                         contentItem: Item {
@@ -205,16 +205,6 @@ Item {
                             Words { anchors { bottom: parent.bottom; bottomMargin: 12; horizontalCenter: parent.horizontalCenter } text: Lang.t("Ekle", "Add"); base: Theme.dim; size: 12 }
                         }
                     }
-                }
-                AddressField {
-                    id: adding
-                    visible: false
-                    Layout.fillWidth: true
-                    placeholderText: Lang.t("Yer imi adresi, örn. vamola.dev (Enter)", "Bookmark address, e.g. vamola.dev (Enter)")
-                    onAccepted: { root.page.addShortcut(text); text = ""; visible = false }
-                    Keys.onEscapePressed: { text = ""; visible = false }
-                    // the base field would navigate; here Enter only adds
-                    onGo: {}
                 }
 
                 // most visited, when switched on

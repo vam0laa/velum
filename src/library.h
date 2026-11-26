@@ -1,5 +1,7 @@
 #pragma once
 #include <QByteArray>
+#include <QList>
+#include <QUrl>
 #include <QString>
 #include <QVariantList>
 #include <QVariantMap>
@@ -8,6 +10,9 @@
 // Taking your things in and out: bookmarks as the HTML file every browser reads, and
 // files locked with a password (backups and synchronisation).
 namespace library {
+
+// the icon addresses a page names, best first, ending with the usual /favicon.ico
+QList<QUrl> iconLinks(const QByteArray &html, const QUrl &page);
 
 // Bookmarks [{ title, url, folder: "A/B" }] as a "Netscape bookmark file".
 QString toHtml(const QVariantList &bookmarks);

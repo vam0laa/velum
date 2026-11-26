@@ -84,7 +84,7 @@ Item {
 
             Window_ {
                 title: Lang.t("favoriler", "favourites")
-                implicitHeight: 28 + tiles.height + 30 + (adding.visible ? 44 : 0)
+                implicitHeight: 28 + tiles.height + 30
 
                 Flow {
                     id: tiles
@@ -141,7 +141,7 @@ Item {
                         implicitHeight: 86
                         hoverEnabled: true
                         visible: page.shortcuts.length < 10
-                        onClicked: { adding.visible = true; adding.forceActiveFocus() }
+                        onClicked: page.askShortcut()
                         Accessible.name: Lang.t("Yer imi ekle", "Add a bookmark")
                         background: Rectangle { color: plus.hovered ? Theme.title : "transparent" }
                         contentItem: Item {
@@ -156,17 +156,6 @@ Item {
                             Text { anchors { bottom: parent.bottom; bottomMargin: 3; horizontalCenter: parent.horizontalCenter } text: Lang.t("ekle", "add"); color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(17) }
                         }
                     }
-                }
-                AddressField {
-                    id: adding
-                    visible: false
-                    anchors { left: parent.left; right: parent.right; top: tiles.bottom; margins: 12; topMargin: 8 }
-                    accent: Theme.pink
-                    placeholderText: Lang.t("yer imi adresi, örn. vamola.dev (Enter)_", "bookmark address, e.g. vamola.dev (Enter)_")
-                    onAccepted: { page.addShortcut(text); text = ""; visible = false }
-                    Keys.onEscapePressed: { text = ""; visible = false }
-                    // the base field would navigate; here Enter only adds
-                    onGo: {}
                 }
             }
 
