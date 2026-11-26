@@ -33,6 +33,11 @@ QString safeMode(const QString &mode, bool pending);
 // said; returns that theme's name if it is installed in one of `folders`, else nothing.
 QByteArray cursorTheme(const QByteArray &answer, const QStringList &folders);
 
+// The library that draws X pointers ignores XCURSOR_THEME: it takes the theme called
+// "default" from the folders in XCURSOR_PATH. This writes such a theme into `folder`
+// that means `theme`.
+bool writePointerFolder(const QString &folder, const QByteArray &theme);
+
 // The pointer's size in real pixels, from the answer about "cursor-size"; 0 if unusable.
 int cursorPixels(const QByteArray &answer, double scale);
 

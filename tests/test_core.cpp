@@ -377,6 +377,11 @@ private slots:
         QCOMPARE(graphics::cursorTheme("'../Bibata'", {icons.path()}), QByteArray());
         QCOMPARE(graphics::cursorTheme("", {icons.path()}), QByteArray());
         QCOMPARE(graphics::cursorPixels("24\n", 5.0 / 3), 40);
+        QVERIFY(graphics::writePointerFolder(icons.filePath("own"), "Bibata"));
+        QFile index(icons.filePath("own/default/index.theme"));
+        QVERIFY(index.open(QIODevice::ReadOnly));
+        QVERIFY(index.readAll().contains("\nInherits=Bibata\n"));
+        QVERIFY(!graphics::writePointerFolder(icons.filePath("own"), "a\nInherits=b"));
         QCOMPARE(graphics::cursorPixels("uint32 x", 2), 0);
     }
 

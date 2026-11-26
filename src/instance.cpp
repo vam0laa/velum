@@ -45,7 +45,9 @@ bool Instance::handOver(const QString &socket, const QStringList &urls)
         return false;
     // an empty message still means "show your window"
     link.write(urls.join(QLatin1Char('\n')).toUtf8() + '\n');
-    return link.waitForBytesWritten(1000);
+    link.flush();
+    // on Windows a short message is often gone already, and then there is nothing to wait for
+    return link.bytesToWrite() == 0 || link.waitForBytesWritten(1000);
 }
 
 bool Instance::listen(const QString &socket)

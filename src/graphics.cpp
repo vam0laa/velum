@@ -107,6 +107,15 @@ QByteArray cursorTheme(const QByteArray &answer, const QStringList &folders)
     return {};
 }
 
+bool writePointerFolder(const QString &folder, const QByteArray &theme)
+{
+    if (theme.isEmpty() || theme.contains('\n') || !QDir().mkpath(folder + QStringLiteral("/default")))
+        return false;
+    QFile file(folder + QStringLiteral("/default/index.theme"));
+    const QByteArray text = "[Icon Theme]\nName=Default\nInherits=" + theme + "\n";
+    return file.open(QIODevice::WriteOnly | QIODevice::Truncate) && file.write(text) == text.size();
+}
+
 int cursorPixels(const QByteArray &answer, double scale)
 {
     const int size = answer.trimmed().toInt();
@@ -131,16 +140,20 @@ void prepare()
             borrow("QT_QPA_PLATFORM", "xcb");
             borrow("QT_SCALE_FACTOR", QByteArray::number(scale, 'f', 6));
             // the same mouse pointer as the rest of the desktop
-            if (!qEnvironmentVariableIsSet("XCURSOR_THEME")) {
-                const QByteArray theme = cursorTheme(ask("gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null"),
-                    {QDir::homePath() + QStringLiteral("/.local/share/icons"), QDir::homePath() + QStringLiteral("/.icons"),
-                     QStringLiteral("/usr/share/icons")});
-                if (!theme.isEmpty()) {
-                    borrow("XCURSOR_THEME", theme);
-                    const int pixels = cursorPixels(ask("gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null"), scale);
-                    if (pixels > 0 && !qEnvironmentVariableIsSet("XCURSOR_SIZE"))
-                        borrow("XCURSOR_SIZE", QByteArray::number(pixels));
-                }
+            const QString home = QDir::homePath();
+            const QByteArray theme = cursorTheme(ask("gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null"),
+                {home + QStringLiteral("/.local/share/icons"), home + QStringLiteral("/.icons"), QStringLiteral("/usr/share/icons")});
+            const QString cache = qEnvironmentVariable("XDG_CACHE_HOME", home + QStringLiteral("/.cache")) + QStringLiteral("/velum/pointer");
+            if (!theme.isEmpty() && writePointerFolder(cache, theme)) {
+                // read again for every new pointer shape, so it stays set while Velum runs
+                const QByteArray usual = qEnvironmentVariableIsSet("XCURSOR_PATH") ? qgetenv("XCURSOR_PATH")
+                    : QByteArray("~/.local/share/icons:~/.icons:/usr/share/icons:/usr/share/pixmaps");
+                if (!usual.startsWith(cache.toLocal8Bit() + ':'))
+                    qputenv("XCURSOR_PATH", cache.toLocal8Bit() + ':' + usual);
+                qputenv("XCURSOR_THEME", theme);
+                const int pixels = cursorPixels(ask("gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null"), scale);
+                if (pixels > 0 && !qEnvironmentVariableIsSet("XCURSOR_SIZE"))
+                    borrow("XCURSOR_SIZE", QByteArray::number(pixels));      // read once, at start
             }
         }
     }
