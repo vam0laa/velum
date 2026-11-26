@@ -378,6 +378,10 @@ Eklentinin 32 harflik kimliği, onu imzalayan anahtarın özetidir. `verifiedZip
 - `qml/StartPage.qml`: glitch saat, aynı yazının dört renkte üst üste, birkaç piksel kaydırılmış hali.
 - `data/sky.jpg`, `data/scanline.png`: Velum için çizilmiş gökyüzü ve tarama çizgisi.
 
+## Yarım ekran hatası
+
+Pencere yöneticisi Velum'u yeniden boyutlandırınca bazen yeni kare çizilmiyor, eski yarım kare esnetilip kırpılıyordu. `WAYLAND_DEBUG=client` günlüğünde bu açıkça görüldü: yeni boyut bildiriliyor, `attach` (yeni kare) gelmiyor. Çare `graphics.cpp`'de `QSG_RENDER_LOOP=basic`: çizim ana iş parçacığında yapılır.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

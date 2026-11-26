@@ -26,6 +26,10 @@ bool hybridWithNvidia(const QString &drm)
 
 void prepare()
 {
+    // Draw on the main thread. With the threaded loop a window resized by the compositor
+    // could stop drawing for seconds, showing its old picture stretched and cut in half.
+    if (!qEnvironmentVariableIsSet("QSG_RENDER_LOOP"))
+        qputenv("QSG_RENDER_LOOP", "basic");
     if (qEnvironmentVariableIntValue("VELUM_USE_NVIDIA") != 0)
         return;
     // a choice the user already made about Vulkan drivers is left alone
