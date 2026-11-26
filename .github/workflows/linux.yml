@@ -80,6 +80,8 @@ jobs:
           export PATH="$PWD/tools:$PATH"
           export QMAKE="$(command -v qmake)" QML_SOURCES_PATHS="$PWD/qml" LD_LIBRARY_PATH="$QT_ROOT_DIR/lib"
           plugins="$QT_ROOT_DIR/plugins"
+          # only SQLite is used; the other database drivers want libraries nobody has
+          find "$plugins/sqldrivers" -type f ! -name libqsqlite.so -delete
           export EXTRA_PLATFORM_PLUGINS="$(cd $plugins/platforms && ls libqwayland*.so libqoffscreen.so | paste -sd';')"
           export EXTRA_QT_PLUGINS="$(cd $plugins && ls -d wayland-* imageformats tls networkinformation 2>/dev/null | paste -sd';')"
           export LDAI_OUTPUT="out/Velum-$VERSION-x86_64.AppImage"
