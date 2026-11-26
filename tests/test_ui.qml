@@ -89,6 +89,39 @@ Item {
             Lang.choice = "en"
             t.check("changing the language rewrites the commands", bar.find("full screen").some(r => r.kind === "command") && w.wishFor(WebEnginePermission.PermissionType.Geolocation) === "wants to know your location.")
             Lang.choice = "tr"
+            // workspaces
+            const kept = w.pageAt(w.current), first = w.space, home = w.current
+            w.togglePin(home)
+            t.check("there is one workspace at first", w.spaces.length === 1 && w.spaceName(w.spaces[0]) === "Genel")
+            w.openTab(t.page("g")); const inFirst = w.view
+            const school = w.addSpace("  Okul ")
+            t.check("a new workspace opens with one empty tab", school > 0 && w.space === school && w.visibleTabs().length === 2 && w.view !== inFirst && w.spaceName(w.spaces[1]) === "Okul")
+            t.check("pinned tabs are shared", w.inSpace(0) && w.pageAt(0) === kept)
+            t.check("a nameless or seventh workspace is refused", w.addSpace("  ") === 0 && w.spaces.length === 2)
+            w.view.url = t.page("o"); const inSchool = w.view
+            w.step(1); w.step(1); t.check("stepping stays inside the workspace", w.view === inSchool)
+            w.switchSpace(first); t.check("going back returns to the same tab", w.view === inFirst && !inSchool.visible)
+            w.switchSpace(school); t.check("and again", w.view === inSchool)
+            w.current = w.visibleTabs().length > 0 ? w.tabIndexOf(inFirst) : 0
+            t.check("choosing a tab elsewhere switches the workspace", w.space === first && w.view === inFirst)
+            w.moveToSpace(w.current, school)
+            t.check("a moved tab leaves, and another is shown", w.space === first && w.view !== inFirst && !w.inSpace(w.tabIndexOf(inFirst)))
+            w.switchSpace(school); w.closeTab(w.tabIndexOf(inFirst)); w.closeTab(w.current)
+            t.check("closing the last own tab falls back to the pinned one", w.space === school && w.visibleTabs().length === 1 && w.current === 0)
+            w.switchSpace(first); w.switchSpace(school)
+            t.check("an empty workspace gets a fresh tab on entry", w.visibleTabs().length === 2 && String(w.view.startUrl) === "")
+            w.togglePin(0); w.closeTab(w.tabIndexOf(w.view)); w.closeTab(w.current)
+            t.check("without pins, closing the last tab leaves an empty one there", w.space === school && w.visibleTabs().length === 1 && String(w.view.startUrl) === "")
+            w.switchSpace(first); w.current = w.visibleTabs()[0]; w.view.url = t.page("k"); w.togglePin(w.current); w.switchSpace(school)
+            w.reopenClosed(); t.check("a closed tab returns to its workspace", w.space === school && w.pageAt(w.current) === kept)
+            w.switchSpace(first); w.renameSpace(school, "Ders"); t.check("a workspace is renamed", w.spaces[1].name === "Ders")
+            const pages = w.visibleTabs().length
+            w.removeSpace(school)
+            t.check("deleting a workspace keeps its pages", w.spaces.length === 1 && w.space === first && w.visibleTabs().length === pages + 1)
+            w.removeSpace(first); t.check("the last workspace cannot be deleted", w.spaces.length === 1)
+            t.check("broken saved workspaces give the default one", w.readSpaces("{x").length === 1 && w.readSpaces('[{"id":-1,"name":"a"}]')[0].id === 1)
+            w.togglePin(0); w.closeOthers(w.tabIndexOf(inFirst) >= 0 ? w.tabIndexOf(inFirst) : w.current)
+
             w.openSettings(); t.check("the settings page opens", true)
             w.downloadFolder = "/tmp/somewhere"; t.check("a download folder can be chosen", w.downloadFolder === "/tmp/somewhere"); w.downloadFolder = ""
             const menu = w.pageMenu

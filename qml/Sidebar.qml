@@ -20,6 +20,11 @@ Panel {
     signal search()
     signal moved(int from, int to)
     signal menuRequested(int index)
+    property var spaces: []
+    property int space
+    signal spaceChosen(int id)
+    signal spaceEdit(int id)
+    signal spaceAdd()
     property int pinnedCount: 0
     property string host: ""            // of the current page, for the shield
     signal reloadPage()
@@ -125,9 +130,12 @@ Panel {
         }
 
         Kicker {
+            readonly property int at: Math.max(0, side.spaces.findIndex(s => s.id === side.space))
+            Layout.fillWidth: true
+            elide: Text.ElideRight
             visible: !side.compact
-            text: Lang.t("sekmeler", "tabs")
-            color: Theme.pink
+            text: side.spaces[at]?.name || Lang.t("Genel", "General")
+            color: Theme.rainbow[at % Theme.rainbow.length]
         }
 
         ListView {
@@ -135,7 +143,8 @@ Panel {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            spacing: 4
+            spacing: 0            // tabs bring their own, so hidden ones take no room
+            cacheBuffer: 4000
             boundsBehavior: Flickable.StopAtBounds
             interactive: contentHeight > height   // otherwise dragging belongs to the tabs
             currentIndex: side.current
@@ -143,6 +152,7 @@ Panel {
                 width: ListView.view.width
                 compact: side.compact
                 current: index === side.current
+                shown: pinned || space === side.space
                 onPicked: i => side.picked(i)
                 onClosed: i => side.closed(i)
                 onMenuRequested: i => side.menuRequested(i)
@@ -165,6 +175,16 @@ Panel {
                 NumberAnimation { properties: "x,y"; duration: Theme.smooth; easing.type: Easing.OutCubic }
                 NumberAnimation { property: "opacity"; to: 1; duration: Theme.quick }
             }
+        }
+
+        SpaceBar {
+            Layout.fillWidth: true
+            spaces: side.spaces
+            space: side.space
+            compact: side.compact
+            onChosen: id => side.spaceChosen(id)
+            onEdit: id => side.spaceEdit(id)
+            onAdd: side.spaceAdd()
         }
 
         GridLayout {

@@ -10,6 +10,8 @@ ItemDelegate {
     required property bool loading
     required property bool pinned
     required property int asleep       // 0 awake, 1 frozen, 2 discarded
+    required property int space        // the workspace it belongs to
+    property bool shown: true          // false: it belongs to another workspace
     property bool current: false
     property bool compact: false
     readonly property string label: title === "" ? Lang.t("Yeni sekme", "New tab") : title
@@ -21,8 +23,11 @@ ItemDelegate {
     // set by the list: the last pinned tab draws a divider under itself
     property bool lastPinned: false
 
-    height: 38
+    height: shown ? 42 : 0
+    visible: shown
     padding: 0
+    bottomPadding: 4
+    bottomInset: 4
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
     onClicked: picked(index)
@@ -150,7 +155,7 @@ ItemDelegate {
 
     Rectangle {
         visible: row.lastPinned
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: -3; leftMargin: 6; rightMargin: 6 }
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 1; leftMargin: 6; rightMargin: 6 }
         height: 2
         color: Theme.peach
         opacity: 0.6

@@ -18,6 +18,10 @@ ApplicationWindow {
     property int moves: 0             // counts reorderings, so that "view" is looked up again
     property int pinnedCount: 0
     property var closedTabs: []       // for "reopen closed tab", newest last
+    // workspaces: separate sets of tabs. Pinned tabs and logins are shared by all of them.
+    property var spaces: [{ id: 1, name: "" }]     // an empty name reads "General"
+    property int space: 1             // the workspace being looked at
+    property var lastInSpace: ({})    // the page each workspace was left on
     property var shortcuts: []        // shown on the start page: [{ title, url }]
     property int sleepMode: 1                    // 0 never, 1 early, 2 relaxed
     readonly property bool autoSleep: sleepMode > 0
@@ -30,7 +34,8 @@ ApplicationWindow {
     property WebEngineView splitLeft: null
     property WebEngineView splitRight: null
     property real splitRatio: 0.5
-    readonly property bool splitShown: !pageFullScreen && splitLeft !== null && splitRight !== null && view !== null && (view === splitLeft || view === splitRight)
+    readonly property bool splitShown: moves >= 0 && !pageFullScreen && splitLeft !== null && splitRight !== null && view !== null
+                                       && (view === splitLeft || view === splitRight) && inSpace(splitLeft.index) && inSpace(splitRight.index)
     property var downloads: []        // download requests of this run, newest first
     property var asks: []             // unanswered permission requests: [{ page, permission, site, wish }]
     // the question for the page being looked at, if it has one
@@ -65,6 +70,9 @@ ApplicationWindow {
         // Present Velum as the Chrome engine it is. Some sites refuse names they do not know.
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
         shortcuts = readList(saved.shortcuts)
+        spaces = readSpaces(saved.spaces)
+        if (!spaces.some(s => s.id === space))
+            space = spaces[0].id
         // pinned tabs come back first, then what was asked for on the command line
         // Restored tabs are "lazy": they load when first looked at.
         current = -1            // nothing is shown, and so nothing loads, until the tab is chosen
@@ -78,7 +86,7 @@ ApplicationWindow {
         if (restoreSession && !Shield.forgettingThisRun) {
             const session = readSession(saved.session)
             for (const p of session.tabs)
-                appendTab(p.url, p.title ?? "", true)
+                appendTab(p.url, p.title ?? "", true, spaces.some(s => s.id === p.space) ? p.space : spaces[0].id)
             if (session.tabs.length > 0)
                 chosen = Math.max(0, Math.min(session.current, tabs.count - 1))
         }
@@ -93,6 +101,7 @@ ApplicationWindow {
         }
         current = chosen
         restored = true
+        followCurrent()
         // the chosen tab was already visible or hidden before "current" settled
         Qt.callLater(() => view?.load_())
     }
@@ -118,7 +127,7 @@ ApplicationWindow {
             if (i === current)
                 at = pinnedCount + list.length
             if (!tab.pinned && tab.pageUrl !== "" && tab.pageUrl !== "about:blank")
-                list.push({ url: tab.pageUrl, title: tab.title })
+                list.push({ url: tab.pageUrl, title: tab.title, space: tab.space })
             if (i === current && tab.pinned)
                 at = i
         }
@@ -127,7 +136,7 @@ ApplicationWindow {
 
     Timer { id: sessionTimer; interval: 800; onTriggered: window.saveSession() }
     function touchSession() { sessionTimer.restart() }
-    onCurrentChanged: touchSession()
+    onCurrentChanged: { followCurrent(); touchSession() }
     onMovesChanged: touchSession()
     onClosing: saveSession()
 
@@ -173,6 +182,8 @@ ApplicationWindow {
         property alias downloadFolder: window.downloadFolder
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
+        property string spaces: "[]"
+        property alias space: window.space
         property alias width: window.width
         property alias height: window.height
     }
@@ -185,12 +196,13 @@ ApplicationWindow {
         return match ? match[1].toLowerCase() : ""
     }
 
-    // Adds a tab after the others, switches to it and returns its page.
-    function appendTab(url, title, lazy) {
-        tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0 })
+    // Adds a tab after the others, in this workspace unless another is named.
+    function appendTab(url, title, lazy, inWorkspace) {
+        tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0, space: inWorkspace ?? space })
         touchSession()
     }
 
+    // Adds a tab, switches to it and returns its page.
     function openTab(url) {
         appendTab(url, "", false)
         current = tabs.count - 1
@@ -207,11 +219,14 @@ ApplicationWindow {
             unsplit()
         const tab = tabs.get(index)
         const wasPinned = tab.pinned
+        const wasCurrent = index === current
         if (tab.pageUrl !== "" && tab.pageUrl !== "about:blank")
-            closedTabs = closedTabs.concat([{ url: tab.pageUrl, index: index }]).slice(-25)
-        if (tabs.count === 1)          // there is always one tab; closing the last one empties it
+            closedTabs = closedTabs.concat([{ url: tab.pageUrl, index: index, space: tab.space }]).slice(-25)
+        // a workspace always shows one tab; closing its last one empties it
+        if (inSpace(index) && neighbourOf(index) < 0)
             openTab("")
-        const next = index < current ? current - 1 : Math.min(current, tabs.count - 2)
+        const pick = wasCurrent ? neighbourOf(index) : current
+        const next = pick > index ? pick - 1 : pick
         if (wasPinned)
             pinnedCount--
         tabs.remove(index)
@@ -227,6 +242,8 @@ ApplicationWindow {
             return
         const last = closedTabs[closedTabs.length - 1]
         closedTabs = closedTabs.slice(0, -1)
+        if (spaces.some(s => s.id === last.space))
+            space = last.space
         openTab(last.url)
         moveTab(current, last.index)
     }
@@ -260,6 +277,7 @@ ApplicationWindow {
             // becomes the first of the ordinary tabs
             const target = pinnedCount - 1
             moveTab(index, target)
+            tabs.setProperty(target, "space", space)     // it stays where you can see it
             tabs.setProperty(target, "pinned", false)
             pinnedCount--
         } else {
@@ -276,7 +294,7 @@ ApplicationWindow {
 
     function closeOthers(index) {
         for (let i = tabs.count - 1; i >= 0; i--) {
-            if (i !== index && !tabs.get(i).pinned) {
+            if (i !== index && !tabs.get(i).pinned && inSpace(i)) {
                 closeTab(i)
                 if (i < index)
                     index--
@@ -322,6 +340,128 @@ ApplicationWindow {
         }
     }
 
+    // ---- workspaces ----
+    function inSpace(index) {
+        const tab = index >= 0 && index < tabs.count ? tabs.get(index) : null
+        const here = space
+        return tab !== null && (tab.pinned || tab.space === here)
+    }
+
+    // the tabs listed in the side bar, as numbers
+    function visibleTabs() {
+        const out = []
+        for (let i = 0; i < tabs.count; i++)
+            if (inSpace(i))
+                out.push(i)
+        return out
+    }
+
+    // the nearest other tab of this workspace: the one below, else the one above, else -1
+    function neighbourOf(index) {
+        const list = visibleTabs().filter(i => i !== index)
+        return list.find(i => i > index) ?? list[list.length - 1] ?? -1
+    }
+
+    // choosing a tab of another workspace (from the command box, say) goes there
+    function followCurrent() {
+        if (restored && current >= 0 && current < tabs.count && !inSpace(current))
+            space = tabs.get(current).space
+    }
+
+    function spaceName(item) { return item.name || Lang.t("Genel", "General") }
+
+    function readSpaces(text) {
+        const out = []
+        try {
+            for (const s of JSON.parse(text))
+                if (s && Number.isInteger(s.id) && s.id > 0 && typeof s.name === "string" && !out.some(o => o.id === s.id) && out.length < 6)
+                    out.push({ id: s.id, name: s.name.slice(0, 20) })
+        } catch (e) {
+        }
+        return out.length > 0 ? out : [{ id: 1, name: "" }]
+    }
+
+    function keepSpaces(list) {
+        spaces = list
+        saved.spaces = JSON.stringify(list)
+    }
+
+    function switchSpace(id) {
+        if (id === space || !spaces.some(s => s.id === id))
+            return
+        // a pinned tab is everywhere, so it is not what a workspace "was left on"
+        lastInSpace[space] = current >= pinnedCount ? view : null
+        const left = lastInSpace[id]
+        space = id
+        let target = -1
+        for (let i = 0; i < tabs.count; i++) {
+            if (left && views.itemAt(i) === left && inSpace(i)) {
+                target = i
+                break
+            }
+            if (target < 0 && !tabs.get(i).pinned && tabs.get(i).space === id)
+                target = i
+        }
+        if (target < 0)
+            openTab("")
+        else
+            current = target
+        touchSession()
+    }
+
+    function addSpace(name) {
+        name = String(name).trim().slice(0, 20)
+        if (name === "" || spaces.length >= 6)
+            return 0
+        const id = Math.max(...spaces.map(s => s.id)) + 1
+        keepSpaces(spaces.concat([{ id: id, name: name }]))
+        switchSpace(id)
+        return id
+    }
+
+    function renameSpace(id, name) {
+        name = String(name).trim().slice(0, 20)
+        if (name !== "")
+            keepSpaces(spaces.map(s => s.id === id ? { id: id, name: name } : s))
+    }
+
+    // Deleting a workspace keeps its pages: they move to another one.
+    function removeSpace(id) {
+        const home = spaces.find(s => s.id !== id)
+        if (!home || !spaces.some(s => s.id === id))
+            return
+        if (space === id)
+            switchSpace(home.id)
+        for (let i = tabs.count - 1; i >= 0; i--) {
+            const tab = tabs.get(i)
+            if (tab.space !== id)
+                continue
+            if (!tab.pinned && (tab.pageUrl === "" || tab.pageUrl === "about:blank"))
+                closeTab(i)
+            else
+                tabs.setProperty(i, "space", home.id)
+        }
+        keepSpaces(spaces.filter(s => s.id !== id))
+        moves++
+        touchSession()
+    }
+
+    function moveToSpace(index, id) {
+        if (index < 0 || index >= tabs.count || tabs.get(index).pinned || tabs.get(index).space === id || !spaces.some(s => s.id === id))
+            return
+        const page = views.itemAt(index) as WebEngineView
+        if (page === splitLeft || page === splitRight)
+            unsplit()
+        const wasCurrent = index === current
+        if (wasCurrent && neighbourOf(index) < 0)
+            openTab("")
+        const pick = wasCurrent ? neighbourOf(index) : current
+        tabs.setProperty(index, "space", id)
+        current = pick
+        moves++
+        touchSession()
+    }
+
     // ---- sleeping tabs ----
     // How far a tab that has not been seen for `idle` ms may be put to sleep:
     // `advice` is what the engine says is safe (it knows about sound, downloads, open connections).
@@ -347,6 +487,12 @@ ApplicationWindow {
     }
 
     function pageViewAt(index) { return views.itemAt(index) as WebEngineView }
+    function tabIndexOf(page) {
+        for (let i = 0; i < tabs.count; i++)
+            if (views.itemAt(i) === page)
+                return i
+        return -1
+    }
 
     // ---- split view ----
     // Puts the tab at `index` beside the current one.
@@ -372,11 +518,14 @@ ApplicationWindow {
             return
         }
         const here = current
-        if (tabs.count === 1) {
+        const others = visibleTabs().filter(i => i !== here)
+        let other = others.filter(i => i < here).pop() ?? others[0]
+        if (other === undefined) {
             openTab("")
+            other = current
             current = here
         }
-        splitWith(here > 0 ? here - 1 : here + 1)
+        splitWith(other)
     }
 
     function sleepState(index) { return index >= 0 && index < tabs.count ? tabs.get(index).asleep : -1 }
@@ -448,7 +597,8 @@ ApplicationWindow {
     }
 
     function step(by) {
-        current = (current + by + tabs.count) % tabs.count
+        const list = visibleTabs()
+        current = list[(list.indexOf(current) + by + list.length) % list.length]
     }
 
     // what a permission means, in words; empty for the ones Velum always refuses
@@ -494,6 +644,8 @@ ApplicationWindow {
         }
         else if (action === "allow" && ask)
             answer(ask, true)
+        else if (action.startsWith("space:"))
+            addSpace(action.slice(6))
         else if (action === "split")
             toggleSplit()
         else if (action === "sleep")
@@ -543,6 +695,11 @@ ApplicationWindow {
             onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
             onMoved: (from, to) => window.moveTab(from, to)
             onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
+            spaces: window.spaces
+            space: window.space
+            onSpaceChosen: id => window.switchSpace(id)
+            onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
+            onSpaceAdd: spaceDialog.show(0, "", false)
         }
 
         // the page, in a window of its own
@@ -847,6 +1004,12 @@ ApplicationWindow {
         onConfirmed: { History.clear(); Shield.clearData(window.profile) }
     }
 
+    SpaceDialog {
+        id: spaceDialog
+        onAccepted: (id, name) => id === 0 ? window.addSpace(name) : window.renameSpace(id, name)
+        onRemoved: id => window.removeSpace(id)
+    }
+
     CommandBar {
         id: commandBar
         anchors.fill: parent
@@ -865,13 +1028,14 @@ ApplicationWindow {
             { name: Lang.t("Sekmeyi kapat", "Close the tab"), keys: "Ctrl+W", run: () => window.closeTab(window.current) },
             { name: Lang.t("Diğer sekmeleri kapat", "Close other tabs"), keys: "", run: () => window.closeOthers(window.current) },
             { name: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"), keys: "Ctrl+\\", run: () => window.toggleSplit() },
+            { name: Lang.t("Yeni çalışma alanı", "New workspace"), keys: "", run: () => spaceDialog.show(0, "", false) },
             { name: Lang.t("Sayfada ara", "Find in page"), keys: "Ctrl+F", run: () => Qt.callLater(window.findInPage) },
             { name: window.restoreSession ? Lang.t("Açılışta sekmeleri geri getirme", "Do not reopen tabs at start") : Lang.t("Açılışta sekmeleri geri getir", "Reopen tabs at start"), keys: "", run: () => window.restoreSession = !window.restoreSession },
             { name: Lang.t("Gezinme verilerini sil", "Delete browsing data"), keys: "Ctrl+Shift+Delete", run: () => clearDialog.open() },
             { name: Lang.t("Ayarlar", "Settings"), keys: "Ctrl+,", run: () => Qt.callLater(window.openSettings) },
             { name: Lang.t("Tam ekran", "Full screen"), keys: "F11", run: () => window.toggleWindowFullScreen() },
             { name: Lang.t("Velum'dan çık", "Quit Velum"), keys: "Ctrl+Q", run: () => Qt.quit() }
-        ]
+        ].concat(window.spaces.map((s, i) => ({ name: Lang.t("Çalışma alanı: ", "Workspace: ") + window.spaceName(s), keys: "Alt+" + (i + 1), run: () => window.switchSpace(s.id) })))
         onOpened: (target, inNewTab) => window.navigate(target, inNewTab)
         onTabChosen: i => window.current = i
         onDismissed: if (window.view && !window.onStartPage) window.view.forceActiveFocus()
@@ -892,6 +1056,7 @@ ApplicationWindow {
         id: tabMenu
         property int index: 0
         readonly property bool pinned: index < window.pinnedCount
+        readonly property bool movable: !pinned
         AppMenuItem { text: tabMenu.pinned ? Lang.t("Sabitlemeyi kaldır", "Unpin") : Lang.t("Sabitle", "Pin"); onTriggered: window.togglePin(tabMenu.index) }
         AppMenuItem { text: Lang.t("Çoğalt", "Duplicate"); onTriggered: window.openTab(tabs.get(tabMenu.index).pageUrl) }
         AppMenuItem { text: Lang.t("Yenile", "Reload"); onTriggered: (views.itemAt(tabMenu.index) as WebEngineView).reload() }
@@ -899,6 +1064,13 @@ ApplicationWindow {
         AppMenuItem { text: Lang.t("Yer imlerine ekle", "Bookmark"); onTriggered: window.addShortcut(tabs.get(tabMenu.index).pageUrl, tabs.get(tabMenu.index).title) }
         AppMenuItem { text: Lang.t("Yan yana aç", "Open side by side"); shown: tabMenu.index !== window.current; onTriggered: window.splitWith(tabMenu.index) }
         AppMenuItem { text: Lang.t("Bölünmeyi kapat", "End split view"); shown: window.splitShown; onTriggered: window.unsplit() }
+        // moving a tab to another workspace; there are at most six
+        AppMenuItem { readonly property var to: window.spaces[0]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
+        AppMenuItem { readonly property var to: window.spaces[1]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
+        AppMenuItem { readonly property var to: window.spaces[2]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
+        AppMenuItem { readonly property var to: window.spaces[3]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
+        AppMenuItem { readonly property var to: window.spaces[4]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
+        AppMenuItem { readonly property var to: window.spaces[5]; shown: tabMenu.movable && to !== undefined && to.id !== window.space; text: to ? "→ " + window.spaceName(to) : ""; onTriggered: window.moveToSpace(tabMenu.index, to.id) }
         AppMenuLine {}
         AppMenuItem { text: Lang.t("Kapat", "Close"); onTriggered: window.closeTab(tabMenu.index) }
         AppMenuItem { text: Lang.t("Diğerlerini kapat", "Close others"); onTriggered: window.closeOthers(tabMenu.index) }
@@ -911,6 +1083,12 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+P"; onActivated: window.togglePin(window.current) }
     Shortcut { sequence: "Ctrl+D"; onActivated: window.toggleBookmark() }
     Shortcut { sequences: [StandardKey.Find]; onActivated: window.findInPage() }
+    Shortcut { sequence: "Alt+1"; onActivated: window.switchSpace(window.spaces[0]?.id) }
+    Shortcut { sequence: "Alt+2"; onActivated: window.switchSpace(window.spaces[1]?.id ?? 0) }
+    Shortcut { sequence: "Alt+3"; onActivated: window.switchSpace(window.spaces[2]?.id ?? 0) }
+    Shortcut { sequence: "Alt+4"; onActivated: window.switchSpace(window.spaces[3]?.id ?? 0) }
+    Shortcut { sequence: "Alt+5"; onActivated: window.switchSpace(window.spaces[4]?.id ?? 0) }
+    Shortcut { sequence: "Alt+6"; onActivated: window.switchSpace(window.spaces[5]?.id ?? 0) }
     Shortcut { sequence: "Ctrl+\\"; onActivated: window.toggleSplit() }
     Shortcut { sequence: "Ctrl+,"; onActivated: window.openSettings() }
     Shortcut { sequence: "Shift+Escape"; onActivated: resources.open() }

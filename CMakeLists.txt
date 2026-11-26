@@ -60,6 +60,8 @@ qt_add_qml_module(velum
         qml/Panel.qml
         qml/WindowBackground.qml
         qml/Kicker.qml
+        qml/SpaceBar.qml
+        qml/SpaceDialog.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml

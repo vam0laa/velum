@@ -279,6 +279,16 @@ property WebEngineView splitRight
 ```
 Çift, sekme numarasıyla değil **sayfanın kendisiyle** hatırlanır; sekmeleri taşısan da bozulmaz. Seçili sekme çiftten biriyse ikisi de görünür (`visible`, `x`, `width` buna göre hesaplanır), başka sekme seçersen tek görünür. Hiçbir sayfa yeniden yüklenmez, yalnızca boyutu değişir.
 
+## 7p. Çalışma alanları
+
+```qml
+property var spaces       // [{ id, name }]
+property int space        // bakılan alan
+```
+Her sekmenin bir `space` numarası var. Kenar çubuğu yalnızca `pinned || space === window.space` olanları gösterir; diğerlerinin satır yüksekliği 0'dır. Sayfalar silinmez ve yeniden yüklenmez, sadece listeden gizlenir. Profil (çerezler) ortaktır; sabitlenen sekmeler her alanda görünür.
+
+Dikkat edilen kural: ekranda her zaman o alanın gösterebileceği bir sekme olur. Son sekmeyi kapatınca ya da taşıyınca sabitlenene dönülür; o da yoksa boş sekme açılır (`neighbourOf` -1 dönerse).
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.
