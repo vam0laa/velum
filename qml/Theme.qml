@@ -81,8 +81,9 @@ QtObject {
     readonly property var buttonIds: ["back", "forward", "reload", "home", "downloads", "extensions", "bookmarks", "history", "game", "settings"]
 
     property HomeCss sheet: HomeCss {
-        selectors: ["tabbar", "toolbar", "tab", "tab-active", "address", "sidebar", "bookmarks", "button", "menu"]
-        properties: ["background", "background-color", "color", "border-color", "border-width", "border-radius"]
+        selectors: ["all", "window", "tabbar", "tab", "tab-active", "newtab", "window-button", "toolbar", "address", "button", "action", "primary", "toggle", "toggle-on",
+                    "bookmarks", "bookmark", "sidebar", "menu", "popup", "tooltip", "notice", "findbar", "settings", "nav", "nav-active", "card", "input",
+                    "page", "headline", "pill", "chip", "search", "tile", "clock", "widget", "date", "calendar", "shield", "note", "tasks", "timer"]
     }
     readonly property var parsed: sheet.parse(web ? "" : css)
     readonly property var cssErrors: parsed.errors
@@ -279,7 +280,7 @@ QtObject {
     readonly property color raised: pick(3)      // buttons
     readonly property color title: pick(4)       // title bars
     readonly property color line: pick(5)
-    readonly property color text: pick(6)
+    readonly property color text: styled("all", "color", pick(6))
     readonly property color dim: pick(7)
     readonly property color accent: pick(web ? 8 : accents[accentChoice] ?? 8)
     readonly property color accentInk: pick(9)
@@ -308,7 +309,7 @@ QtObject {
     property FontLoader pixelFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/VT323-Regular.ttf") }
     readonly property string pixel: pixelFont.name      // has the Turkish letters
     property FontLoader sansFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/GoogleSansFlex.woff") }
-    readonly property string ui: web ? pixelFont.name : fontFamily !== "" ? family(fontFamily, bodyLoader) : sansFont.name
+    readonly property string ui: web ? pixelFont.name : parsed.sheet["all"]?.["font-family"] !== undefined ? parsed.sheet["all"]["font-family"] : fontFamily !== "" ? family(fontFamily, bodyLoader) : sansFont.name
     // sizes are written for the small pixel letters; the other font needs less
     function size(n) { return web ? n : Math.round(n / 1.3) }
     // real weights of the variable font; the pixel font has only one

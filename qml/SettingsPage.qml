@@ -84,7 +84,7 @@ Rectangle {
     }
     readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
 
-    color: Theme.sheetBack
+    color: Theme.styled("settings", "background", Theme.sheetBack)
 
     function refresh() {
         if (visible && passwords1.wanted)
@@ -174,13 +174,14 @@ Rectangle {
                         AbstractButton {
                             id: entry
                             readonly property bool chosen: page.query === "" && page.section === item.modelData.key
-                            readonly property color ink: chosen ? Theme.accentInk : Theme.text
+                            readonly property string skin: chosen ? "nav-active" : "nav"
+                            readonly property color ink: Theme.styled(skin, "color", chosen ? Theme.accentInk : Theme.text)
                             Layout.fillWidth: true
                             implicitHeight: 44
                             hoverEnabled: true
                             onClicked: { search.text = ""; page.query = ""; page.section = item.modelData.key }
                             Accessible.name: item.modelData.label
-                            background: Rectangle { radius: Theme.round(height / 2); color: entry.chosen ? Theme.accent : entry.hovered ? (Theme.web ? Theme.title : Theme.raised) : "transparent"; Behavior on color { ColorAnimation { duration: Theme.quick } } }
+                            background: Rectangle { radius: Theme.styled(entry.skin, "border-radius", Theme.round(height / 2)); color: entry.chosen ? Theme.styled("nav-active", "background", Theme.accent) : entry.hovered ? (Theme.web ? Theme.title : Theme.raised) : Theme.styled("nav", "background", "transparent"); border.width: Theme.styled(entry.skin, "border-width", Theme.styled(entry.skin, "border-color", "") !== "" ? 1 : 0); border.color: Theme.styled(entry.skin, "border-color", Theme.line); Behavior on color { ColorAnimation { duration: Theme.quick } } }
                             contentItem: Item {
                                 Icon { x: 14; anchors.verticalCenter: parent.verticalCenter; name: item.modelData.icon; size: 17; color: entry.ink }
                                 Text { anchors { left: parent.left; leftMargin: 44; right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter } text: item.modelData.label; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; color: entry.ink; font.family: Theme.ui; font.pixelSize: Theme.web ? 17 : 14; font.variableAxes: Theme.axes(entry.chosen ? 700 : 450) }
@@ -229,10 +230,10 @@ Rectangle {
                     onTextEdited: page.query = text
                     Keys.onEscapePressed: { text = ""; page.query = "" }
                     background: Rectangle {
-                        radius: Theme.round(height / 2)
-                        color: "transparent"
-                        border.width: search.activeFocus ? 2 : 1
-                        border.color: search.activeFocus ? Theme.accent : Theme.line
+                        radius: Theme.styled("input", "border-radius", Theme.round(height / 2))
+                        color: Theme.styled("input", "background", "transparent")
+                        border.width: search.activeFocus ? 2 : Theme.styled("input", "border-width", 1)
+                        border.color: search.activeFocus ? Theme.accent : Theme.styled("input", "border-color", Theme.line)
                         Icon { x: 16; anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 16; color: Theme.dim }
                     }
                 }

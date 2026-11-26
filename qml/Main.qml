@@ -1398,7 +1398,7 @@ ApplicationWindow {
     Item {
         id: scene
         anchors.fill: parent
-        Rectangle { anchors.fill: parent; color: Theme.frameBack }
+        Rectangle { anchors.fill: parent; color: Theme.styled("window", "background", Theme.frameBack) }
 
         GridLayout {
             // with the tabs on top the page reaches the edges; beside them the windows float
@@ -1872,16 +1872,16 @@ ApplicationWindow {
                     anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: window.notice !== "" ? 18 : -10 }
                     width: Math.min(parent.width - 24, noticeText.implicitWidth + 32)
                     height: 38
-                    radius: Theme.radius
+                    radius: Theme.styled("notice", "border-radius", Theme.radius)
                     z: 3
                     opacity: window.notice !== "" ? 1 : 0
                     visible: opacity > 0
                     Behavior on opacity { NumberAnimation { duration: Theme.smooth } }
                     Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
                     Shadow { radius: Theme.radius }
-                    color: Theme.raised
-                    border.color: Theme.line
-                    Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+                    color: Theme.styled("notice", "background", Theme.raised)
+                    border.color: Theme.styled("notice", "border-color", Theme.line)
+                    Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.styled("notice", "color", Theme.text); font.family: Theme.styled("notice", "font-family", Theme.ui); font.pixelSize: Theme.styled("notice", "font-size", Theme.size(17)); elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
                 }
 
                 // made the first time it is opened, then kept

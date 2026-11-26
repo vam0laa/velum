@@ -18,7 +18,7 @@ Bevel {
 
     implicitWidth: 360
     implicitHeight: column.implicitHeight + 28
-    color: Theme.window
+    color: Theme.styled("popup", "background", Theme.window)
     light: Theme.peach
     radius: Theme.radius
 

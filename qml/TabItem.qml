@@ -133,8 +133,8 @@ ItemDelegate {
             textFormat: Text.PlainText     // a page title is never treated as markup
             color: row.ink
             opacity: row.asleep > 0 ? 0.55 : 1
-            font.family: Theme.ui; font.pixelSize: Theme.size(17)
-            font.weight: row.current ? Font.DemiBold : Font.Normal
+            font.family: row.styled("font-family", Theme.ui); font.pixelSize: row.styled("font-size", Theme.size(17))
+            font.weight: row.styled("font-weight", row.current ? Font.DemiBold : Font.Normal)
             elide: Text.ElideRight
             visible: !row.compact
         }
@@ -192,7 +192,7 @@ ItemDelegate {
         grabPermissions: PointerHandler.CanTakeOverFromAnything
         onCentroidChanged: if (active) row.dragged(row.index, centroid.scenePosition)
     }
-    opacity: drag.active ? 0.7 : 1
+    opacity: (drag.active ? 0.7 : 1) * styled("opacity", 1)
 
     Rectangle {
         visible: row.lastPinned

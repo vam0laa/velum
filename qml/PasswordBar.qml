@@ -16,7 +16,7 @@ Rectangle {
     width: 380
     height: column.implicitHeight + 28
     radius: Theme.radius
-    color: Theme.window
+    color: Theme.styled("popup", "background", Theme.window)
     border.color: Theme.green
 
     ColumnLayout {

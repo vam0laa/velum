@@ -117,7 +117,7 @@ Panel {
             focusPolicy: Qt.NoFocus
             onClicked: side.newTab()
             Accessible.name: Lang.t("Yeni sekme", "New tab")
-            background: Rectangle { color: add.hovered ? Theme.title : Theme.raised; border.width: 2; border.color: Theme.line; opacity: add.down ? 0.8 : 1 }
+            background: Rectangle { radius: Theme.styled("newtab", "border-radius", 0); color: add.hovered ? Theme.title : Theme.styled("newtab", "background", Theme.raised); border.width: Theme.styled("newtab", "border-width", 2); border.color: Theme.styled("newtab", "border-color", Theme.line); opacity: add.down ? 0.8 : 1 }
             contentItem: Item {
                 Icon { x: side.compact ? (parent.width - width) / 2 : 14; anchors.verticalCenter: parent.verticalCenter; name: "plus"; color: Theme.accent; size: 17 }
                 Text { x: 42; visible: !side.compact; anchors.verticalCenter: parent.verticalCenter; text: Lang.t("Yeni sekme", "New tab"); color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); font.weight: Font.Normal }

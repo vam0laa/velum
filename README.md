@@ -29,7 +29,7 @@ Logos of search engines, extensions and flags in `data/logos` belong to their ow
 
 ## Your own look
 
-Settings → Appearance: pick a theme or make your own in the Theme Studio (four main colours, the rest follows; fine tuning, shape, lettering, a live preview, undo and a readability warning; nothing changes until you apply), set corners, density, tab shape and lettering, choose and order the toolbar buttons, add a style sheet for the browser (`.tabbar .toolbar .tab .tab-active .address .sidebar .bookmarks .button .menu`), and save it all, with the home page design, to a `.velumtheme` file to share.
+Settings → Appearance: pick a theme or make your own in the Theme Studio (four main colours, the rest follows; fine tuning, shape, lettering, a live preview, undo and a readability warning; nothing changes until you apply), set corners, density, tab shape and lettering, choose and order the toolbar buttons, add a style sheet that reaches every part of the browser and the home page (the settings list the names; properties `background color border-color border-width border-radius opacity font-size font-weight font-family display`, where a part can use them), and save it all, with the home page design, to a `.velumtheme` file to share.
 
 Twenty-three open licensed letterings come along (see data/fonts/extra). Ctrl+Shift+0 resets the look.
 

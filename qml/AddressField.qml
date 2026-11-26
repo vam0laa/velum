@@ -16,7 +16,7 @@ TextField {
     color: Theme.styled("address", "color", Theme.text)
     selectionColor: Theme.accent
     selectedTextColor: Theme.accentInk
-    font.family: Theme.ui; font.pixelSize: Theme.size(18)
+    font.family: Theme.styled("address", "font-family", Theme.ui); font.pixelSize: Theme.styled("address", "font-size", Theme.size(18))
     leftPadding: Theme.web ? 28 : 34
     rightPadding: 10
     implicitHeight: Theme.dense(34)

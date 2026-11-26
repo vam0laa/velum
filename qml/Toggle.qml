@@ -10,6 +10,7 @@ AbstractButton {
     property string note
     Layout.fillWidth: true
     implicitHeight: 44
+    readonly property string skin: on ? "toggle-on" : "toggle"
     focusPolicy: Qt.NoFocus
     contentItem: RowLayout {
         spacing: 10
@@ -22,14 +23,14 @@ AbstractButton {
         Rectangle {
             implicitWidth: 36
             implicitHeight: 20
-            radius: Theme.radius
-            color: choice.on ? Theme.accent : Theme.raised
-            border.width: 2
-            border.color: Theme.line
+            radius: Theme.styled(choice.skin, "border-radius", Theme.radius)
+            color: Theme.styled(choice.skin, "background", choice.on ? Theme.accent : Theme.raised)
+            border.width: Theme.styled(choice.skin, "border-width", 2)
+            border.color: Theme.styled(choice.skin, "border-color", Theme.line)
             Rectangle {
-                width: 14; height: 14; radius: Theme.radius; y: 3
+                width: 14; height: 14; radius: Theme.styled(choice.skin, "border-radius", Theme.radius); y: 3
                 x: choice.on ? 19 : 3
-                color: choice.on ? Theme.accentInk : Theme.dim
+                color: Theme.styled(choice.skin, "color", choice.on ? Theme.accentInk : Theme.dim)
                 Behavior on x { NumberAnimation { duration: Theme.quick } }
             }
         }

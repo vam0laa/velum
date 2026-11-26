@@ -11,8 +11,11 @@ Rectangle {
     default property alias content: body.data
     Layout.fillWidth: true
     implicitHeight: column.implicitHeight + (Theme.web ? 4 : 40)
-    radius: Theme.round(16)
-    color: Theme.web ? "transparent" : Theme.paneBack
+    radius: Theme.styled("card", "border-radius", Theme.round(16))
+    color: Theme.web ? "transparent" : Theme.styled("card", "background", Theme.paneBack)
+    border.width: Theme.styled("card", "border-width", Theme.styled("card", "border-color", "") !== "" ? 1 : 0)
+    border.color: Theme.styled("card", "border-color", Theme.line)
+    opacity: Theme.styled("card", "opacity", 1)
 
     ColumnLayout {
         id: column
@@ -22,7 +25,7 @@ Rectangle {
             visible: card.heading !== ""
             spacing: 9
             Icon { visible: card.symbol !== "" && !Theme.web; name: card.symbol; size: 18; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
-            Text { text: card.heading; color: Theme.web ? Theme.dim : Theme.text; font.family: Theme.ui; font.pixelSize: Theme.web ? 16 : 16; font.variableAxes: Theme.axes(700) }
+            Text { text: card.heading; color: Theme.web ? Theme.dim : Theme.styled("card", "color", Theme.text); font.family: Theme.styled("card", "font-family", Theme.ui); font.pixelSize: Theme.web ? 16 : 16; font.variableAxes: Theme.axes(700) }
         }
         Text { Layout.fillWidth: true; visible: text !== ""; text: card.note; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.web ? 15 : 13; wrapMode: Text.WordWrap; Layout.bottomMargin: 4 }
         ColumnLayout { id: body; Layout.fillWidth: true; spacing: 6 }

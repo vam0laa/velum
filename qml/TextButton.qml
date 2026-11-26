@@ -9,12 +9,16 @@ AbstractButton {
     implicitWidth: label.implicitWidth + 28
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
-    opacity: enabled ? 1 : 0.45
+    // your style sheet: ".action", and ".primary" for the one that does something
+    readonly property string skin: strong ? "primary" : "action"
+    function styled(property, fallback) { return Theme.styled(skin, property, fallback) }
+    opacity: (enabled ? 1 : 0.45) * styled("opacity", 1)
     contentItem: Text {
         id: label
         text: button.text
-        color: button.strong ? Theme.accentInk : Theme.text
-        font.family: Theme.ui; font.pixelSize: Theme.size(18)
+        color: button.styled("color", button.strong ? Theme.accentInk : Theme.text)
+        font.family: button.styled("font-family", Theme.ui); font.pixelSize: button.styled("font-size", Theme.size(18))
+        font.variableAxes: button.styled("font-weight", 0) > 0 ? Theme.axes(button.styled("font-weight", 400)) : ({})
         leftPadding: Theme.web && button.down ? 2 : 0
         topPadding: Theme.web && button.down ? 2 : 0
         horizontalAlignment: Text.AlignHCenter
@@ -25,12 +29,13 @@ AbstractButton {
         Rectangle {
             x: Theme.web && button.down ? 2 : 0
             y: x
-            radius: Theme.radius
+            radius: button.styled("border-radius", Theme.radius)
             width: parent.width
             height: parent.height
-            color: button.strong ? (button.hovered ? Theme.barDeep : Theme.accent) : button.hovered ? Theme.title : Theme.raised
-            border.width: Theme.web ? 2 : 0
-            border.color: Theme.line
+            color: button.strong ? (button.hovered ? Qt.darker(button.styled("background", Theme.web ? Theme.barDeep : Theme.accent), Theme.web ? 1 : 1.15) : button.styled("background", Theme.accent))
+                                 : button.hovered ? Theme.title : button.styled("background", Theme.raised)
+            border.width: Theme.web ? 2 : button.styled("border-width", button.styled("border-color", "") !== "" ? 1 : 0)
+            border.color: button.styled("border-color", Theme.line)
         }
     }
 }

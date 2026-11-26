@@ -170,8 +170,8 @@ Item {
                 focusPolicy: Qt.NoFocus
                 onClicked: bar.newTab()
                 Accessible.name: Lang.t("Yeni sekme", "New tab")
-                background: Rectangle { color: add.hovered ? Qt.alpha("#ffffff", 0.25) : "transparent" }
-                contentItem: Icon { name: "plus"; size: 20; color: Theme.web ? Theme.barInk : Theme.text }
+                background: Rectangle { radius: Theme.styled("newtab", "border-radius", Theme.round(8)); color: add.hovered ? Qt.alpha("#ffffff", Theme.web ? 0.25 : 0.12) : Theme.styled("newtab", "background", "transparent"); border.width: Theme.styled("newtab", "border-width", Theme.styled("newtab", "border-color", "") !== "" ? 1 : 0); border.color: Theme.styled("newtab", "border-color", Theme.line) }
+                contentItem: Icon { name: "plus"; size: 20; color: Theme.web ? Theme.barInk : Theme.styled("newtab", "color", Theme.text) }
                 Hint { text: Lang.t("Yeni sekme", "New tab") + Keymap.hint("newTab"); shown: add.hovered; y: add.height + 6 }
             }
             Item { Layout.fillWidth: true }
@@ -271,12 +271,12 @@ Item {
                 hoverEnabled: true
                 focusPolicy: Qt.NoFocus
                 onClicked: bar.openBookmark(modelData.url)
-                background: Rectangle { radius: Theme.round(7); color: mark.hovered ? Theme.raised : "transparent" }
+                background: Rectangle { radius: Theme.styled("bookmark", "border-radius", Theme.round(7)); color: mark.hovered ? Theme.raised : Theme.styled("bookmark", "background", "transparent"); border.width: Theme.styled("bookmark", "border-width", Theme.styled("bookmark", "border-color", "") !== "" ? 1 : 0); border.color: Theme.styled("bookmark", "border-color", Theme.line) }
                 contentItem: Item {
                     Image { id: icon; x: 8; anchors.verticalCenter: parent.verticalCenter; width: 15; height: 15; source: bar.iconFor(mark.modelData.url); cache: false; sourceSize: Qt.size(32, 32) }
                     Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; visible: icon.status !== Image.Ready; width: 15; height: 15; radius: 4; color: Theme.rainbow[mark.index % Theme.rainbow.length]
                         Text { anchors.centerIn: parent; text: String(mark.modelData.title).charAt(0).toLocaleUpperCase(); textFormat: Text.PlainText; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: 10 } }
-                    Text { id: caption; x: 29; width: Math.min(implicitWidth, 144); anchors.verticalCenter: parent.verticalCenter; text: mark.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.styled("bookmarks", "color", Theme.text); font.family: Theme.ui; font.pixelSize: 12 }
+                    Text { id: caption; x: 29; width: Math.min(implicitWidth, 144); anchors.verticalCenter: parent.verticalCenter; text: mark.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.styled("bookmark", "color", Theme.styled("bookmarks", "color", Theme.text)); font.family: Theme.styled("bookmark", "font-family", Theme.ui); font.pixelSize: Theme.styled("bookmark", "font-size", 12) }
                 }
             }
         }

@@ -15,7 +15,7 @@ MenuItem {
         text: item.text
         textFormat: Text.PlainText
         color: item.enabled ? Theme.styled("menu", "color", Theme.text) : Theme.dim
-        font.family: Theme.ui; font.pixelSize: Theme.size(17)
+        font.family: Theme.styled("menu", "font-family", Theme.ui); font.pixelSize: Theme.styled("menu", "font-size", Theme.size(17))
         leftPadding: 8
         elide: Text.ElideRight
         verticalAlignment: Text.AlignVCenter

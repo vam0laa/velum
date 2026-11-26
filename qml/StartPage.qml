@@ -41,10 +41,13 @@ Rectangle {
 
     // the value your style sheet gives to the first of `names` that has it
     function css(names, property, fallback) {
-        for (const name of names) {
-            const found = parsed.sheet[name]?.[property]
-            if (found !== undefined)
-                return found
+        // the home page's own sheet first, then the browser's
+        for (const sheet of [parsed.sheet, Theme.parsed.sheet]) {
+            for (const name of names) {
+                const found = sheet[name]?.[property]
+                if (found !== undefined)
+                    return found
+            }
         }
         return fallback
     }

@@ -31,7 +31,7 @@ Bevel {
     visible: false
     implicitWidth: 340
     implicitHeight: 44
-    color: Theme.window
+    color: Theme.styled("findbar", "background", Theme.window)
 
     RowLayout {
         anchors { fill: parent; leftMargin: 12; rightMargin: 5 }

@@ -294,6 +294,14 @@ Item {
             Theme.fontFamily = "Lexend"; Theme.headFamily = "Monoton"; t.check("the chosen ones are used", Theme.ui !== sans && Theme.display !== Theme.ui)
             Theme.css = ".toolbar { background: #ff0000 }"; Theme.roundness = 0; Theme.palette = "nord"
             w.resetLook(); t.check("resetting the look undoes it all", Theme.ui === sans && Theme.headFamily === "" && Theme.css === "" && Theme.roundness === 1 && Theme.palette === "lucid")
+            // the style sheet reaches everything
+            Theme.css = ".all { color: #ff0000; font-family: Lexend }\n.card { background: #001100 }\n.primary { background: #002200 }\n.clock { color: #0000ff }\n.toggle-on, .menu, .popup, .tooltip, .notice, .nav-active { opacity: 0.9 }"
+            t.check("every part is a known name", Theme.cssErrors.length === 0)
+            t.check("writing everywhere follows .all", String(Theme.text) === "#ff0000" && Theme.ui === "Lexend")
+            w.openTab(""); t.check("the home page listens to the browser sheet too", w.startPage.css(["clock"], "color", "") === "#0000ff")
+            w.homeCss = ".clock { color: #00ff00 }"; t.check("its own sheet wins", w.startPage.css(["clock"], "color", "") === "#00ff00"); w.homeCss = ""
+            w.openSettings("look"); w.closeTab(w.current)
+            Theme.css = ""; t.check("clearing gives the theme back", String(Theme.text) !== "#ff0000")
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")
