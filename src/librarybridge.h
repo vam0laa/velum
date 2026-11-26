@@ -27,6 +27,11 @@ public:
     {
         return library::fromHtml(QString::fromUtf8(read(path(file, {".html", ".htm"}))));
     }
+    // reads the manifest of an installed extension's folder
+    Q_INVOKABLE QVariantMap extensionAccess(const QString &folder) const
+    {
+        return library::extensionAccess(read(folder.isEmpty() ? QString() : folder + QStringLiteral("/manifest.json")));
+    }
     Q_INVOKABLE bool writeLocked(const QUrl &file, const QString &text, const QString &password) const
     {
         const QByteArray sealed = library::seal(text.toUtf8(), password);

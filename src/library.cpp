@@ -1,5 +1,8 @@
 #include "library.h"
 
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QUrl>
@@ -216,6 +219,22 @@ QStringList hostList(const QByteArray &file)
             out << host;
     }
     return out;
+}
+
+QVariantMap extensionAccess(const QByteArray &manifest)
+{
+    const QJsonObject m = QJsonDocument::fromJson(manifest).object();
+    QStringList permissions, hosts;
+    const auto add = [](QStringList &to, const QJsonValue &list) {
+        for (const QJsonValue &v : list.toArray())
+            if (v.isString() && to.size() < 100 && !to.contains(v.toString()))
+                to << v.toString().left(200);
+    };
+    add(permissions, m.value(QLatin1String("permissions")));
+    add(hosts, m.value(QLatin1String("host_permissions")));
+    for (const QJsonValue &script : m.value(QLatin1String("content_scripts")).toArray())
+        add(hosts, script.toObject().value(QLatin1String("matches")));
+    return {{QStringLiteral("permissions"), permissions}, {QStringLiteral("hosts"), hosts}};
 }
 
 QByteArray seal(const QByteArray &plain, const QString &password)

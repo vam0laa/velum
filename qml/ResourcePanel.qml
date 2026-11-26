@@ -9,6 +9,7 @@ Popup {
     property var rows: []        // [{ index, title, memory, cpu, state, shared }]
     property var total: ({ memory: 0, cpu: 0 })
     property int mode: 1          // 0 never, 1 early, 2 relaxed
+    signal closeTab(int index)
     signal refresh()
     signal sleep(int index)
     signal wake(int index)
@@ -55,6 +56,12 @@ Popup {
                     Text { text: row.modelData.state === 2 ? Lang.t("uyuyor", "asleep") : row.modelData.state === 1 ? Lang.t("donduruldu", "frozen") : row.modelData.shared ? Lang.t("ortak", "shared") : ""; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(14) }
                     Text { Layout.preferredWidth: 64; horizontalAlignment: Text.AlignRight; text: row.modelData.state === 2 ? "—" : Math.round(row.modelData.memory) + " MB"; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(16) }
                     Text { Layout.preferredWidth: 40; horizontalAlignment: Text.AlignRight; text: row.modelData.state === 2 ? "" : "%" + Math.round(row.modelData.cpu); color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(16) }
+                    IconButton {
+                        implicitWidth: 28; implicitHeight: 28; iconSize: 12
+                        symbol: "close"
+                        hint: Lang.t("Sekmeyi kapat", "Close the tab")
+                        onClicked: panel.closeTab(row.modelData.index)
+                    }
                     IconButton {
                         Layout.rightMargin: 4
                         implicitWidth: 28; implicitHeight: 28; iconSize: 14

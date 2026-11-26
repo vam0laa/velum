@@ -1349,6 +1349,7 @@ ApplicationWindow {
         onRefresh: window.measure()
         onSleep: i => { window.sleepTab(i); window.measure() }
         onWake: i => { window.wakeTab(i); window.measure() }
+        onCloseTab: i => { window.closeTab(i); window.measure() }
         onChoose: i => window.current = i
         onModeChosen: mode => window.sleepMode = mode
     }
@@ -1373,6 +1374,28 @@ ApplicationWindow {
         onClosed: Qt.callLater(() => { const said = yes; yes = false; window.answerDownload(said) })
     }
     onWaitingChanged: if (waiting.length > 0 && !downloadDialog.opened) Qt.callLater(() => { if (window.waiting.length > 0) downloadDialog.open() })
+
+    // what a newly installed extension can do; one at a time
+    property var newExtensions: []
+    onNewExtensionsChanged: if (newExtensions.length > 0 && !accessDialog.opened) Qt.callLater(() => { if (window.newExtensions.length > 0) accessDialog.open() })
+    ConfirmDialog {
+        id: accessDialog
+        readonly property var item: window.newExtensions[0] ?? null
+        heading: item ? item.name + Lang.t(" kuruldu. Şunları yapabiliyor:", " was installed. It can:") : ""
+        detail: item ? "• " + (Access.list(Library.extensionAccess(item.path ?? "")).join("\n• ") || Lang.t("özel bir şey yok", "nothing special")) : ""
+        action: Lang.t("Kaldır", "Remove it")
+        cancel: Lang.t("Kalsın", "Keep it")
+        property bool unwanted: false
+        onConfirmed: unwanted = true
+        onClosed: Qt.callLater(() => {
+            const item = window.newExtensions[0]
+            window.newExtensions = window.newExtensions.slice(1)
+            if (unwanted && item)
+                window.removeExtension(item)
+            unwanted = false
+        })
+    }
+    property alias accessDialog: accessDialog
 
     ConfirmDialog {
         id: extensionDialog

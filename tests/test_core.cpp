@@ -468,6 +468,15 @@ private slots:
         QVERIFY(!lists::plausible(lists::harmfulFile, QByteArray(400, 'x')));
     }
 
+    void extensionPermissions()
+    {
+        const QVariantMap got = library::extensionAccess("{\"permissions\":[\"tabs\",\"storage\",\"tabs\",5],\"host_permissions\":[\"https://a.example/*\"],"
+                                                         "\"content_scripts\":[{\"matches\":[\"<all_urls>\",\"https://a.example/*\"]}]}");
+        QCOMPARE(got.value("permissions").toStringList(), (QStringList{"tabs", "storage"}));
+        QCOMPARE(got.value("hosts").toStringList(), (QStringList{"https://a.example/*", "<all_urls>"}));
+        QVERIFY(library::extensionAccess("nonsense").value("hosts").toStringList().isEmpty());
+    }
+
     void heldDownloads()
     {
         QTemporaryDir dir;

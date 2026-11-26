@@ -8,6 +8,7 @@ Popup {
     property string heading
     property string detail
     property string action
+    property string cancel: Lang.t("Vazgeç", "Cancel")
     signal confirmed()
 
     anchors.centerIn: Overlay.overlay
@@ -26,7 +27,7 @@ Popup {
         RowLayout {
             Layout.alignment: Qt.AlignRight
             spacing: 8
-            SafeButton { text: Lang.t("Vazgeç", "Cancel"); onClicked: dialog.close() }
+            SafeButton { text: dialog.cancel; onClicked: dialog.close() }
             SafeButton { text: dialog.action; strong: true; onClicked: { dialog.close(); dialog.confirmed() } }
         }
     }

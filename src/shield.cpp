@@ -68,7 +68,8 @@ Shield::Shield(QObject *parent) : QWebEngineUrlRequestInterceptor(parent)
     m_forgettingThisRun = m_forget;
     m_safe = settings.value(QStringLiteral("shield/safeBrowsing"), true).toBool();
     m_dns = settings.value(QStringLiteral("shield/secureDns"), QStringLiteral("off")).toString();
-    applyDns();
+    if (m_dns != QLatin1String("off"))      // the engine's own way needs no telling
+        applyDns();
     m_cookieNotify.setSingleShot(true);
     m_cookieNotify.setInterval(300);
     connect(&m_cookieNotify, &QTimer::timeout, this, [this] { ++m_cookieRevision; emit cookiesChanged(); });
@@ -287,7 +288,8 @@ void Shield::attach(QObject *profile)
             m_cookieNotify.start();
         }
     });
-    m_cookieStore->loadAllCookies();
+    // read once the window is up: opening the cookie file would hold up the start
+    QTimer::singleShot(2500, m_cookieStore, &QWebEngineCookieStore::loadAllCookies);
 }
 
 QVariantList Shield::blockedHosts(const QString &site, int) const

@@ -5,6 +5,7 @@ QtObject {
     property var files: ({})
     function writeBookmarks(file, list) { files[String(file)] = JSON.stringify(list); return true }
     function readBookmarks(file) { return files[String(file)] ? JSON.parse(files[String(file)]) : [] }
+    function extensionAccess(folder) { return String(folder) === "" ? { permissions: [], hosts: [] } : { permissions: ["tabs", "storage"], hosts: ["<all_urls>"] } }
     function writeLocked(file, text, password) { if (password === "") return false; files[String(file)] = JSON.stringify({ p: password, t: text }); return true }
     function readLocked(file, password) {
         const f = files[String(file)]

@@ -102,6 +102,14 @@ ColumnLayout {
                         on: row.modelData.isEnabled
                         onClicked: panel.enable(row.modelData, !row.modelData.isEnabled)
                     }
+                    Text {
+                        Layout.fillWidth: true
+                        text: Access.words(row.modelData.path ?? "")
+                        textFormat: Text.PlainText
+                        wrapMode: Text.WordWrap
+                        color: Theme.dim
+                        font.family: Theme.ui; font.pixelSize: 12
+                    }
                     RowLayout {
                         spacing: 8
                         TextButton {

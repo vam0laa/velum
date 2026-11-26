@@ -421,6 +421,10 @@ Item {
                 while (w.tabCount > base) w.closeTab(w.tabCount - 1)
                 w.space = wasSpace; w.current = Math.min(wasTab, w.tabCount - 1)
             }
+            // ---- what extensions may do ----
+            t.check("everywhere is said plainly", Access.list({ hosts: ["*://*/*"], permissions: ["storage"] }).length === 1 && Access.list({ hosts: ["<all_urls>"], permissions: ["history"] }).length === 2)
+            t.check("named sites are named", Access.list({ hosts: ["https://a.example/*", "https://a.example/x"], permissions: [] })[0].indexOf("a.example") > 0)
+            t.check("harmless permissions are not listed", Access.list({ hosts: [], permissions: ["storage", "alarms"] }).length === 0)
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")

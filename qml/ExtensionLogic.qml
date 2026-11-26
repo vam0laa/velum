@@ -76,6 +76,8 @@ QtObject {
         } else {
             app.profile.extensionManager.setExtensionEnabled(extension, true)
             app.say(Lang.t(extension.name + " eklendi.", extension.name + " was added."))
+            // said right after installing, with the way out beside it
+            app.newExtensions = app.newExtensions.concat([extension])
         }
         Qt.callLater(app.refreshExtensions)
         Qt.callLater(app.installNext)
