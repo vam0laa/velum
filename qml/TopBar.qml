@@ -130,6 +130,21 @@ Item {
                 Word { x: 2; color: Theme.night ? "#b0479c" : "#ff3fd0" }
                 Word { id: logo; color: Theme.night ? "#dfe8ff" : "#ffffff" }
             }
+            // Velum's mark, before the tabs: press it for a new one
+            AbstractButton {
+                id: mark_
+                visible: !Theme.web
+                implicitWidth: 28
+                implicitHeight: 30
+                hoverEnabled: true
+                focusPolicy: Qt.NoFocus
+                onClicked: bar.newTab()
+                Accessible.name: Lang.t("Yeni sekme", "New tab")
+                scale: down ? 0.92 : 1
+                contentItem: Item { Brand { anchors.centerIn: parent; named: false; opacity: mark_.hovered ? 1 : 0.85 } }
+                background: null
+                Hint { text: Lang.t("Yeni sekme", "New tab") + Keymap.hint("newTab"); shown: mark_.hovered; y: mark_.height + 6 }
+            }
             // said plainly: this window keeps nothing
             Rectangle {
                 visible: bar.privateMode
