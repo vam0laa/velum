@@ -238,9 +238,30 @@ Item {
             Theme.roundness = 0; t.check("corners can be square", Theme.radius === 0 && Theme.round(22) === 0)
             Theme.roundness = 1.6; t.check("or softer", Theme.radius > usualRadius)
             Theme.density = "compact"; t.check("bars can be tighter", Theme.dense(48) < 48)
-            Theme.copyCurrent(); t.check("your theme starts as the one on screen", Theme.shown === "custom" && Theme.custom.length === 15 && Theme.themes[Theme.themes.length - 1].key === "custom")
-            t.check("a colour can be changed", Theme.setColor(2, "#123456") && String(Theme.surface) === "#123456")
-            t.check("a bad colour is refused", !Theme.setColor(2, "url(x)") && String(Theme.surface) === "#123456")
+            const shades = []
+            for (let i = 0; i < 15; i++) shades.push(String(Theme.pick(i)))
+            t.check("your own colours are kept", Theme.keepColors(shades) && Theme.themes[Theme.themes.length - 1].key === "custom")
+            t.check("bad colours are refused", !Theme.keepColors(shades.map(() => "url(x)")) && !Theme.keepColors(["#fff"]))
+            // the studio
+            w.openStudio(); const st = w.studio, math = st.calc
+            t.check("the studio opens on what is on screen", st.opened && st.colors.length === 15 && st.colors[2] === String(Theme.surface) && st.past.length === 0)
+            t.check("contrast is measured", Math.round(math.contrast("#000000", "#ffffff")) === 21 && math.contrast("#777777", "#777777") === 1)
+            t.check("hue and back", math.fromHsl.apply(null, math.toHsl("#3a7bd5")) === "#3a7bd5")
+            const surfaceBefore = String(Theme.surface)
+            st.setColor(2, "#101820"); t.check("a main colour carries the others", st.colors[2] === "#101820" && st.colors[0] !== shades[0])
+            t.check("the browser does not change before applying", String(Theme.surface) === surfaceBefore)
+            st.lastStep = 0; st.setColor(6, "#111111"); t.check("unreadable writing is noticed", st.hard)
+            st.repair(); t.check("and repaired", !st.hard && st.readable >= 4)
+            st.undo(); t.check("undo steps back", st.hard)
+            st.startOver(); t.check("starting over restores the opening look", st.colors[2] === surfaceBefore)
+            st.fine = true; st.setColor(6, "#abcdef"); t.check("fine tuning changes one colour", st.colors[6] === "#abcdef" && st.colors[2] === surfaceBefore)
+            st.fine = false; st.setColor(2, "#123456"); st.setShape("tabShape", "pill")
+            Theme.motion = false; st.apply()
+            t.check("applying makes it the browser's look", Theme.shown === "custom" && String(Theme.surface) === "#123456" && Theme.tabShape === "pill")
+            Theme.goBack(); t.check("and can be undone", String(Theme.surface) === surfaceBefore && Theme.previous === null)
+            Theme.motion = true
+            st.begin(); st.setColor(2, "#123456"); st.close(); t.check("cancelling changes nothing", String(Theme.surface) === surfaceBefore)
+            Theme.keepColors(shades.map((c, i) => i === 2 ? "#123456" : c)); Theme.palette = "custom"
             Theme.keepButtons(["reload", "back", "bogus", "reload"], ["game", "back"])
             t.check("buttons are known and once", Theme.barLeft.join() === "reload,back" && Theme.barRight.join() === "game")
             Theme.moveButton("back", -1); Theme.placeButton("history", "right")

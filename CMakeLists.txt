@@ -91,7 +91,11 @@ qt_add_qml_module(velum
         qml/Lang.qml
         qml/Keymap.qml
         qml/KeyList.qml
-        qml/ColorEditor.qml
+        qml/ColorMath.qml
+        qml/ThemePreview.qml
+        qml/ThemeStudio.qml
+        qml/StudioPicker.qml
+        qml/StudioCard.qml
         qml/ShapeEditor.qml
         qml/CssEditor.qml
         qml/Toggle.qml

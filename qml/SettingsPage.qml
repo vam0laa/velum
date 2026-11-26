@@ -52,6 +52,7 @@ Rectangle {
     signal startChanged(string name, var value)      // a property of the window and its new value
     signal designRequested()
     signal resetLook()
+    signal openStudio()
     signal exportTheme(url file)
     signal importTheme(url file)
 
@@ -392,10 +393,10 @@ Rectangle {
                 }
                 Group {
                     id: look3
-                    wanted: !Theme.web && page.shows("look", "kendi temam renk editör custom theme colours özel")
-                    heading: Lang.t("Kendi teman", "Your own theme")
+                    wanted: !Theme.web && page.shows("look", "kendi temam renk editör stüdyo custom theme studio colours özel")
+                    heading: Lang.t("Tema Stüdyosu", "Theme Studio")
                     symbol: "palette"
-                    ColorEditor { Layout.fillWidth: true }
+                    StudioCard { Layout.fillWidth: true; onOpenStudio: page.openStudio() }
                 }
                 Group {
                     id: look4

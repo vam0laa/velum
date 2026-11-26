@@ -437,7 +437,8 @@ scripts/release.sh    derlemeyi indirir, burada imzalar, yayınlar
 ## Görünümü kişiselleştirme
 
 - `qml/Theme.qml`: kendi renklerin, köşe/yoğunluk/sekme biçimi, araç çubuğu sırası, tarayıcı CSS'i; `bundle`/`applyBundle` tema dosyasını yazar ve yalnızca geçerli alanları geri alır.
-- `qml/ColorEditor.qml`, `ShapeEditor.qml`, `CssEditor.qml`: ayarlardaki düzenleyiciler.
+- `qml/ThemeStudio.qml`: tema stüdyosu (taslak üzerinde çalışır, "Uygula" ile geçer); `ColorMath.qml` dört renkten on beşi türetir ve okunurluğu ölçer; `ThemePreview.qml` canlı önizleme; `StudioPicker.qml` renk seçici.
+- `ShapeEditor.qml`, `CssEditor.qml`: ayarlardaki düzenleyiciler.
 - `src/files.h`: arayüz yalnızca `.velumtheme` dosyalarını okuyup yazabilir.
 
 ## 8. CMakeLists.txt

@@ -66,6 +66,15 @@ ApplicationWindow {
         } catch (e) {
         }
     }
+    // the theme studio, made when first opened
+    property var studio: null
+    Component { id: studioScreen; ThemeStudio {} }
+    function openStudio() {
+        if (!studio)
+            studio = studioScreen.createObject(scene)
+        studio.begin()
+    }
+
     // the way out of a look gone wrong
     function resetLook() {
         Theme.resetAll()
@@ -1333,11 +1342,11 @@ ApplicationWindow {
             themeWash.duration = 12000          // slow enough to be photographed
             Theme.change(() => Theme.palette = action.slice(5))
         }
-        else if (action.startsWith("find:")) {
-            openSettings("look")
-            if (action === "find:renk")
-                Theme.copyCurrent()
-            prefs.query = action.slice(5)
+        else if (action.startsWith("studio")) {
+            openStudio()
+            studio.tab = Number(action.split(":")[1] ?? 0)
+            if (action.endsWith(":pick"))
+                studio.picking = 8
         }
         else if (action.startsWith("design"))
             start.editor?.open(Number(action.split(":")[1] ?? 0))
@@ -1920,6 +1929,7 @@ ApplicationWindow {
                             showBookmarkBar: window.showBookmarkBar
                             onStartChanged: (name, value) => window.setStart(name, value)
                             onResetLook: window.resetLook()
+                    onOpenStudio: window.openStudio()
                     onExportTheme: file => window.exportTheme(file)
                     onImportTheme: file => window.importTheme(file)
                     onDesignRequested: { window.openTab(""); Qt.callLater(() => start.editor?.open(0)) }

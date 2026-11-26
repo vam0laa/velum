@@ -108,23 +108,15 @@ QtObject {
         }
         return false
     }
-    // starts your theme from what is on screen now
-    function copyCurrent() {
-        const list = []
-        for (let i = 0; i < 15; i++)
-            list.push(i === 8 ? String(accent) : String(pick(i)))
-        if (keepColors(list)) {
-            accentChoice = ""
-            palette = "custom"
-        }
-    }
-    function setColor(i, value) {
-        const c = sheet.color(value)
-        if (c === "" || custom.length !== 15)
-            return false
-        const list = custom.slice()
-        list[i] = c
-        return keepColors(list)
+    // the look as it was before the studio last applied one
+    property var previous: null
+    function keepPrevious() { previous = bundle() }
+    function goBack() {
+        if (!previous)
+            return
+        const was = previous
+        previous = null
+        applyBundle(was)
     }
     function keepButtons(left, right) {
         const seen = []
