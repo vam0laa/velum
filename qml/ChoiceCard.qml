@@ -20,7 +20,7 @@ AbstractButton {
     Behavior on scale { NumberAnimation { duration: Theme.quick } }
     Accessible.name: label
     background: Rectangle {
-        radius: Theme.web ? 0 : 22
+        radius: Theme.round(22)
         color: card.chosen ? Qt.tint(Theme.surface, Qt.alpha(card.tone, 0.22)) : card.hovered ? Theme.title : Theme.surface
         border.width: card.chosen ? 2 : 0
         border.color: card.tone
@@ -54,7 +54,7 @@ AbstractButton {
         Rectangle {
             Layout.rightMargin: 18
             implicitWidth: 26; implicitHeight: 26
-            radius: Theme.web ? 0 : 13
+            radius: Theme.round(13)
             color: card.chosen ? card.tone : "transparent"
             border.width: card.chosen ? 0 : 2
             border.color: Theme.line

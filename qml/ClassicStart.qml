@@ -29,7 +29,7 @@ Item {
     Flickable {
         anchors.fill: parent
         anchors.rightMargin: panel.visible && root.width > 900 ? panel.width + 24 : 0
-        contentHeight: Math.max(height, grid.implicitHeight + 96)
+        contentHeight: Math.max(height, grid.implicitHeight + 124)
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
@@ -38,7 +38,7 @@ Item {
             readonly property bool two: root.wide && !(panel.visible && root.width < 1500)
             width: Math.min(parent.width - 48, two ? 1180 : 680)
             x: (parent.width - width) / 2
-            y: Math.max(36, (parent.height - implicitHeight) * 0.42)
+            y: Math.max(62, (parent.height - implicitHeight) * 0.42)
             columns: two ? 2 : 1
             columnSpacing: 56
             rowSpacing: 28
@@ -197,7 +197,7 @@ Item {
                         visible: root.page.shortcuts.length < 10
                         onClicked: { adding.visible = true; adding.forceActiveFocus() }
                         Accessible.name: Lang.t("Yer imi ekle", "Add a bookmark")
-                        background: Rectangle { radius: root.page.css(["tile"], "border-radius", Theme.web ? 0 : 22); color: plus.hovered ? Theme.raised : "transparent"; border.color: Theme.line; border.width: 1.5 }
+                        background: Rectangle { radius: root.page.css(["tile"], "border-radius", Theme.round(22)); color: plus.hovered ? Theme.raised : "transparent"; border.color: Theme.line; border.width: 1.5 }
                         contentItem: Item {
                             Icon { anchors { top: parent.top; topMargin: 24; horizontalCenter: parent.horizontalCenter } name: "plus"; size: 24; color: Theme.accent }
                             Words { anchors { bottom: parent.bottom; bottomMargin: 12; horizontalCenter: parent.horizontalCenter } text: Lang.t("Ekle", "Add"); base: Theme.dim; size: 12 }

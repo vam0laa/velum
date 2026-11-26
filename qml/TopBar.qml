@@ -46,16 +46,50 @@ Item {
     readonly property bool bookmarkRow: showBookmarks && !Theme.web
     function openDownloads() { downloadButton.show() }
 
-    implicitHeight: Theme.web ? 90 : bookmarkRow ? 122 : 90
+    implicitHeight: strip.height + tools.height + (bookmarkRow ? Theme.dense(32) : 0)
+
+    // the toolbar in your order: buttons left of the address, buttons right of it, the menu
+    function arrange() {
+        const buttons = { back: backButton, forward: forwardButton, reload: reloadButton, home: homeButton, downloads: downloadButton,
+                          extensions: extensionsButton, bookmarks: bookmarksButton, history: historyButton, game: gameButton, settings: settingsButton }
+        const left = Theme.web ? ["back", "forward", "reload", "home"] : Theme.barLeft
+        const right = Theme.web ? ["downloads", "extensions"] : Theme.barRight
+        for (const id in buttons)
+            buttons[id].visible = left.includes(id) || right.includes(id)
+        const order = left.map(id => buttons[id]).concat([field], right.map(id => buttons[id]), [menuButton])
+        // a layout shows its items in the order they joined it
+        for (const item of order) {
+            item.parent = null
+            item.parent = toolRow
+        }
+    }
+    Component.onCompleted: arrange()
+    Connections {
+        target: Theme
+        function onBarLeftChanged() { bar.arrange() }
+        function onBarRightChanged() { bar.arrange() }
+        function onStyleChanged() { bar.arrange() }
+    }
+    signal openBookmarksRequested()
+    signal historyRequested()
+    signal gameRequested()
+    property bool gaming: false
+    // the names of what the toolbar shows, from left to right (for the tests)
+    function shownOrder() {
+        const names = new Map([[backButton, "back"], [forwardButton, "forward"], [reloadButton, "reload"], [homeButton, "home"], [field, "address"], [downloadButton, "downloads"],
+                               [extensionsButton, "extensions"], [bookmarksButton, "bookmarks"], [historyButton, "history"], [gameButton, "game"], [settingsButton, "settings"], [menuButton, "menu"]])
+        toolRow.ensurePolished()
+        return Array.from(toolRow.children).filter(i => i.visible).sort((a, b) => a.x - b.x).map(i => names.get(i))
+    }
 
     // the strip with the tabs
     Rectangle {
         id: strip
         width: parent.width
-        height: 42
+        height: Theme.dense(42)
         gradient: Gradient {
-            GradientStop { position: 0; color: Theme.web ? Theme.stripTop : Theme.frameBack }
-            GradientStop { position: 1; color: Theme.web ? Theme.stripBottom : Theme.frameBack }
+            GradientStop { position: 0; color: Theme.web ? Theme.stripTop : Theme.styled("tabbar", "background", Theme.frameBack) }
+            GradientStop { position: 1; color: Theme.web ? Theme.stripBottom : Theme.styled("tabbar", "background", Theme.frameBack) }
         }
         RowLayout {
             anchors { fill: parent; leftMargin: 10; rightMargin: 8; topMargin: 6 }
@@ -150,28 +184,30 @@ Item {
     Rectangle {
         id: tools
         anchors { top: strip.bottom; left: parent.left; right: parent.right }
-        height: 48
-        color: Theme.paneBack
+        height: Theme.dense(48)
+        color: Theme.styled("toolbar", "background", Theme.paneBack)
         Rectangle { visible: Theme.web; width: parent.width; height: 2; color: Theme.edge }
         Rectangle { visible: Theme.web || !bar.bookmarkRow; anchors.bottom: parent.bottom; width: parent.width; height: Theme.web ? 2 : 1; color: Theme.line }
 
         RowLayout {
+            id: toolRow
             anchors { fill: parent; leftMargin: 10; rightMargin: 12; topMargin: 2; bottomMargin: 2 }
             spacing: Theme.web ? 9 : 4
-            IconButton { symbol: "back"; hint: Lang.t("Geri (Alt+Sol)", "Back (Alt+Left)"); enabled: bar.view?.canGoBack ?? false; onClicked: bar.view.goBack() }
-            IconButton { symbol: "forward"; hint: Lang.t("İleri (Alt+Sağ)", "Forward (Alt+Right)"); enabled: bar.view?.canGoForward ?? false; onClicked: bar.view.goForward() }
+            IconButton { id: backButton; symbol: "back"; hint: Lang.t("Geri", "Back") + Keymap.hint("back"); enabled: bar.view?.canGoBack ?? false; onClicked: bar.view.goBack() }
+            IconButton { id: forwardButton; symbol: "forward"; hint: Lang.t("İleri", "Forward") + Keymap.hint("forward"); enabled: bar.view?.canGoForward ?? false; onClicked: bar.view.goForward() }
             IconButton {
+                id: reloadButton
                 symbol: bar.view?.loading ? "stop" : "reload"
                 hint: bar.view?.loading ? Lang.t("Durdur", "Stop") : Lang.t("Yenile", "Reload") + Keymap.hint("reload")
                 onClicked: bar.view.loading ? bar.view.stop() : bar.view.reload()
             }
-            IconButton { symbol: "home"; hint: Lang.t("Ana sayfa", "Home page"); onClicked: bar.home() }
+            IconButton { id: homeButton; symbol: "home"; hint: Lang.t("Ana sayfa", "Home page"); onClicked: bar.home() }
             AddressField {
                 id: field
                 Layout.fillWidth: true
                 Layout.leftMargin: 4
                 Layout.rightMargin: 4
-                implicitHeight: 34
+                implicitHeight: Theme.dense(34)
                 bare: bar.onWeb
                 leftPadding: bar.onWeb ? 42 : Theme.web ? 28 : 34
                 rightPadding: buttons.width + (bar.onWeb ? 40 : 10)
@@ -203,7 +239,11 @@ Item {
                 }
             }
             DownloadButton { id: downloadButton; downloads: bar.downloads; onShowFolder: folder => bar.showFolder(folder); onClearFinished: bar.clearDownloads() }
-            IconButton { symbol: "puzzle"; hint: Lang.t("Eklentiler", "Extensions"); onClicked: bar.extensions() }
+            IconButton { id: extensionsButton; symbol: "puzzle"; hint: Lang.t("Eklentiler", "Extensions"); onClicked: bar.extensions() }
+            IconButton { id: bookmarksButton; visible: false; symbol: "star"; hint: Lang.t("Yer imleri", "Bookmarks") + Keymap.hint("bookmarks"); onClicked: bar.openBookmarksRequested() }
+            IconButton { id: historyButton; visible: false; symbol: "history"; hint: Lang.t("Geçmiş", "History") + Keymap.hint("history"); onClicked: bar.historyRequested() }
+            IconButton { id: gameButton; visible: false; symbol: "gauge"; tone: bar.gaming ? Theme.accent : Theme.text; hint: Lang.t("Oyun modu", "Game mode") + Keymap.hint("gameMode"); onClicked: bar.gameRequested() }
+            IconButton { id: settingsButton; visible: false; symbol: "settings"; hint: Lang.t("Ayarlar", "Settings") + Keymap.hint("settings"); onClicked: bar.settings() }
             IconButton { id: menuButton; symbol: "menu"; hint: Lang.t("Menü", "Menu"); onClicked: bar.menu(menuButton) }
         }
     }
@@ -212,7 +252,7 @@ Item {
     Rectangle {
         visible: bar.bookmarkRow
         anchors { top: tools.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
-        color: Theme.paneBack
+        color: Theme.styled("bookmarks", "background", Theme.paneBack)
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
         ListView {
             id: marks
@@ -231,12 +271,12 @@ Item {
                 hoverEnabled: true
                 focusPolicy: Qt.NoFocus
                 onClicked: bar.openBookmark(modelData.url)
-                background: Rectangle { radius: 7; color: mark.hovered ? Theme.raised : "transparent" }
+                background: Rectangle { radius: Theme.round(7); color: mark.hovered ? Theme.raised : "transparent" }
                 contentItem: Item {
                     Image { id: icon; x: 8; anchors.verticalCenter: parent.verticalCenter; width: 15; height: 15; source: bar.iconFor(mark.modelData.url); cache: false; sourceSize: Qt.size(32, 32) }
                     Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; visible: icon.status !== Image.Ready; width: 15; height: 15; radius: 4; color: Theme.rainbow[mark.index % Theme.rainbow.length]
                         Text { anchors.centerIn: parent; text: String(mark.modelData.title).charAt(0).toLocaleUpperCase(); textFormat: Text.PlainText; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: 10 } }
-                    Text { id: caption; x: 29; width: Math.min(implicitWidth, 144); anchors.verticalCenter: parent.verticalCenter; text: mark.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.family: Theme.ui; font.pixelSize: 12 }
+                    Text { id: caption; x: 29; width: Math.min(implicitWidth, 144); anchors.verticalCenter: parent.verticalCenter; text: mark.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.styled("bookmarks", "color", Theme.text); font.family: Theme.ui; font.pixelSize: 12 }
                 }
             }
         }

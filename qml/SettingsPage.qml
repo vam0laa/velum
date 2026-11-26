@@ -51,6 +51,8 @@ Rectangle {
     property bool showBookmarkBar
     signal startChanged(string name, var value)      // a property of the window and its new value
     signal designRequested()
+    signal exportTheme(url file)
+    signal importTheme(url file)
 
     readonly property string folderShown: downloadFolder !== "" ? downloadFolder
         : Files.toPath(StandardPaths.writableLocation(StandardPaths.DownloadLocation))
@@ -78,7 +80,7 @@ Rectangle {
         const q = query.trim().toLocaleLowerCase()
         return q === "" ? section === key : String(words).toLocaleLowerCase().indexOf(q) >= 0
     }
-    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
+    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, look3, look4, look5, look6, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
 
     color: Theme.sheetBack
 
@@ -104,6 +106,21 @@ Rectangle {
             page.startChanged("startPicture", Files.toPath(selectedFile))
             page.startChanged("startBackground", "image")
         }
+    }
+
+    FileDialog {
+        id: themeOut
+        title: Lang.t("Temayı kaydet", "Save the theme")
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "velumtheme"
+        nameFilters: [Lang.t("Velum teması", "Velum theme") + " (*.velumtheme)"]
+        onAccepted: page.exportTheme(selectedFile)
+    }
+    FileDialog {
+        id: themeIn
+        title: Lang.t("Tema yükle", "Load a theme")
+        nameFilters: [Lang.t("Velum teması", "Velum theme") + " (*.velumtheme)"]
+        onAccepted: page.importTheme(selectedFile)
     }
 
     // a setting: its name on the left, what changes it on the right
@@ -161,7 +178,7 @@ Rectangle {
                             hoverEnabled: true
                             onClicked: { search.text = ""; page.query = ""; page.section = item.modelData.key }
                             Accessible.name: item.modelData.label
-                            background: Rectangle { radius: Theme.web ? 0 : height / 2; color: entry.chosen ? Theme.accent : entry.hovered ? (Theme.web ? Theme.title : Theme.raised) : "transparent"; Behavior on color { ColorAnimation { duration: Theme.quick } } }
+                            background: Rectangle { radius: Theme.round(height / 2); color: entry.chosen ? Theme.accent : entry.hovered ? (Theme.web ? Theme.title : Theme.raised) : "transparent"; Behavior on color { ColorAnimation { duration: Theme.quick } } }
                             contentItem: Item {
                                 Icon { x: 14; anchors.verticalCenter: parent.verticalCenter; name: item.modelData.icon; size: 17; color: entry.ink }
                                 Text { anchors { left: parent.left; leftMargin: 44; right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter } text: item.modelData.label; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; color: entry.ink; font.family: Theme.ui; font.pixelSize: Theme.web ? 17 : 14; font.variableAxes: Theme.axes(entry.chosen ? 700 : 450) }
@@ -210,7 +227,7 @@ Rectangle {
                     onTextEdited: page.query = text
                     Keys.onEscapePressed: { text = ""; page.query = "" }
                     background: Rectangle {
-                        radius: Theme.web ? 0 : height / 2
+                        radius: Theme.round(height / 2)
                         color: "transparent"
                         border.width: search.activeFocus ? 2 : 1
                         border.color: search.activeFocus ? Theme.accent : Theme.line
@@ -233,7 +250,7 @@ Rectangle {
                     Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: 84
-                        radius: Theme.web ? 0 : 12
+                        radius: Theme.round(12)
                         color: Theme.raised
                         RowLayout {
                             anchors { fill: parent; leftMargin: 18; rightMargin: 18 }
@@ -362,6 +379,40 @@ Rectangle {
                         }
                     }
                     Toggle { label: Lang.t("Animasyonlar", "Animations"); on: Theme.motion; onClicked: Theme.motion = !Theme.motion }
+                }
+
+                Group {
+                    id: look3
+                    wanted: !Theme.web && page.shows("look", "kendi temam renk editör custom theme colours özel")
+                    heading: Lang.t("Kendi teman", "Your own theme")
+                    symbol: "palette"
+                    ColorEditor { Layout.fillWidth: true }
+                }
+                Group {
+                    id: look4
+                    wanted: !Theme.web && page.shows("look", "şekil köşe yoğunluk sekme biçimi yazı tipi font araç çubuğu düğme toolbar corners density")
+                    heading: Lang.t("Şekil ve yerleşim", "Shape and layout")
+                    symbol: "panel"
+                    ShapeEditor { Layout.fillWidth: true; horizontalTabs: page.horizontalTabs }
+                }
+                Group {
+                    id: look5
+                    wanted: !Theme.web && page.shows("look", "css stil style sheet özelleştir")
+                    heading: Lang.t("Tarayıcı CSS'i", "Browser style sheet")
+                    symbol: "command"
+                    CssEditor { Layout.fillWidth: true }
+                }
+                Group {
+                    id: look6
+                    wanted: !Theme.web && page.shows("look", "paylaş kaydet yükle dosya share export import tema")
+                    heading: Lang.t("Görünümünü paylaş", "Share your look")
+                    symbol: "download"
+                    Note { text: Lang.t("Renkler, şekil, CSS ve ana sayfa tasarımın tek dosyada. Yer imlerin, görevlerin, notun ve geçmişin dosyaya girmez.", "Colours, shape, style sheets and the home page design in one file. Bookmarks, tasks, your note and history stay out of it.") }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        TextButton { Layout.fillWidth: true; implicitHeight: 40; strong: true; text: Lang.t("Dosyaya kaydet…", "Save to a file…"); onClicked: themeOut.open() }
+                        TextButton { Layout.fillWidth: true; implicitHeight: 40; text: Lang.t("Dosyadan yükle…", "Load from a file…"); onClicked: themeIn.open() }
+                    }
                 }
 
                 // ---- privacy ----

@@ -115,7 +115,7 @@ HomeBox {
                             implicitWidth: 20; implicitHeight: 20
                             onClicked: widget.page.tasksEdited(widget.page.tasks.map((t, i) => i === task.index ? { text: t.text, done: !t.done } : t))
                             Accessible.name: task.modelData.text
-                            background: Rectangle { radius: Theme.web ? 0 : 10; color: task.modelData.done ? Theme.accent : "transparent"; border.width: task.modelData.done ? 0 : 2; border.color: Theme.dim }
+                            background: Rectangle { radius: Theme.round(10); color: task.modelData.done ? Theme.accent : "transparent"; border.width: task.modelData.done ? 0 : 2; border.color: Theme.dim }
                             contentItem: Text { visible: task.modelData.done; text: "✓"; color: Theme.accentInk; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 13; font.family: Theme.ui }
                         }
                         Words { Layout.fillWidth: true; text: task.modelData.text; wrapMode: Text.WordWrap; size: 13; opacity: task.modelData.done ? 0.5 : 1; font.strikeout: task.modelData.done }
@@ -133,7 +133,7 @@ HomeBox {
                     maximumLength: 120
                     font.family: Theme.ui
                     font.pixelSize: 13
-                    background: Rectangle { radius: Theme.web ? 0 : 16; color: Qt.alpha(widget.ink, 0.08); border.color: parent.activeFocus ? Theme.accent : "transparent" }
+                    background: Rectangle { radius: Theme.round(16); color: Qt.alpha(widget.ink, 0.08); border.color: parent.activeFocus ? Theme.accent : "transparent" }
                     onAccepted: {
                         if (text.trim() !== "")
                             widget.page.tasksEdited(widget.page.tasks.concat([{ text: text.trim(), done: false }]))

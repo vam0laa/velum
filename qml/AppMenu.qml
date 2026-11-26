@@ -7,5 +7,11 @@ Menu {
     padding: 6
     enter: PopIn {}
     exit: PopOut {}
-    background: Rectangle { implicitWidth: 260; radius: Theme.radius; color: Theme.window; border.color: Theme.line }
+    background: Rectangle {
+        implicitWidth: 260
+        radius: Theme.styled("menu", "border-radius", Theme.radius)
+        color: Theme.styled("menu", "background", Theme.window)
+        border.width: Theme.styled("menu", "border-width", 1)
+        border.color: Theme.styled("menu", "border-color", Theme.line)
+    }
 }

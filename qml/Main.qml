@@ -66,6 +66,39 @@ ApplicationWindow {
         } catch (e) {
         }
     }
+    // ---- sharing your look ----
+    function themeText() {
+        return JSON.stringify({ velumTheme: 1, look: Theme.bundle(),
+                                home: { widgets: homeWidgets, headline: homeHeadline, words: homeWords, css: homeCss, background: startBackground === "image" ? "" : startBackground } }, null, 1)
+    }
+    // true when `text` was a theme; only what is valid in it is taken over
+    function applyThemeText(text) {
+        let d = null
+        try {
+            d = JSON.parse(text)
+        } catch (e) {
+        }
+        if (!d || d.velumTheme !== 1)
+            return false
+        Theme.change(() => Theme.applyBundle(d.look))
+        const home = d.home ?? {}
+        if (Array.isArray(home.widgets))
+            keepWidgets(home.widgets)
+        if (typeof home.headline === "string" && Array.isArray(home.words))
+            keepWords(home.headline, home.words.map(String).join("\n"))
+        if (typeof home.css === "string")
+            homeCss = home.css.slice(0, 20000)
+        if (["dots", "glow", "plain"].includes(home.background))
+            startBackground = home.background
+        return true
+    }
+    function exportTheme(file) {
+        say(Files.write(file, themeText()) ? Lang.t("Tema kaydedildi.", "The theme was saved.") : Lang.t("Tema kaydedilemedi.", "The theme could not be saved."))
+    }
+    function importTheme(file) {
+        say(applyThemeText(Files.read(file)) ? Lang.t("Tema yüklendi.", "The theme was loaded.") : Lang.t("Bu dosya bir Velum teması değil.", "This file is not a Velum theme."))
+    }
+
     // a switch in the settings
     function setStart(name, value) {
         const widget = { showClock: "clock", showShield: "shield", showNote: "note" }[name]
@@ -86,6 +119,7 @@ ApplicationWindow {
     property bool showBookmarkBar: true
     property alias mainMenu: mainMenu
     property alias startPage: start
+    property alias topToolbar: topBar
     // tiling desktops draw no title bar; Windows does, with its own buttons
     readonly property bool ownButtons: Qt.platform.os !== "windows"
     readonly property bool bookmarked: view !== null && shortcuts.some(s => s.url === String(view.url))
@@ -1292,6 +1326,12 @@ ApplicationWindow {
             themeWash.duration = 12000          // slow enough to be photographed
             Theme.change(() => Theme.palette = action.slice(5))
         }
+        else if (action.startsWith("find:")) {
+            openSettings("look")
+            if (action === "find:renk")
+                Theme.copyCurrent()
+            prefs.query = action.slice(5)
+        }
         else if (action.startsWith("design"))
             start.editor?.open(Number(action.split(":")[1] ?? 0))
         else if (action === "menu")
@@ -1418,6 +1458,10 @@ ApplicationWindow {
                 onMenu: at => window.showMenu(at)
                 onMaximize: window.toggleWindowFullScreen()
                 onQuitRequested: window.close()
+            gaming: window.powerMode === "game"
+            onGameRequested: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game")
+            onOpenBookmarksRequested: window.openBookmarks()
+            onHistoryRequested: window.showCommandHistory()
                 pageButtons.storeButton: card.storeButton
                 pageButtons.keyButton: card.keyButton
                 pageButtons.readerButton: card.readerButton
@@ -1868,7 +1912,9 @@ ApplicationWindow {
                             showFrequent: window.showFrequent
                             showBookmarkBar: window.showBookmarkBar
                             onStartChanged: (name, value) => window.setStart(name, value)
-                            onDesignRequested: { window.openTab(""); Qt.callLater(() => start.editor?.open(0)) }
+                            onExportTheme: file => window.exportTheme(file)
+                    onImportTheme: file => window.importTheme(file)
+                    onDesignRequested: { window.openTab(""); Qt.callLater(() => start.editor?.open(0)) }
                             extensions: window.extensions
                             fetchingExtension: window.fetchingExtension
                             onAddFromStore: typed => window.askExtension(typed, false)

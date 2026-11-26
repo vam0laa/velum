@@ -8,7 +8,7 @@ Item {
     property alias minimizable: bar.minimizable
     property alias maximizable: bar.maximizable
     property alias closable: bar.closable
-    property color fill: Theme.paneBack
+    property color fill: Theme.styled("sidebar", "background", Theme.paneBack)
     property bool chrome: true            // false hides the frame (page full screen, top tabs)
     property bool shadow: true
     default property alias content: body.data
@@ -27,7 +27,7 @@ Item {
     signal video()
 
     Shadow { visible: panel.chrome && panel.shadow && !Theme.seeThrough }
-    Rectangle { anchors.fill: parent; visible: panel.chrome; color: panel.fill; radius: Theme.corner; border.width: Theme.web ? 2 : 1; border.color: Theme.web ? Theme.edge : Theme.line }
+    Rectangle { anchors.fill: parent; visible: panel.chrome; color: panel.fill; radius: Theme.styled("sidebar", "border-radius", Theme.corner); border.width: Theme.web ? 2 : Theme.styled("sidebar", "border-width", 1); border.color: Theme.web ? Theme.edge : Theme.styled("sidebar", "border-color", Theme.line) }
     Rectangle { anchors { fill: parent; margins: -2 } visible: panel.chrome && Theme.web; color: "transparent"; border.width: 2; border.color: Theme.line }
     TitleBar {
         id: bar

@@ -27,6 +27,10 @@ Logos of search engines, extensions and flags in `data/logos` belong to their ow
 
 "Design" on the home page (or in Settings) adds, removes and orders widgets (big clock, date, calendar, shield counter, task list, focus timer, note), changes the headline and its changing words, and takes a style sheet. It is a small part of CSS made for this page: the selectors `.page .headline .pill .chip .search .tile .clock .widget .date .calendar .shield .note .tasks .timer` and the properties `background color border-color border-width border-radius opacity font-size font-weight font-family display`. It cannot load anything or run anything.
 
+## Your own look
+
+Settings → Appearance: pick a theme or make your own from fifteen colours, set corners, density, tab shape and lettering, choose and order the toolbar buttons, add a style sheet for the browser (`.tabbar .toolbar .tab .tab-active .address .sidebar .bookmarks .button .menu`), and save it all, with the home page design, to a `.velumtheme` file to share.
+
 ## Speed
 
 Three modes in the menu and in Settings → Performance: balanced, game (background tabs freeze within seconds, no animations) and saver. A memory limit puts the longest unseen tabs to sleep. Graphics acceleration can be forced or switched off. Shortcuts can be changed in Settings → Shortcuts.

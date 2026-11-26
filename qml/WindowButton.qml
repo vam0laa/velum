@@ -12,7 +12,7 @@ AbstractButton {
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
     Accessible.name: hint
-    background: Rectangle { radius: Theme.web ? 0 : height / 2; color: button.hovered ? (button.kind === "close" ? Theme.danger : Qt.alpha(button.ink, 0.18)) : "transparent"; border.color: button.ink; border.width: Theme.web ? 1 : 0 }
+    background: Rectangle { radius: Theme.round(height / 2); color: button.hovered ? (button.kind === "close" ? Theme.danger : Qt.alpha(button.ink, 0.18)) : "transparent"; border.color: button.ink; border.width: Theme.web ? 1 : 0 }
     contentItem: Item {
         Rectangle { visible: button.kind === "min"; width: 10; height: 2; x: (parent.width - width) / 2; y: parent.height - 6; color: button.ink }
         Rectangle { visible: button.kind === "max"; anchors.centerIn: parent; width: 10; height: 9; color: "transparent"; border.color: button.ink; Rectangle { width: parent.width; height: 3; color: button.ink } }

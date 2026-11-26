@@ -11,7 +11,7 @@ Rectangle {
     visible: page.css(names, "display", "block") !== "none"
     opacity: page.css(names, "opacity", 1)
     color: page.css(names, "background", base)
-    radius: page.css(names, "border-radius", Theme.web ? 0 : corner)
+    radius: page.css(names, "border-radius", Theme.round(corner))
     border.width: page.css(names, "border-width", page.css(names, "border-color", "") !== "" ? 2 : 0)
     border.color: page.css(names, "border-color", Theme.line)
 }

@@ -64,7 +64,7 @@ ColumnLayout {
                     Layout.rightMargin: 14
                     visible: list.pick && !row.there
                     implicitWidth: 24; implicitHeight: 24
-                    radius: Theme.web ? 0 : 12
+                    radius: Theme.round(12)
                     color: row.ticked ? Theme.accent : "transparent"
                     border.width: row.ticked ? 0 : 2
                     border.color: Theme.line

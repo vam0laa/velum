@@ -6,12 +6,12 @@ Rectangle {
     property bool horizontal: true
     implicitWidth: 420
     implicitHeight: 250
-    radius: Theme.web ? 0 : 18
+    radius: Theme.round(18)
     color: Theme.frame
     border.color: Theme.line
     clip: true
 
-    component Bar: Rectangle { height: 7; radius: Theme.web ? 0 : 3.5; color: Theme.dim; opacity: 0.55 }
+    component Bar: Rectangle { height: 7; radius: Theme.round(3.5); color: Theme.dim; opacity: 0.55 }
     Behavior on color { ColorAnimation { duration: Theme.smooth } }
 
     // the tabs: along the top, or down the side
@@ -30,16 +30,16 @@ Rectangle {
                 y: preview.horizontal ? 0 : 34 + index * 28
                 width: preview.horizontal ? 88 : tabs.width
                 height: 22
-                radius: Theme.web ? 0 : 8
+                radius: Theme.round(8)
                 color: index === 0 ? Theme.raised : "transparent"
                 Behavior on x { NumberAnimation { duration: Theme.smooth * 1.6; easing.type: Easing.OutBack } }
                 Behavior on y { NumberAnimation { duration: Theme.smooth * 1.6; easing.type: Easing.OutBack } }
-                Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; width: 9; height: 9; radius: Theme.web ? 0 : 3; color: Theme.rainbow[parent.index] }
+                Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; width: 9; height: 9; radius: Theme.round(3); color: Theme.rainbow[parent.index] }
                 Bar { x: 23; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 36 }
             }
         }
         // the address field sits with the tabs when they are on the side
-        Rectangle { visible: !preview.horizontal; width: tabs.width; height: 24; radius: Theme.web ? 0 : 12; color: Theme.window; Bar { x: 10; anchors.verticalCenter: parent.verticalCenter; width: parent.width * 0.5 } }
+        Rectangle { visible: !preview.horizontal; width: tabs.width; height: 24; radius: Theme.round(12); color: Theme.window; Bar { x: 10; anchors.verticalCenter: parent.verticalCenter; width: parent.width * 0.5 } }
     }
 
     Rectangle {
@@ -48,7 +48,7 @@ Rectangle {
         y: preview.horizontal ? 40 : 10
         width: preview.width - x - 10
         height: preview.height - y - 10
-        radius: Theme.web ? 0 : 12
+        radius: Theme.round(12)
         color: Theme.surface
         clip: true
         Behavior on x { NumberAnimation { duration: Theme.smooth * 1.6; easing.type: Easing.OutCubic } }
@@ -59,7 +59,7 @@ Rectangle {
             width: parent.width
             height: 28
             color: Theme.window
-            Rectangle { anchors.centerIn: parent; width: parent.width * 0.62; height: 16; radius: Theme.web ? 0 : 8; color: Theme.raised }
+            Rectangle { anchors.centerIn: parent; width: parent.width * 0.62; height: 16; radius: Theme.round(8); color: Theme.raised }
         }
         // a miniature of the home page
         Column {
@@ -67,16 +67,16 @@ Rectangle {
             y: preview.horizontal ? 46 : 28
             spacing: 8
             Text { text: "Velum"; color: Theme.text; font.family: Theme.ui; font.pixelSize: 20; font.variableAxes: Theme.axes(850) }
-            Rectangle { width: sheet.width * 0.42; height: 22; radius: Theme.web ? 0 : 11; color: Theme.accent }
-            Rectangle { width: sheet.width * 0.5; height: 18; radius: Theme.web ? 0 : 9; color: Theme.raised }
+            Rectangle { width: sheet.width * 0.42; height: 22; radius: Theme.round(11); color: Theme.accent }
+            Rectangle { width: sheet.width * 0.5; height: 18; radius: Theme.round(9); color: Theme.raised }
             Row {
                 spacing: 6
                 Repeater {
                     model: 4
                     Rectangle {
                         required property int index
-                        width: 30; height: 30; radius: Theme.web ? 0 : 9; color: Theme.raised
-                        Rectangle { anchors.centerIn: parent; width: 14; height: 14; radius: Theme.web ? 0 : 4; color: Theme.rainbow[parent.index] }
+                        width: 30; height: 30; radius: Theme.round(9); color: Theme.raised
+                        Rectangle { anchors.centerIn: parent; width: 14; height: 14; radius: Theme.round(4); color: Theme.rainbow[parent.index] }
                     }
                 }
             }

@@ -1,10 +1,11 @@
 import QtQuick
 
-// The style sheet you can write for the home page: a small part of CSS, read here.
+// The style sheets you can write, for the home page and for the browser around it: a
+// small part of CSS, read here.
 // Only the names below exist; nothing in it can reach the network or run.
 QtObject {
-    readonly property var selectors: ["page", "headline", "pill", "chip", "search", "tile", "clock", "widget", "date", "calendar", "shield", "note", "tasks", "timer"]
-    readonly property var properties: ["background", "background-color", "color", "border-color", "border-width", "border-radius", "opacity", "font-size", "font-weight", "font-family", "display"]
+    property var selectors: ["page", "headline", "pill", "chip", "search", "tile", "clock", "widget", "date", "calendar", "shield", "note", "tasks", "timer"]
+    property var properties: ["background", "background-color", "color", "border-color", "border-width", "border-radius", "opacity", "font-size", "font-weight", "font-family", "display"]
     readonly property var names: ["transparent", "black", "white", "red", "green", "blue", "yellow", "orange", "purple", "pink", "gray", "grey", "teal", "cyan", "magenta", "navy", "olive", "maroon", "lime", "silver", "gold", "crimson", "coral", "salmon", "violet", "indigo", "turquoise", "tomato", "orchid", "plum", "khaki", "beige", "ivory", "lavender", "skyblue", "steelblue", "hotpink", "darkblue", "darkred", "darkgreen", "lightgray", "lightblue", "lightgreen"]
 
     // "#rgb", "#rrggbb", "#rrggbbaa", "rgb(...)", "rgba(...)" or a known name, as Qt writes it; "" if not

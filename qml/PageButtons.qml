@@ -25,7 +25,7 @@ Row {
         hoverEnabled: true
         focusPolicy: Qt.NoFocus
         Accessible.name: text
-        background: Rectangle { radius: Theme.web ? 0 : 10; color: pill.hovered ? Theme.title : Theme.web ? Theme.raised : Qt.alpha(Theme.accent, 0.16); border.width: Theme.web ? 1 : 0; border.color: Theme.line }
+        background: Rectangle { radius: Theme.round(10); color: pill.hovered ? Theme.title : Theme.web ? Theme.raised : Qt.alpha(Theme.accent, 0.16); border.width: Theme.web ? 1 : 0; border.color: Theme.line }
         contentItem: Item {
             Icon { x: 6; anchors.verticalCenter: parent.verticalCenter; name: pill.symbol; size: 13; color: Theme.text }
             Text { id: label; x: 25; anchors.verticalCenter: parent.verticalCenter; text: pill.text; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(16) }

@@ -27,7 +27,7 @@ Rectangle {
 
     visible: false
     width: Math.min(400, parent.width - 24)
-    radius: Theme.web ? 0 : 24
+    radius: Theme.round(24)
     color: Theme.window
     border.color: Theme.line
 
@@ -49,7 +49,7 @@ Rectangle {
             font.family: area.code ? "monospace" : Theme.ui
             font.pixelSize: 13
             leftPadding: 12; rightPadding: 12; topPadding: 10; bottomPadding: 10
-            background: Rectangle { radius: Theme.web ? 0 : 12; color: Theme.surface; border.color: input.activeFocus ? Theme.accent : Theme.line }
+            background: Rectangle { radius: Theme.round(12); color: Theme.surface; border.color: input.activeFocus ? Theme.accent : Theme.line }
         }
     }
 
@@ -87,7 +87,7 @@ Rectangle {
                 readonly property int at: editor.page.widgets.indexOf(modelData.id)
                 width: ListView.view.width
                 height: 50
-                radius: Theme.web ? 0 : 14
+                radius: Theme.round(14)
                 color: Theme.surface
                 RowLayout {
                     anchors { fill: parent; leftMargin: 14; rightMargin: 8 }
@@ -116,7 +116,7 @@ Rectangle {
                 color: Theme.text
                 font.family: Theme.ui
                 font.pixelSize: 13
-                background: Rectangle { radius: Theme.web ? 0 : 12; color: Theme.surface; border.color: head.activeFocus ? Theme.accent : Theme.line }
+                background: Rectangle { radius: Theme.round(12); color: Theme.surface; border.color: head.activeFocus ? Theme.accent : Theme.line }
             }
             Label { text: Lang.t("Dönen kelimeler, her satıra bir tane", "Changing words, one per line"); color: Theme.dim }
             Area { id: said; Layout.preferredHeight: 150; placeholder: Lang.t("tarayıcın.\nsakin alanın.", "browser.\nquiet place.") }

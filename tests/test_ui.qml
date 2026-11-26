@@ -233,6 +233,40 @@ Item {
             w.memoryLimit = 1; w.keepUnderLimit(); t.check("the limit measures memory", w.memoryUsed >= 0); w.memoryLimit = 0
             w.openSettings("speed"); t.check("performance settings open", w.prefs.section === "speed" && !w.prefs.nothingFound)
             w.closeTab(w.current)
+            // your own look
+            const usualRadius = Theme.radius
+            Theme.roundness = 0; t.check("corners can be square", Theme.radius === 0 && Theme.round(22) === 0)
+            Theme.roundness = 1.6; t.check("or softer", Theme.radius > usualRadius)
+            Theme.density = "compact"; t.check("bars can be tighter", Theme.dense(48) < 48)
+            Theme.copyCurrent(); t.check("your theme starts as the one on screen", Theme.shown === "custom" && Theme.custom.length === 15 && Theme.themes[Theme.themes.length - 1].key === "custom")
+            t.check("a colour can be changed", Theme.setColor(2, "#123456") && String(Theme.surface) === "#123456")
+            t.check("a bad colour is refused", !Theme.setColor(2, "url(x)") && String(Theme.surface) === "#123456")
+            Theme.keepButtons(["reload", "back", "bogus", "reload"], ["game", "back"])
+            t.check("buttons are known and once", Theme.barLeft.join() === "reload,back" && Theme.barRight.join() === "game")
+            Theme.moveButton("back", -1); Theme.placeButton("history", "right")
+            t.check("and can be moved", Theme.barLeft.join() === "back,reload" && Theme.barRight.join() === "game,history")
+            w.horizontalTabs = true
+            t.check("the toolbar shows your order", w.topToolbar.shownOrder().join() === "back,reload,address,game,history,menu")
+            Theme.keepButtons(["home"], ["back"]); t.check("and follows changes", w.topToolbar.shownOrder().join() === "home,address,back,menu")
+            Theme.keepButtons(["back", "reload"], ["game", "history"]); w.horizontalTabs = false
+            Theme.css = ".tab-active { background: #ff0000; } .toolbar { background: #00ff00 } .nope { color: red }"
+            t.check("the browser style sheet is read", Theme.styled("tab-active", "background", "") === "#ff0000" && Theme.styled("toolbar", "background", "") === "#00ff00" && Theme.cssErrors.length === 1)
+            w.keepWords("Paylaşılan", "tema")
+            const file = "file:///tmp/x.velumtheme"
+            w.exportTheme(file)
+            Theme.motion = false
+            Theme.resetShape(); Theme.palette = "lucid"; w.keepWords("", "")
+            t.check("reset gives the usual shape back", Theme.roundness === 1 && Theme.css === "" && Theme.barLeft.length === 4)
+            w.importTheme(file)
+            t.check("a saved theme comes back whole", Theme.roundness === 1.6 && Theme.density === "compact" && Theme.shown === "custom" && String(Theme.surface) === "#123456"
+                    && Theme.barRight.join() === "game,history" && w.homeHeadline === "Paylaşılan")
+            t.check("other files are not themes", !w.applyThemeText("{}") && !w.applyThemeText("nonsense") && !Files.write("file:///tmp/x.sh", "x"))
+            t.check("a hostile theme changes nothing it should not", w.applyThemeText('{"velumTheme":1,"look":{"roundness":99,"density":"x","font":"a;b<>","colors":["red"],"palette":"nope"},"home":{"widgets":["rm"],"headline":5}}')
+                    && Theme.roundness === 1.6 && Theme.density === "compact" && Theme.fontFamily === "" && Theme.custom.length === 15)
+            Theme.resetShape(); Theme.palette = "lucid"; w.keepWords("", ""); w.keepWidgets(["clock", "date", "calendar", "shield"]); w.homeCss = ""
+            Theme.motion = true
+            for (const shape of ["pill", "square", "line", "rounded"]) Theme.tabShape = shape
+            w.openSettings("look"); t.check("the look settings open", w.prefs.section === "look"); w.closeTab(w.current)
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")

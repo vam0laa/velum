@@ -14,7 +14,7 @@ Item {
     property color tone: Theme.accent      // behind the letter in the everyday look
     Rectangle {
         anchors.fill: parent
-        radius: Theme.web ? 0 : mark.width * 0.24
+        radius: Theme.round(mark.width * 0.24)
         color: image.status === Image.Ready ? (Theme.night ? "#c3cdee" : "#ffffff") : Theme.web ? Theme.raised : mark.tone
         border.width: Theme.web ? 2 : 0
         border.color: Theme.accent

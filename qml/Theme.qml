@@ -13,6 +13,7 @@ QtObject {
     // webcore is bright blue by day and night blue from the evening on
     property int hour: new Date().getHours()
     readonly property string shown: web ? (hour >= 7 && hour < 19 ? "cybercore" : "night")
+                                        : palette === "custom" && custom.length === 15 ? "custom"
                                         : palette === "cybercore" || palette === "night" || !(palette === "desktop" || palettes[palette]) ? "lucid" : palette
     readonly property bool night: web && shown === "night"
     property Timer clock: Timer { interval: 30000; running: true; repeat: true; onTriggered: theme.hour = new Date().getHours() }
@@ -24,7 +25,147 @@ QtObject {
     readonly property bool moving: motion && !calm
     readonly property bool seeThrough: glass && !calm
 
+    // ---- your own look ----
+    property var custom: []                // the fifteen colours of your theme
+    property real roundness: 1             // corners: 0 square, 1 as designed, 1.6 softer
+    property string density: "normal"      // "compact", "normal", "roomy"
+    property string tabShape: "rounded"    // "rounded", "pill", "square", "line"
+    property string fontFamily: ""         // "" Velum's own lettering
+    property var barLeft: ["back", "forward", "reload", "home"]      // toolbar buttons
+    property var barRight: ["downloads", "extensions"]               // before the menu
+    property string css: ""                // your style sheet for the browser itself
+
+    readonly property var roleNames: [
+        Lang.t("Çerçeve", "Frame"), Lang.t("Pencere", "Window"), Lang.t("Sayfa", "Surface"), Lang.t("Düğme", "Button"), Lang.t("Başlık", "Title"),
+        Lang.t("Çizgi", "Line"), Lang.t("Yazı", "Text"), Lang.t("Soluk yazı", "Quiet text"), Lang.t("Vurgu", "Accent"), Lang.t("Vurgu üstü yazı", "Text on accent"),
+        Lang.t("Mor", "Purple"), Lang.t("Pembe", "Pink"), Lang.t("Yeşil", "Green"), Lang.t("Şeftali", "Peach"), Lang.t("Uyarı", "Warning")]
+    readonly property var buttonIds: ["back", "forward", "reload", "home", "downloads", "extensions", "bookmarks", "history", "game", "settings"]
+
+    property HomeCss sheet: HomeCss {
+        selectors: ["tabbar", "toolbar", "tab", "tab-active", "address", "sidebar", "bookmarks", "button", "menu"]
+        properties: ["background", "background-color", "color", "border-color", "border-width", "border-radius"]
+    }
+    readonly property var parsed: sheet.parse(web ? "" : css)
+    readonly property var cssErrors: parsed.errors
+    // what your style sheet says about `name`, else `fallback`
+    function styled(name, property, fallback) {
+        const found = parsed.sheet[name]?.[property]
+        return found !== undefined ? found : fallback
+    }
+
+    // a corner of `n` pixels, as round as you like them
+    function round(n) { return web ? 0 : Math.round(n * roundness) }
+    // a height of `n` pixels, as roomy as you like it
+    readonly property real barScale: web ? 1 : density === "compact" ? 0.86 : density === "roomy" ? 1.14 : 1
+    function dense(n) { return Math.round(n * barScale) }
+
+    // your colours: fifteen of them, each one checked
+    function keepColors(list) {
+        const clean = Array.isArray(list) && list.length === 15 ? list.map(c => sheet.color(c)) : []
+        if (clean.length === 15 && clean.every(c => c !== "")) {
+            custom = clean
+            saved.custom = JSON.stringify(clean)
+            return true
+        }
+        return false
+    }
+    // starts your theme from what is on screen now
+    function copyCurrent() {
+        const list = []
+        for (let i = 0; i < 15; i++)
+            list.push(i === 8 ? String(accent) : String(pick(i)))
+        if (keepColors(list)) {
+            accentChoice = ""
+            palette = "custom"
+        }
+    }
+    function setColor(i, value) {
+        const c = sheet.color(value)
+        if (c === "" || custom.length !== 15)
+            return false
+        const list = custom.slice()
+        list[i] = c
+        return keepColors(list)
+    }
+    function keepButtons(left, right) {
+        const seen = []
+        const clean = list => (Array.isArray(list) ? list : []).filter(b => buttonIds.includes(b) && !seen.includes(b) && seen.push(b))
+        barLeft = clean(left)
+        barRight = clean(right)
+        saved.buttons = JSON.stringify({ left: barLeft, right: barRight })
+    }
+    // `side`: "left", "right" or "" (hidden)
+    function placeButton(id, side) {
+        const left = barLeft.filter(b => b !== id), right = barRight.filter(b => b !== id)
+        if (side === "left")
+            left.push(id)
+        else if (side === "right")
+            right.push(id)
+        keepButtons(left, right)
+    }
+    function moveButton(id, by) {
+        const left = barLeft.slice(), right = barRight.slice()
+        for (const list of [left, right]) {
+            const at = list.indexOf(id), to = at + by
+            if (at >= 0 && to >= 0 && to < list.length) {
+                list.splice(at, 1)
+                list.splice(to, 0, id)
+            }
+        }
+        keepButtons(left, right)
+    }
+
+    // the look as it can be written to a file and read back
+    function bundle() {
+        return { palette: palette, colors: custom, accent: accentChoice, roundness: roundness, density: density, tabShape: tabShape,
+                 font: fontFamily, left: barLeft, right: barRight, css: css, glass: glass }
+    }
+    // takes over what is valid in `d` and leaves the rest alone
+    function applyBundle(d) {
+        if (!d || typeof d !== "object")
+            return
+        const has = keepColors(d.colors)
+        if (typeof d.palette === "string" && (palettes[d.palette] || d.palette === "desktop" || (d.palette === "custom" && has)))
+            palette = d.palette
+        if (d.accent === "" || accents[d.accent] !== undefined)
+            accentChoice = d.accent
+        if (typeof d.roundness === "number")
+            roundness = Math.max(0, Math.min(1.6, d.roundness))
+        if (["compact", "normal", "roomy"].includes(d.density))
+            density = d.density
+        if (["rounded", "pill", "square", "line"].includes(d.tabShape))
+            tabShape = d.tabShape
+        if (typeof d.font === "string" && /^[\w \-]{0,60}$/.test(d.font))
+            fontFamily = d.font
+        if (Array.isArray(d.left) && Array.isArray(d.right))
+            keepButtons(d.left, d.right)
+        if (typeof d.css === "string")
+            css = d.css.slice(0, 20000)
+        if (typeof d.glass === "boolean")
+            glass = d.glass
+    }
+    function resetShape() {
+        roundness = 1; density = "normal"; tabShape = "rounded"; fontFamily = ""; css = ""
+        keepButtons(["back", "forward", "reload", "home"], ["downloads", "extensions"])
+    }
+
+    Component.onCompleted: {
+        try { keepColors(JSON.parse(saved.custom)) } catch (e) {}
+        try {
+            const b = JSON.parse(saved.buttons)
+            if (b && b.left)
+                keepButtons(b.left, b.right)
+        } catch (e) {}
+    }
+
     property Settings saved: Settings {
+        property string custom: "[]"
+        property string buttons: "{}"
+        property alias roundness: theme.roundness
+        property alias density: theme.density
+        property alias tabShape: theme.tabShape
+        property alias fontFamily: theme.fontFamily
+        property alias css: theme.css
         category: "look"
         property alias tone: theme.palette
         property alias style: theme.style
@@ -71,7 +212,8 @@ QtObject {
     })
 
     // what the pickers offer, in order
-    readonly property var themes: [
+    readonly property var themes: builtIn.concat(custom.length === 15 ? [{ key: "custom", label: Lang.t("Benim temam", "My theme") }] : [])
+    readonly property var builtIn: [
         { key: "lucid", label: "Lucid" }, { key: "mocha", label: "Mocha" }, { key: "macchiato", label: "Macchiato" }, { key: "frappe", label: "Frappé" }, { key: "latte", label: "Latte" }, { key: "dark", label: Lang.t("Koyu", "Dark") }, { key: "light", label: Lang.t("Açık", "Light") },
         { key: "rosepine", label: "Rosé Pine" }, { key: "everforest", label: "Everforest" }, { key: "gruvbox", label: "Gruvbox" }, { key: "nord", label: "Nord" },
         { key: "tokyo", label: "Tokyo Night" }, { key: "desktop", label: Lang.t("Masaüstü", "Desktop") }
@@ -84,6 +226,8 @@ QtObject {
     // colour i of any theme, used by the pickers to draw previews
     function colorOf(key, i) {
         const base = palettes[key] ?? palettes.lucid
+        if (key === "custom")
+            return custom[i] ?? base[i]
         if (key === "desktop")
             return DesktopColors.colors[desktopRoles[i]] ?? base[i]
         return base[i]
@@ -125,14 +269,14 @@ QtObject {
     property FontLoader pixelFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/VT323-Regular.ttf") }
     readonly property string pixel: pixelFont.name      // has the Turkish letters
     property FontLoader sansFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/GoogleSansFlex.woff") }
-    readonly property string ui: web ? pixelFont.name : sansFont.name
+    readonly property string ui: web ? pixelFont.name : fontFamily !== "" ? fontFamily : sansFont.name
     // sizes are written for the small pixel letters; the other font needs less
     function size(n) { return web ? n : Math.round(n / 1.3) }
     // real weights of the variable font; the pixel font has only one
     function axes(weight) { return web ? ({}) : ({ "wght": weight }) }
 
-    readonly property int radius: web ? 0 : 8      // buttons, fields, rows
-    readonly property int corner: web ? 0 : 12     // windows
+    readonly property int radius: round(8)         // buttons, fields, rows
+    readonly property int corner: round(12)        // windows
     readonly property int gap: 8
     readonly property int sidebar: 280
     readonly property int strip: 60

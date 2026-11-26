@@ -28,7 +28,15 @@ ItemDelegate {
     property bool lastPinned: false
 
     width: !horizontal ? (ListView.view?.width ?? 0) : !shown ? 0 : compact ? 48 : wide
-    height: horizontal ? 36 : shown ? 40 : 0
+    height: horizontal ? Theme.dense(36) : shown ? Theme.dense(40) : 0
+    // your style sheet: ".tab", and ".tab-active" over it for the current one
+    function styled(property, fallback) {
+        const usual = Theme.styled("tab", property, fallback)
+        return current ? Theme.styled("tab-active", property, usual) : usual
+    }
+    readonly property real tabRadius: Theme.web ? 0 : Theme.tabShape === "pill" ? height / 2 : Theme.tabShape === "square" ? 0
+        : Theme.tabShape === "line" ? 0 : Theme.round(9)
+    readonly property bool lined: !Theme.web && Theme.tabShape === "line"
     visible: shown
     padding: 0
     bottomPadding: horizontal ? 0 : 4
@@ -41,25 +49,29 @@ ItemDelegate {
     Accessible.name: label
 
     // on the blue strip an idle tab is a darker folder; the current one joins the toolbar
-    readonly property color ink: current ? Theme.text : horizontal && Theme.web ? "#dbe6ff" : Theme.dim
+    readonly property color ink: styled("color", current ? Theme.text : horizontal && Theme.web ? "#dbe6ff" : Theme.dim)
 
     background: Item {
         // vertical: a row, outlined when chosen
         Rectangle {
             anchors.fill: parent
             visible: !row.horizontal
-            radius: Theme.radius
-            color: row.current ? Theme.raised : row.hovered ? (Theme.web ? Theme.title : Qt.alpha(Theme.raised, 0.5)) : "transparent"
-            border.width: Theme.web && row.current ? 2 : 0
-            border.color: Theme.line
+            radius: row.styled("border-radius", Theme.web ? 0 : row.tabRadius > 0 ? Math.min(height / 2, Theme.tabShape === "pill" ? height / 2 : Theme.radius) : 0)
+            color: row.styled("background", row.current && !row.lined ? Theme.raised : row.hovered ? (Theme.web ? Theme.title : Qt.alpha(Theme.raised, 0.5)) : "transparent")
+            border.width: Theme.web && row.current ? 2 : row.styled("border-width", row.styled("border-color", "") !== "" ? 1 : 0)
+            border.color: row.styled("border-color", Theme.line)
+            Rectangle { visible: row.lined && row.current; width: 3; height: parent.height - 10; y: 5; radius: 1.5; color: Theme.accent }
         }
         // everyday look: a rounded tab, filled when it is the current one
         Rectangle {
             anchors { fill: parent; topMargin: 1; bottomMargin: 3 }
             visible: row.horizontal && !Theme.web
-            radius: 9
-            color: row.current ? Theme.raised : row.hovered ? Qt.alpha(Theme.raised, 0.45) : "transparent"
+            radius: row.styled("border-radius", row.tabRadius)
+            color: row.styled("background", row.current && !row.lined ? Theme.raised : row.hovered ? Qt.alpha(Theme.raised, 0.45) : "transparent")
+            border.width: row.styled("border-width", row.styled("border-color", "") !== "" ? 1 : 0)
+            border.color: row.styled("border-color", Theme.line)
             Behavior on color { ColorAnimation { duration: Theme.quick } }
+            Rectangle { visible: row.lined && row.current; anchors { bottom: parent.bottom; left: parent.left; right: parent.right; leftMargin: 8; rightMargin: 8 } height: 3; radius: 1.5; color: Theme.accent }
         }
         Shape {
             id: folder

@@ -434,6 +434,12 @@ scripts/release.sh    derlemeyi indirir, burada imzalar, yayınlar
 - `src/graphics.cpp` + `gpubridge.h`: ekran kartı ayarı; "Zorla" ile açılış yarıda kalırsa bir sonrakinde otomatiğe döner.
 - `qml/Keymap.qml`: kısayolların tek listesi ve senin değişikliklerin; `KeyList.qml` ayarlardaki düzenleyici.
 
+## Görünümü kişiselleştirme
+
+- `qml/Theme.qml`: kendi renklerin, köşe/yoğunluk/sekme biçimi, araç çubuğu sırası, tarayıcı CSS'i; `bundle`/`applyBundle` tema dosyasını yazar ve yalnızca geçerli alanları geri alır.
+- `qml/ColorEditor.qml`, `ShapeEditor.qml`, `CssEditor.qml`: ayarlardaki düzenleyiciler.
+- `src/files.h`: arayüz yalnızca `.velumtheme` dosyalarını okuyup yazabilir.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

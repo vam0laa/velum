@@ -11,7 +11,7 @@ Rectangle {
     default property alias content: body.data
     Layout.fillWidth: true
     implicitHeight: column.implicitHeight + (Theme.web ? 4 : 40)
-    radius: Theme.web ? 0 : 16
+    radius: Theme.round(16)
     color: Theme.web ? "transparent" : Theme.paneBack
 
     ColumnLayout {

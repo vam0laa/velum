@@ -13,20 +13,20 @@ TextField {
 
     placeholderText: Theme.web ? Lang.t("ara ya da adres yaz_", "search or type an address_") : Lang.t("Ara ya da adres yaz", "Search or enter address")
     placeholderTextColor: Theme.dim
-    color: Theme.text
+    color: Theme.styled("address", "color", Theme.text)
     selectionColor: Theme.accent
     selectedTextColor: Theme.accentInk
     font.family: Theme.ui; font.pixelSize: Theme.size(18)
     leftPadding: Theme.web ? 28 : 34
     rightPadding: 10
-    implicitHeight: 34
+    implicitHeight: Theme.dense(34)
     selectByMouse: true
 
     background: Rectangle {
-        radius: Theme.web ? 0 : 10
-        color: Theme.raised
-        border.width: Theme.web || field.activeFocus ? 2 : 1
-        border.color: field.activeFocus ? (Theme.web ? Theme.pink : Theme.accent) : Theme.line
+        radius: Theme.styled("address", "border-radius", Theme.round(10))
+        color: Theme.styled("address", "background", Theme.raised)
+        border.width: Theme.web || field.activeFocus ? 2 : Theme.styled("address", "border-width", 1)
+        border.color: field.activeFocus ? (Theme.web ? Theme.pink : Theme.accent) : Theme.styled("address", "border-color", Theme.line)
         Text { visible: Theme.web && !field.bare; x: 10; anchors.verticalCenter: parent.verticalCenter; text: ">"; color: field.accent; font.family: Theme.ui; font.pixelSize: field.font.pixelSize + 2 }
         Icon { visible: !Theme.web && !field.bare; x: 11; anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 15; color: Theme.dim }
     }

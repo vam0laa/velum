@@ -11,9 +11,9 @@ AbstractButton {
     property bool hintBeside: false
     property bool flat: false
     property bool filled: false
-    property color tone: Theme.text
-    implicitWidth: 34
-    implicitHeight: 30
+    property color tone: Theme.styled("button", "color", Theme.text)
+    implicitWidth: Theme.dense(34)
+    implicitHeight: Theme.dense(30)
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
 
@@ -36,10 +36,10 @@ AbstractButton {
             y: x
             width: parent.width
             height: parent.height
-            radius: Theme.radius
-            color: button.hovered && button.enabled ? (Theme.web ? Theme.title : Theme.raised) : !Theme.web || button.flat ? "transparent" : Theme.raised
-            border.width: Theme.web && !button.flat ? 2 : 0
-            border.color: Theme.line
+            radius: Theme.styled("button", "border-radius", Theme.radius)
+            color: button.hovered && button.enabled ? (Theme.web ? Theme.title : Theme.raised) : !Theme.web || button.flat ? (button.flat ? "transparent" : Theme.styled("button", "background", "transparent")) : Theme.raised
+            border.width: Theme.web && !button.flat ? 2 : button.flat ? 0 : Theme.styled("button", "border-width", Theme.styled("button", "border-color", "") !== "" ? 1 : 0)
+            border.color: Theme.styled("button", "border-color", Theme.line)
         }
     }
     Accessible.name: hint

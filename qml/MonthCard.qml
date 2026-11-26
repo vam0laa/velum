@@ -57,7 +57,7 @@ Item {
                         anchors.centerIn: parent
                         width: Math.min(parent.width, parent.height)
                         height: width
-                        radius: Theme.web ? 0 : width / 2
+                        radius: Theme.round(width / 2)
                         color: Theme.accent
                         visible: box.day === month.today
                     }

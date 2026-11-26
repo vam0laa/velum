@@ -146,7 +146,7 @@ Popup {
                             enabled: index < welcome.step
                             onClicked: welcome.step = index
                             Accessible.name: String(index + 1)
-                            background: Rectangle { radius: Theme.web ? 0 : 6; color: mark.index <= welcome.step ? welcome.tone : Theme.line; opacity: mark.index < welcome.step ? 0.55 : 1 }
+                            background: Rectangle { radius: Theme.round(6); color: mark.index <= welcome.step ? welcome.tone : Theme.line; opacity: mark.index < welcome.step ? 0.55 : 1 }
                             Behavior on width { NumberAnimation { duration: Theme.smooth * 1.5; easing.type: Easing.OutBack } }
                         }
                     }
@@ -169,7 +169,7 @@ Popup {
                     Rectangle {
                         implicitWidth: Math.min(pill.implicitWidth + 44, words.width)
                         implicitHeight: pill.height + 8
-                        radius: Theme.web ? 0 : height / 2.4
+                        radius: Theme.round(height / 2.4)
                         color: welcome.tone
                         Behavior on implicitWidth { NumberAnimation { duration: Theme.smooth * 2; easing.type: Easing.OutBack; easing.overshoot: 0.9 } }
                         Behavior on color { ColorAnimation { duration: Theme.smooth * 2 } }
@@ -206,7 +206,7 @@ Popup {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                radius: Theme.web ? 0 : 36
+                radius: Theme.round(36)
                 color: Qt.alpha(Theme.window, 0.9)
                 border.color: Theme.line
 
@@ -338,7 +338,7 @@ Popup {
                                         Layout.fillWidth: true
                                         Layout.preferredWidth: 1
                                         implicitHeight: 92
-                                        radius: Theme.web ? 0 : 24
+                                        radius: Theme.round(24)
                                         color: Qt.tint(Theme.surface, Qt.alpha(Theme.rainbow[index % Theme.rainbow.length], 0.2))
                                         Column {
                                             anchors.centerIn: parent
@@ -370,7 +370,7 @@ Popup {
                 focusPolicy: Qt.NoFocus
                 scale: down ? 0.96 : 1
                 Behavior on scale { NumberAnimation { duration: Theme.quick } }
-                background: Rectangle { radius: Theme.web ? 0 : height / 2; color: round.strong ? (round.hovered ? Qt.lighter(welcome.tone, 1.08) : welcome.tone) : round.hovered ? Theme.title : Theme.raised }
+                background: Rectangle { radius: Theme.round(height / 2); color: round.strong ? (round.hovered ? Qt.lighter(welcome.tone, 1.08) : welcome.tone) : round.hovered ? Theme.title : Theme.raised }
                 contentItem: Label { id: caption; text: round.text; color: round.strong ? Theme.accentInk : Theme.text; font.pixelSize: 16; font.variableAxes: Theme.axes(750); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
             }
             Round {

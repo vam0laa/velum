@@ -14,7 +14,7 @@ MenuItem {
         Text { id: shortcut; visible: item.keys !== ""; anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter } text: item.keys; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(15) }
         text: item.text
         textFormat: Text.PlainText
-        color: item.enabled ? Theme.text : Theme.dim
+        color: item.enabled ? Theme.styled("menu", "color", Theme.text) : Theme.dim
         font.family: Theme.ui; font.pixelSize: Theme.size(17)
         leftPadding: 8
         elide: Text.ElideRight
