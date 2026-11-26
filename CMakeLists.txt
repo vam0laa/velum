@@ -44,6 +44,7 @@ qt_add_qml_module(velum
         qml/StartPage.qml
         qml/ClassicStart.qml
         qml/MonthCard.qml
+        qml/Recommended.qml
         qml/WebStart.qml
         qml/Icon.qml
         qml/Hint.qml

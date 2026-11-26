@@ -6,6 +6,7 @@ TextField {
     id: field
     property url pageUrl
     property color accent: Theme.accent
+    property bool bare: false          // no mark in front: the owner puts its own there
     signal go(url target)
 
     function showAddress() { text = activeFocus ? (pageUrl.toString() === "about:blank" ? "" : pageUrl.toString()) : Address.display(pageUrl) }
@@ -26,8 +27,8 @@ TextField {
         color: Theme.raised
         border.width: Theme.web || field.activeFocus ? 2 : 1
         border.color: field.activeFocus ? (Theme.web ? Theme.pink : Theme.accent) : Theme.line
-        Text { visible: Theme.web; x: 10; anchors.verticalCenter: parent.verticalCenter; text: ">"; color: field.accent; font.family: Theme.ui; font.pixelSize: field.font.pixelSize + 2 }
-        Icon { visible: !Theme.web; x: 11; anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 15; color: Theme.dim }
+        Text { visible: Theme.web && !field.bare; x: 10; anchors.verticalCenter: parent.verticalCenter; text: ">"; color: field.accent; font.family: Theme.ui; font.pixelSize: field.font.pixelSize + 2 }
+        Icon { visible: !Theme.web && !field.bare; x: 11; anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 15; color: Theme.dim }
     }
 
     onPageUrlChanged: if (!activeFocus) showAddress()

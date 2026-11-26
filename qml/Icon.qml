@@ -8,6 +8,7 @@ Item {
     property string name
     property color color: Theme.text
     property real size: 18
+    property bool filled: false
 
     readonly property var paths: ({
         back: "M19 12H5 M11 6l-6 6 6 6",
@@ -33,6 +34,7 @@ Item {
         palette: "M12 3a9 9 0 1 0 0 18c1.500 0 2-1 2-2s-1-1.500-1-2.500s1-1.500 2-1.500h3c2 0 3-1.500 3-3.500c0-5-4-8.500-9-8.500z M7.500 11v.100 M10 7.500v.100 M14.500 7.500v.100 M17 11v.100",
         puzzle: "M5 8h4a2.500 2.500 0 1 1 5 0h4a1 1 0 0 1 1 1v3a2.500 2.500 0 1 0 0 5v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z",
         home: "M4 11l8-7 8 7 M6 10v10h12V10 M10 20v-6h4v6",
+        menu: "M4 7h16 M4 12h16 M4 17h16",
         key: "M8 8a4 4 0 1 1 0 8a4 4 0 0 1 0-8z M12 12h9 M18 12v4 M21 12v3",
         book: "M12 6c-2-1.500-5-2-8-1.500v13c3-.5 6 0 8 1.500 2-1.500 5-2 8-1.500v-13c-3-.5-6 0-8 1.500z M12 6v13",
         play: "M8 5l11 7-11 7z",
@@ -53,7 +55,7 @@ Item {
         ShapePath {
             strokeColor: icon.color
             strokeWidth: 1.8
-            fillColor: "transparent"
+            fillColor: icon.filled ? icon.color : "transparent"
             capStyle: ShapePath.RoundCap
             joinStyle: ShapePath.RoundJoin
             PathSvg { path: icon.paths[icon.name] ?? "" }

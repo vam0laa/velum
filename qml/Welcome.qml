@@ -7,13 +7,21 @@ import QtQuick.Layouts
 Popup {
     id: welcome
     property int step: 0
-    readonly property int steps: 5
+    readonly property int steps: 6
+    property var installed: []          // names of the extensions already there
+    property alias wanted: offers.picked
+    signal extensionsChosen(var ids)    // asked for by ticking them and going on
     property bool horizontalTabs
     signal layoutChosen(bool horizontal)
     signal importRequested()
     signal finished()
 
     function next() {
+        // leaving the extensions page with ticks is the "yes"
+        if (step === 4 && offers.picked.length > 0) {
+            extensionsChosen(offers.picked)
+            offers.picked = []
+        }
         if (step < steps - 1)
             step++
         else
@@ -24,13 +32,14 @@ Popup {
         close()
         finished()
     }
-    onAboutToShow: step = 0
+    onAboutToShow: { step = 0; offers.picked = [] }
 
     readonly property var headlines: [
-        [Lang.t("Hoş geldin.", "Welcome."), Lang.t("Velum'u dört kısa adımda sana göre ayarlayalım.", "Four short steps to make Velum yours.")],
+        [Lang.t("Hoş geldin.", "Welcome."), Lang.t("Velum'u birkaç kısa adımda sana göre ayarlayalım.", "A few short steps to make Velum yours.")],
         [Lang.t("Rengini seç.", "Pick your colours."), Lang.t("Tema ve vurgu rengi anında değişir.", "The theme and accent change as you click.")],
         [Lang.t("Sekmeler nerede?", "Where do tabs go?"), Lang.t("Yanda ya da üstte.", "Down the side or along the top.")],
         [Lang.t("Arama ve veriler.", "Search and your things."), Lang.t("Hangi motorla arayacaksın? Eski tarayıcından yer imlerini de alabilirsin.", "Which search engine? You can also bring bookmarks from your old browser.")],
+        [Lang.t("Eklenti ister misin?", "Any extensions?"), Lang.t("İşaretlediklerin Chrome Web Store'dan (Google) indirilip kurulur. Eklentiler gezdiğin sayfaları okuyabilir. Hiçbiri zorunlu değil; bazıları bu motorda eksik çalışabilir.", "Ticked ones are fetched from the Chrome Web Store (Google) and installed. Extensions can read the pages you visit. None is required; some may work only partly on this engine.")],
         [Lang.t("Hazırsın.", "You are set."), Lang.t("Hepsi ayarlarda durur (Ctrl+,). Her şey için komut kutusu: Ctrl+K.", "All of this stays in the settings (Ctrl+,). The command box does everything else: Ctrl+K.")]
     ]
 
@@ -116,8 +125,15 @@ Popup {
                     }
                     TextButton { text: Lang.t("Başka tarayıcıdan içe aktar…", "Import from another browser…"); onClicked: welcome.importRequested() }
                 }
-                Flow {
+                Recommended {
+                    id: offers
                     visible: welcome.step === 4
+                    Layout.fillWidth: true
+                    pick: true
+                    installed: welcome.installed
+                }
+                Flow {
+                    visible: welcome.step === 5
                     Layout.fillWidth: true
                     spacing: 10
                     Repeater {
@@ -149,7 +165,7 @@ Popup {
             TextButton { visible: welcome.step < welcome.steps - 1; text: Lang.t("Atla", "Skip"); onClicked: welcome.finish() }
             Item { Layout.fillWidth: true }
             TextButton { visible: welcome.step > 0; text: Lang.t("Geri", "Back"); onClicked: welcome.back() }
-            TextButton { text: welcome.step === welcome.steps - 1 ? Lang.t("Gezinmeye başla", "Start browsing") : Lang.t("Devam", "Continue"); strong: true; implicitHeight: 38; onClicked: welcome.next() }
+            TextButton { text: welcome.step === welcome.steps - 1 ? Lang.t("Gezinmeye başla", "Start browsing") : welcome.step === 4 && offers.picked.length > 0 ? Lang.t("Kur ve devam et", "Install and continue") : Lang.t("Devam", "Continue"); strong: true; implicitHeight: 38; onClicked: welcome.next() }
         }
     }
 }

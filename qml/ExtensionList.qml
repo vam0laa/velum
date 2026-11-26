@@ -66,6 +66,15 @@ ColumnLayout {
     }
 
     Card {
+        heading: Lang.t("Önerilenler", "Suggested")
+        Recommended {
+            Layout.fillWidth: true
+            installed: panel.extensions.map(e => e.name)
+            onInstall: id => panel.addFromStore(id)
+        }
+    }
+
+    Card {
         heading: Lang.t("Kurulu", "Installed")
         Text {
             Layout.fillWidth: true

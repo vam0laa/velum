@@ -50,7 +50,7 @@ Install for your user: `cmake --install build --prefix ~/.local`
 
 Passwords are kept in the system keyring (Secret Service: GNOME Keyring, KeePassXC and the like), never in a file of Velum's. Velum asks before saving, and fills a form only when you ask, on https pages whose address matches exactly. Forms inside frames are not filled.
 
-Extensions (Settings > Extensions) install from a Chrome Web Store address ("add to Velum" in the title bar on a store page), a zip or a folder, after you agree. A store package is fetched from Google and installed only if it is signed with the key its id is made from. Only Manifest V3 extensions load, the engine does not offer every Chrome API, and the store's own "Add to Chrome" button does not work.
+The welcome offers uBlock Origin Lite, Dark Reader and SponsorBlock, none ticked; they are also suggested in the settings. Extensions (Settings > Extensions) install from a Chrome Web Store address ("add to Velum" in the title bar on a store page), a zip or a folder, after you agree. A store package is fetched from Google and installed only if it is signed with the key its id is made from. Only Manifest V3 extensions load, the engine does not offer every Chrome API, and the store's own "Add to Chrome" button does not work.
 
 Import in the bookmark manager takes bookmarks (with folders) and the last 90 days of history from Firefox, Zen, LibreWolf, Chromium, Chrome, Brave, Helium, Vivaldi or Edge. Only when you ask, from copies of their files; passwords and cookies are not touched.
 

@@ -396,6 +396,12 @@ Gizli görünüm: adres ya da arama kutusuna `velum:webcore` yazılınca açıl�
 - `src/defaultbrowser.h`: "Varsayılan yap" düğmesi, `xdg-settings` ile.
 - Kalın yazılar `Theme.axes()` ile: yazı tipinin gerçek ağırlık ekseni.
 
+## Üst çubuk ve önerilen eklentiler
+
+- Sayfayla ilgili her şey adres kutusunun içinde: solda kalkan, sağda sayfa düğmeleri ve yer imi yıldızı. Sağda indirmeler, eklentiler ve menü (☰).
+- Çalışma alanı düğmeleri ancak ikinci alan açılınca görünür.
+- `qml/Recommended.qml`: karşılamada işaretlemeli, ayarlarda tek tek "Kur". Karşılamada hiçbiri işaretli gelmez; seçilenler sırayla indirilir (`queueExtensions`).
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

@@ -30,6 +30,12 @@ ApplicationWindow {
     property var iconsSaved: ({})       // this run: site -> the icon last written
     property var iconNames: []          // sites that have an icon on disk
     property bool showBookmarkBar: true
+    property alias mainMenu: mainMenu
+    readonly property bool bookmarked: view !== null && shortcuts.some(s => s.url === String(view.url))
+    function showMenu(at) {
+        const place = at.mapToItem(null, at.width - mainMenu.width, at.height + 6)
+        mainMenu.popup(Math.max(8, place.x), Math.max(8, Math.min(place.y, height - mainMenu.implicitHeight - 8)))
+    }
     property bool greet: false              // show the welcome pages if they were never seen
     property bool welcomed: false
     property alias welcome: welcome
@@ -909,9 +915,26 @@ ApplicationWindow {
             } else {
                 say(Lang.t("Eklenti indirilemedi.", "The extension could not be fetched."))
             }
+            if (path === "")
+                Qt.callLater(installNext)
         })
     }
     property string fetched: ""       // the downloaded package being installed
+    property var extensionQueue: []   // store ids you agreed to, still to be installed
+
+    // one after another; each one was ticked by you
+    function queueExtensions(ids) {
+        extensionQueue = extensionQueue.concat(Array.from(ids).filter(id => WebStore.idFrom(id) !== "" && !extensionQueue.includes(id)))
+        installNext()
+    }
+    function installNext() {
+        if (fetchingExtension || fetched !== "" || extensionQueue.length === 0)
+            return
+        const id = extensionQueue[0]
+        extensionQueue = extensionQueue.slice(1)
+        wantedExtension = { text: id, file: false }
+        addExtension()
+    }
 
     function extensionInstalled(extension) {
         if (fetched !== "") {
@@ -925,6 +948,7 @@ ApplicationWindow {
             say(Lang.t(extension.name + " eklendi.", extension.name + " was added."))
         }
         Qt.callLater(refreshExtensions)
+        Qt.callLater(installNext)
     }
 
     function enableExtension(extension, on) {
@@ -1136,6 +1160,8 @@ ApplicationWindow {
         }
         else if (action === "allow" && ask)
             answer(ask, true)
+        else if (action === "menu")
+            mainMenu.popup(width - mainMenu.width - 12, 90)
         else if (action === "passwords")
             openPasswords()
         else if (action === "offer")
@@ -1214,6 +1240,7 @@ ApplicationWindow {
             onSpaceChosen: id => window.switchSpace(id)
             onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
             onSpaceAdd: spaceDialog.show(0, "", false)
+            onMenu: at => window.showMenu(at)
         }
 
         TopBar {
@@ -1242,6 +1269,10 @@ ApplicationWindow {
             iconFor: window.iconNames.length >= 0 && window.iconRevision >= 0 ? url => window.iconFor(url) : url => ""
             onOpenBookmark: address => window.navigate(address, false)
             onImportRequested: window.openImport()
+            bookmarked: window.bookmarked
+            onToggleBookmark: window.toggleBookmark()
+            onExtensions: window.openSettings("extensions")
+            onMenu: at => window.showMenu(at)
             onMaximize: window.toggleWindowFullScreen()
             onCloseTabRequested: window.closeTab(window.current)
             pageButtons.storeButton: card.storeButton
@@ -1725,6 +1756,8 @@ ApplicationWindow {
         onLayoutChosen: h => window.horizontalTabs = h
         onImportRequested: window.openImport()
         onFinished: window.welcomed = true
+        installed: window.extensions.map(e => e.name)
+        onExtensionsChosen: ids => window.queueExtensions(ids)
     }
 
     ResourcePanel {
@@ -1830,6 +1863,29 @@ ApplicationWindow {
         onOpenInTab: url => window.openTab(url)
         onSearchFor: text => window.openTab(String(Address.search(text)))
         onFind: window.findInPage()
+    }
+
+    // the menu behind the three lines
+    AppMenu {
+        id: mainMenu
+        AppMenuItem { text: Lang.t("Yeni sekme", "New tab"); keys: "Ctrl+T"; onTriggered: window.newTab() }
+        AppMenuItem { text: Lang.t("Yeni çalışma alanı", "New workspace"); onTriggered: spaceDialog.show(0, "", false) }
+        AppMenuLine {}
+        AppMenuItem { text: Lang.t("Yer imleri", "Bookmarks"); keys: "Ctrl+Shift+O"; onTriggered: window.openBookmarks() }
+        AppMenuItem { text: Lang.t("Geçmiş", "History"); keys: "Ctrl+H"; onTriggered: Qt.callLater(window.showCommandHistory) }
+        AppMenuItem { text: Lang.t("İndirilenler", "Downloads"); keys: "Ctrl+J"; onTriggered: Qt.callLater(window.openDownloads) }
+        AppMenuItem { text: Lang.t("Parolalar", "Passwords"); onTriggered: window.openPasswords() }
+        AppMenuItem { text: Lang.t("Eklentiler", "Extensions"); onTriggered: window.openSettings("extensions") }
+        AppMenuLine {}
+        AppMenuItem { text: Lang.t("Sayfada ara", "Find in page"); keys: "Ctrl+F"; enabled: !window.onStartPage && !window.onSettings; onTriggered: window.findInPage() }
+        AppMenuItem { text: Lang.t("Yakınlaştır", "Zoom in"); keys: "Ctrl++"; onTriggered: window.view.zoomFactor = Math.min(3, window.view.zoomFactor + 0.1) }
+        AppMenuItem { text: Lang.t("Uzaklaştır", "Zoom out"); keys: "Ctrl+-"; onTriggered: window.view.zoomFactor = Math.max(0.5, window.view.zoomFactor - 0.1) }
+        AppMenuItem { text: Lang.t("Okuma modu", "Reading mode"); keys: "Alt+R"; enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleReader() }
+        AppMenuItem { text: Lang.t("Küçük video penceresi", "Mini video window"); keys: "Alt+P"; enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleMini() }
+        AppMenuItem { text: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"); keys: "Ctrl+\\"; onTriggered: window.toggleSplit() }
+        AppMenuLine {}
+        AppMenuItem { text: Lang.t("Ayarlar", "Settings"); keys: "Ctrl+,"; onTriggered: window.openSettings() }
+        AppMenuItem { text: Lang.t("Velum'dan çık", "Quit Velum"); keys: "Ctrl+Q"; onTriggered: Qt.quit() }
     }
 
     // choosing between several saved accounts; five are offered

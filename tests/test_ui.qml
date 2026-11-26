@@ -172,6 +172,14 @@ Item {
             w.prefs.query = ""; t.check("clearing returns to the category", w.prefs.shows("general", "x") && !w.prefs.shows("privacy", "x"))
             DefaultBrowser.make(); t.check("the default browser button works", DefaultBrowser.current)
             w.closeTab(w.current)
+            // the toolbar's star and menu
+            while (w.shortcuts.length) w.removeShortcut(0)
+            w.openTab("https://star.example/"); w.view.url = "https://star.example/"
+            t.check("the star knows an unsaved page", !w.bookmarked)
+            w.toggleBookmark(); t.check("and a saved one", w.bookmarked && w.shortcuts.length === 1)
+            w.toggleBookmark(); t.check("and back", !w.bookmarked)
+            w.showMenu(w.contentItem); t.check("the menu opens", w.mainMenu.opened || w.mainMenu.visible); w.mainMenu.close()
+            w.closeTab(w.current)
             // both layouts
             w.horizontalTabs = true; w.openTab(t.page("h1")); w.openTab(t.page("h2"))
             const top = w.current; w.moveTab(top, w.pinnedCount)
@@ -212,6 +220,12 @@ Item {
             w.welcomed = false; w.welcome.open()
             t.check("the welcome starts at the first page", w.welcome.step === 0)
             w.welcome.next(); w.welcome.next(); w.welcome.back(); t.check("it moves between pages", w.welcome.step === 1)
+            WebStore.fetched = []
+            w.welcome.step = 4; t.check("no extension is chosen for you", w.welcome.wanted.length === 0)
+            w.welcome.next(); t.check("going on without a tick installs nothing", WebStore.fetched.length === 0 && w.welcome.step === 5)
+            w.welcome.back(); w.welcome.wanted = ["ddkjiahejlhfcafbddmgiahcphecmpfh", "eimadpbcbfnmbkopoojfekhnkhdbieeh"]
+            w.welcome.next()
+            t.check("ticked extensions are fetched when you go on", WebStore.fetched.length >= 1 && WebStore.fetched[0] === "ddkjiahejlhfcafbddmgiahcphecmpfh")
             for (let i = 0; i < 10; i++) w.welcome.next()
             t.check("finishing is remembered", w.welcomed && !w.welcome.opened)
             w.current = was
@@ -400,6 +414,7 @@ Item {
                 w.view.runJavaScript(w.loginScript.fill("https://other.example", "o", "p"), WebEngineScript.ApplicationWorld, done => {
                     t.check("another site's password is refused by the page script too", done === false)
                     // extensions: nothing happens before a yes
+                    WebStore.fetched = []; w.extensionQueue = []
                     w.askExtension("not an extension", false)
                     t.check("a wrong store address is refused", w.wantedExtension === null && !w.extensionQuestion.opened)
                     w.askExtension("https://chromewebstore.google.com/detail/x/" + "a".repeat(32), false)

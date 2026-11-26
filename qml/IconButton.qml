@@ -10,6 +10,7 @@ AbstractButton {
     property real iconSize: 18
     property bool hintBeside: false
     property bool flat: false
+    property bool filled: false
     property color tone: Theme.text
     implicitWidth: 34
     implicitHeight: 30
@@ -24,6 +25,7 @@ AbstractButton {
             name: button.symbol
             size: button.iconSize
             color: button.enabled ? button.tone : Theme.dim
+            filled: button.filled
             opacity: button.enabled ? 1 : 0.5
         }
     }

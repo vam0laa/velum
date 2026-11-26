@@ -25,6 +25,7 @@ Panel {
     signal spaceChosen(int id)
     signal spaceEdit(int id)
     signal spaceAdd()
+    signal menu(Item at)
     property int pinnedCount: 0
     property string host: ""            // of the current page, for the shield
     signal reloadPage()
@@ -178,11 +179,12 @@ Panel {
                 onAdd: side.spaceAdd()
             }
             IconButton {
+                id: menuButton
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
-                symbol: "settings"
-                hint: Lang.t("Ayarlar (Ctrl+,)", "Settings (Ctrl+,)")
+                symbol: "menu"
+                hint: Lang.t("Menü", "Menu")
                 hintBeside: side.compact
-                onClicked: side.settings()
+                onClicked: side.menu(menuButton)
             }
             DownloadButton {
                 id: downloadButton

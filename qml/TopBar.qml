@@ -38,6 +38,11 @@ Item {
     property var iconFor: url => ""
     signal openBookmark(url address)
     signal importRequested()
+    property bool bookmarked: false
+    readonly property bool onWeb: /^https?:/.test(String(view?.url ?? ""))
+    signal toggleBookmark()
+    signal extensions()
+    signal menu(Item at)
     readonly property bool bookmarkRow: showBookmarks && !Theme.web
     function openDownloads() { downloadButton.show() }
 
@@ -66,6 +71,7 @@ Item {
                 Word { id: logo; color: Theme.night ? "#dfe8ff" : "#ffffff" }
             }
             SpaceBar {
+                visible: bar.spaces.length > 1
                 Layout.preferredWidth: Math.min(300, naturalWidth)
                 Layout.alignment: Qt.AlignVCenter
                 spaces: bar.spaces
@@ -163,14 +169,42 @@ Item {
             AddressField {
                 id: field
                 Layout.fillWidth: true
-                implicitHeight: 32
+                Layout.leftMargin: 4
+                Layout.rightMargin: 4
+                implicitHeight: 34
+                bare: bar.onWeb
+                leftPadding: bar.onWeb ? 42 : Theme.web ? 28 : 34
+                rightPadding: buttons.width + (bar.onWeb ? 40 : 10)
                 pageUrl: bar.view?.url ?? ""
                 onGo: target => { bar.view.url = target; bar.view.forceActiveFocus() }
+                // what concerns this page sits inside its address
+                ShieldButton {
+                    x: 3
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: bar.onWeb
+                    flat: true
+                    implicitWidth: 32; implicitHeight: 28
+                    host: bar.host
+                    onReload: bar.reloadPage()
+                    onClearRequested: bar.clearData()
+                }
+                PageButtons { id: buttons; anchors { right: parent.right; rightMargin: bar.onWeb ? 38 : 8; verticalCenter: parent.verticalCenter } }
+                IconButton {
+                    anchors { right: parent.right; rightMargin: 3; verticalCenter: parent.verticalCenter }
+                    visible: bar.onWeb
+                    flat: true
+                    implicitWidth: 32; implicitHeight: 28
+                    iconSize: 17
+                    symbol: "star"
+                    filled: bar.bookmarked
+                    tone: bar.bookmarked ? Theme.accent : Theme.dim
+                    hint: bar.bookmarked ? Lang.t("Yer imini kaldır (Ctrl+D)", "Remove the bookmark (Ctrl+D)") : Lang.t("Yer imlerine ekle (Ctrl+D)", "Bookmark this page (Ctrl+D)")
+                    onClicked: bar.toggleBookmark()
+                }
             }
-            PageButtons { id: buttons }
-            ShieldButton { host: bar.host; onReload: bar.reloadPage(); onClearRequested: bar.clearData() }
             DownloadButton { id: downloadButton; downloads: bar.downloads; onShowFolder: folder => bar.showFolder(folder); onClearFinished: bar.clearDownloads() }
-            IconButton { symbol: "settings"; hint: Lang.t("Ayarlar (Ctrl+,)", "Settings (Ctrl+,)"); onClicked: bar.settings() }
+            IconButton { symbol: "puzzle"; hint: Lang.t("Eklentiler", "Extensions"); onClicked: bar.extensions() }
+            IconButton { id: menuButton; symbol: "menu"; hint: Lang.t("Menü", "Menu"); onClicked: bar.menu(menuButton) }
         }
     }
 
