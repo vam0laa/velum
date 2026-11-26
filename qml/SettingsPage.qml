@@ -4,32 +4,53 @@ import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
 
-// Every setting in one place (Ctrl+,). Changes take effect as you make them.
-Popup {
+// The settings, a page of its own in a tab (Ctrl+,): categories on the left,
+// their settings on the right. Changes take effect as you make them.
+Rectangle {
     id: page
     property int sleepMode
     property bool restoreSession
     property string downloadFolder          // "" means the system's downloads folder
-    property int section: 0
+    property bool horizontalTabs
+    property bool compactSidebar
+    property var neverSites: []
+    property int bookmarkCount
+    property string section: "look"
     signal sleepModeChosen(int mode)
     signal restoreSessionChosen(bool on)
     signal downloadFolderChosen(string folder)
+    signal layoutChosen(bool horizontal)
+    signal compactChosen(bool on)
     signal clearRequested()
-    property var neverSites: []
     signal askAgain(string origin)
-    onSectionChanged: if (opened && section === 4) passwordList.refresh()
-    onOpened: if (section === 4) passwordList.refresh()
+    signal bookmarksRequested()
+    signal importRequested()
+    signal welcomeRequested()
 
     readonly property string folderShown: downloadFolder !== "" ? downloadFolder
         : decodeURIComponent(String(StandardPaths.writableLocation(StandardPaths.DownloadLocation)).replace("file://", ""))
+    readonly property bool narrow: width < 520
 
-    anchors.centerIn: Overlay.overlay
-    modal: true
-    width: Math.min(720, Overlay.overlay.width - 32)
-    height: Math.min(520, Overlay.overlay.height - 32)
-    padding: 4
-    topPadding: 34
-    background: WindowBackground { title: Lang.t("ayarlar", "settings"); stripe: Theme.peach }
+    readonly property var sections: [
+        { key: "look", icon: "palette", label: Lang.t("Görünüm", "Appearance") },
+        { key: "general", icon: "settings", label: Lang.t("Genel", "General") },
+        { key: "tabs", icon: "panel", label: Lang.t("Sekmeler", "Tabs") },
+        { key: "privacy", icon: "shield", label: Lang.t("Gizlilik", "Privacy") },
+        { key: "passwords", icon: "key", label: Lang.t("Parolalar", "Passwords") },
+        { key: "bookmarks", icon: "star", label: Lang.t("Yer imleri", "Bookmarks") },
+        { key: "keys", icon: "command", label: Lang.t("Kısayollar", "Shortcuts") },
+        { key: "about", icon: "alert", label: Lang.t("Hakkında", "About") }
+    ]
+    readonly property var current: sections.find(s => s.key === section) ?? sections[0]
+
+    color: Theme.surface
+
+    function refresh() {
+        if (visible && section === "passwords")
+            passwordList.refresh()
+    }
+    onSectionChanged: { scroll.contentY = 0; refresh() }
+    onVisibleChanged: refresh()
 
     FolderDialog {
         id: folders
@@ -37,142 +58,262 @@ Popup {
         onAccepted: page.downloadFolderChosen(decodeURIComponent(String(selectedFolder).replace("file://", "")))
     }
 
-    // not set in capitals: that would turn the Turkish "i" into the wrong letter
-    component Heading: Text { color: Theme.accent; font.family: Theme.pixel; font.pixelSize: 20; Layout.topMargin: 4 }
-    component Row_: RowLayout {
+    component Line: RowLayout {
         property alias label: name.text
         Layout.fillWidth: true
         spacing: 12
         Text { id: name; Layout.fillWidth: true; color: Theme.text; font.pixelSize: 13; wrapMode: Text.WrapAtWordBoundaryOrAnywhere }
     }
+    component Note: Text { Layout.fillWidth: true; color: Theme.dim; font.pixelSize: 12; wrapMode: Text.WordWrap }
 
     RowLayout {
         anchors.fill: parent
         spacing: 0
 
-        // sections on the left
-        ColumnLayout {
-            Layout.fillWidth: false          // a column of names, not half the page
-            Layout.preferredWidth: 160
-            Layout.maximumWidth: 160
+        // categories; only their icons when the page is narrow
+        Flickable {
+            Layout.fillWidth: false
+            Layout.preferredWidth: page.narrow ? 60 : 172
             Layout.fillHeight: true
-            Layout.margins: 12
-            spacing: 4
-            Repeater {
-                model: [Lang.t("Genel", "General"), Lang.t("Sekmeler", "Tabs"), Lang.t("Gizlilik", "Privacy"), Lang.t("Hakkında", "About"), Lang.t("Parolalar", "Passwords")]
-                AbstractButton {
-                    id: entry
-                    required property int index
-                    required property string modelData
-                    Layout.fillWidth: true
-                    implicitHeight: 34
-                    hoverEnabled: true
-                    onClicked: page.section = index
-                    contentItem: Text { text: entry.modelData; color: page.section === entry.index ? Theme.text : Theme.dim; font.pixelSize: 13; leftPadding: 10; verticalAlignment: Text.AlignVCenter }
-                    background: Rectangle { radius: Theme.radius; color: page.section === entry.index ? Theme.raised : entry.hovered ? Theme.surface : "transparent" }
+            Layout.margins: 10
+            contentHeight: menu.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ColumnLayout {
+                id: menu
+                width: parent.width
+                spacing: 4
+                Text {
+                    visible: !page.narrow
+                    Layout.leftMargin: 10
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    text: Lang.t("Ayarlar", "Settings")
+                    color: Theme.text
+                    font.pixelSize: 28
+                    font.weight: Font.ExtraBold
+                    font.letterSpacing: -0.5
+                }
+                Repeater {
+                    model: page.sections
+                    AbstractButton {
+                        id: entry
+                        required property var modelData
+                        required property int index
+                        readonly property bool chosen: page.section === modelData.key
+                        readonly property color tone: Theme.rainbow[index % Theme.rainbow.length]
+                        Layout.fillWidth: true
+                        implicitHeight: 42
+                        hoverEnabled: true
+                        onClicked: page.section = modelData.key
+                        Accessible.name: modelData.label
+                        background: Rectangle {
+                            radius: height / 2
+                            color: entry.chosen ? Qt.alpha(entry.tone, 0.2) : entry.hovered ? Theme.raised : "transparent"
+                            Behavior on color { ColorAnimation { duration: Theme.quick } }
+                        }
+                        contentItem: Item {
+                            Icon { x: 11; anchors.verticalCenter: parent.verticalCenter; name: entry.modelData.icon; size: 18; color: entry.chosen ? entry.tone : Theme.dim }
+                            Text { x: 40; anchors.verticalCenter: parent.verticalCenter; visible: !page.narrow; text: entry.modelData.label; color: entry.chosen ? Theme.text : Theme.dim; font.pixelSize: 13; font.weight: entry.chosen ? Font.Bold : Font.Normal }
+                        }
+                        Hint { text: entry.modelData.label; shown: page.narrow && entry.hovered; x: entry.width + 8 }
+                    }
                 }
             }
-            Item { Layout.fillHeight: true }
         }
 
-        Rectangle {
+        Rectangle { Layout.fillHeight: true; implicitWidth: 1; color: Theme.line; opacity: 0.6 }
+
+        Flickable {
+            id: scroll
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.margins: 8
-            color: Theme.surface
-            radius: Theme.radius + 2
+            contentHeight: content.implicitHeight + 72
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar {}
 
-            StackLayout {
-                anchors { fill: parent; margins: 18 }
-                currentIndex: page.section
+            ColumnLayout {
+                id: content
+                width: Math.min(parent.width - 40, 760)
+                x: (parent.width - width) / 2
+                y: 28
+                spacing: 16
 
-                // General
-                ColumnLayout {
-                    spacing: 10
-                    Heading { text: Lang.t("Dil", "Language") }
+                Text { text: page.current.label; color: Theme.text; font.pixelSize: 36; font.weight: Font.ExtraBold; font.letterSpacing: -1; Layout.bottomMargin: 4 }
+
+                // ---- appearance ----
+                Card {
+                    visible: page.section === "look"
+                    heading: Lang.t("tema", "theme")
+                    ThemePicker { Layout.fillWidth: true }
+                }
+                Card {
+                    visible: page.section === "look"
+                    heading: Lang.t("düzen", "layout")
+                    tone: Theme.mauve
+                    LayoutPicker { horizontal: page.horizontalTabs; onChosen: h => page.layoutChosen(h) }
+                    Toggle {
+                        visible: !page.horizontalTabs
+                        label: Lang.t("Yan paneli daralt", "Narrow side bar")
+                        note: Lang.t("Yalnızca simgeler (Ctrl+B)", "Icons only (Ctrl+B)")
+                        on: page.compactSidebar
+                        onClicked: page.compactChosen(!page.compactSidebar)
+                    }
+                }
+
+                // ---- general ----
+                Card {
+                    visible: page.section === "general"
+                    heading: Lang.t("dil", "language")
                     Segments {
                         options: [{ key: "auto", label: Lang.t("Sistem", "System") }, { key: "tr", label: "Türkçe" }, { key: "en", label: "English" }]
                         current: Lang.choice
                         onChosen: key => Lang.choice = key
                     }
-                    Heading { text: Lang.t("Görünüm", "Look") }
-                    Segments {
-                        options: [{ key: "mocha", label: "Mocha" }, { key: "gruvbox", label: "Gruvbox" }, { key: "nord", label: "Nord" }, { key: "tokyo", label: "Tokyo" }, { key: "desktop", label: Lang.t("Masaüstü", "Desktop") }]
-                        current: Theme.palette
-                        onChosen: key => Theme.palette = key
-                    }
-                    Heading { text: Lang.t("Arama motoru", "Search engine") }
+                }
+                Card {
+                    visible: page.section === "general"
+                    heading: Lang.t("arama motoru", "search engine")
+                    tone: Theme.pink
                     Segments {
                         options: Address.engines
                         current: Address.engine
                         onChosen: key => Address.engine = key
                     }
-                    Heading { text: Lang.t("İndirmeler", "Downloads") }
-                    Row_ {
+                }
+                Card {
+                    visible: page.section === "general"
+                    heading: Lang.t("indirmeler", "downloads")
+                    tone: Theme.peach
+                    Line {
                         label: page.folderShown
                         TextButton { text: Lang.t("Klasör seç…", "Choose…"); onClicked: folders.open() }
                         TextButton { text: Lang.t("Varsayılan", "Default"); visible: page.downloadFolder !== ""; onClicked: page.downloadFolderChosen("") }
                     }
-                    Item { Layout.fillHeight: true }
+                }
+                Card {
+                    visible: page.section === "general"
+                    heading: Lang.t("karşılama", "welcome")
+                    tone: Theme.green
+                    Line {
+                        label: Lang.t("İlk açılıştaki seçimleri yeniden gez", "Go through the first-run choices again")
+                        TextButton { text: Lang.t("Aç", "Open"); onClicked: page.welcomeRequested() }
+                    }
                 }
 
-                // Tabs
-                ColumnLayout {
-                    spacing: 10
+                // ---- tabs ----
+                Card {
+                    visible: page.section === "tabs"
+                    heading: Lang.t("açılış", "start")
                     Toggle {
                         label: Lang.t("Açılışta sekmeleri geri getir", "Reopen tabs at start")
                         note: Lang.t("Sekmeler ilk bakıldığında yüklenir", "A tab loads when you first look at it")
                         on: page.restoreSession
                         onClicked: page.restoreSessionChosen(!page.restoreSession)
                     }
-                    Heading { text: Lang.t("Boşta kalan sekmeler", "Idle tabs") }
+                }
+                Card {
+                    visible: page.section === "tabs"
+                    heading: Lang.t("boşta kalan sekmeler", "idle tabs")
+                    tone: Theme.mauve
                     Segments {
                         options: [{ key: 0, label: Lang.t("Uyutma", "Never") }, { key: 1, label: Lang.t("Erken", "Early") }, { key: 2, label: Lang.t("Rahat", "Relaxed") }]
                         current: page.sleepMode
                         onChosen: key => page.sleepModeChosen(key)
                     }
-                    Text {
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        color: Theme.dim
-                        font.pixelSize: 12
+                    Note {
                         text: page.sleepMode === 0 ? Lang.t("Sekmeler hep açık kalır.", "Tabs always stay awake.")
                             : page.sleepMode === 1 ? Lang.t("2 dakikada donar, 10 dakikada bellekten çıkar. Sabit ve ses çalan sekmeler uyumaz.", "Frozen after 2 minutes, discarded after 10. Pinned tabs and tabs playing sound stay awake.")
                             : Lang.t("5 dakikada donar, 20 dakikada bellekten çıkar. Sabit ve ses çalan sekmeler uyumaz.", "Frozen after 5 minutes, discarded after 20. Pinned tabs and tabs playing sound stay awake.")
                     }
-                    Item { Layout.fillHeight: true }
                 }
 
-                // Privacy
-                ColumnLayout {
-                    spacing: 6
+                // ---- privacy ----
+                Card {
+                    visible: page.section === "privacy"
+                    heading: Lang.t("kalkan", "shield")
+                    tone: Theme.green
                     Toggle { label: Lang.t("Reklam ve izleyici engelleme", "Block ads and trackers"); note: Lang.t("Filtre listeleriyle", "With filter lists"); on: Shield.enabled; onClicked: Shield.enabled = !Shield.enabled }
                     Toggle { label: Lang.t("Üçüncü taraf çerezleri engelle", "Block third party cookies"); note: Lang.t("Siteler arası takibi zorlaştırır", "Makes following you between sites harder"); on: Shield.blockThirdPartyCookies; onClicked: Shield.blockThirdPartyCookies = !Shield.blockThirdPartyCookies }
                     Toggle { label: Lang.t("Önce HTTPS", "HTTPS first"); note: Lang.t("http adreslerini şifreli aç", "Open http addresses encrypted"); on: Shield.httpsFirst; onClicked: Shield.httpsFirst = !Shield.httpsFirst }
-                    Toggle { label: Lang.t("Çıkışta unut", "Forget on exit"); note: Lang.t("Geçmiş, çerezler ve sekmeler; sonraki açılıştan itibaren", "History, cookies and tabs; from the next start"); on: Shield.forgetOnExit; onClicked: Shield.forgetOnExit = !Shield.forgetOnExit }
-                    Row_ {
+                    Line {
                         label: Shield.statusText(Lang.turkish, Shield.revision, Shield.statusCode)
                         TextButton { text: Lang.t("Listeleri güncelle", "Update lists"); onClicked: Shield.updateLists() }
                     }
-                    Item { Layout.fillHeight: true }
-                    TextButton { Layout.fillWidth: true; text: Lang.t("Gezinme verilerini sil…", "Delete browsing data…"); onClicked: { page.close(); page.clearRequested() } }
+                }
+                Card {
+                    visible: page.section === "privacy"
+                    heading: Lang.t("gezinme verileri", "browsing data")
+                    tone: Theme.danger
+                    Toggle { label: Lang.t("Çıkışta unut", "Forget on exit"); note: Lang.t("Geçmiş, çerezler ve sekmeler; sonraki açılıştan itibaren", "History, cookies and tabs; from the next start"); on: Shield.forgetOnExit; onClicked: Shield.forgetOnExit = !Shield.forgetOnExit }
+                    TextButton { text: Lang.t("Gezinme verilerini sil…", "Delete browsing data…"); onClicked: page.clearRequested() }
                 }
 
-                // About
-                ColumnLayout {
-                    spacing: 8
-                    Image { source: Qt.resolvedUrl("../data/velum.svg"); sourceSize: Qt.size(128, 128); Layout.preferredWidth: 64; Layout.preferredHeight: 64 }
-                    Text { text: "Velum " + Qt.application.version; color: Theme.text; font.pixelSize: 20; font.weight: Font.Bold }
-                    Text { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; text: Lang.t("Sakin ve gizlilik odaklı bir tarayıcı. Motor: Qt WebEngine (Chromium). Engelleyici: Brave adblock-rust.", "A calm, private browser. Engine: Qt WebEngine (Chromium). Blocker: Brave adblock-rust.") }
-                    Text { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12; text: Lang.t("Varsayılan tarayıcı yapmak için: xdg-settings set default-web-browser velum.desktop", "To make it the default browser: xdg-settings set default-web-browser velum.desktop") }
-                    Item { Layout.fillHeight: true }
+                // ---- passwords ----
+                Card {
+                    visible: page.section === "passwords"
+                    PasswordList {
+                        id: passwordList
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Math.max(260, page.height - 240)
+                        neverSites: page.neverSites
+                        onAllow: origin => page.askAgain(origin)
+                    }
                 }
 
-                // Passwords
-                PasswordList {
-                    id: passwordList
-                    neverSites: page.neverSites
-                    onAllow: origin => page.askAgain(origin)
+                // ---- bookmarks ----
+                Card {
+                    visible: page.section === "bookmarks"
+                    heading: Lang.t("yer imleri", "bookmarks")
+                    tone: Theme.peach
+                    Line {
+                        label: Lang.t(page.bookmarkCount + " yer imi kayıtlı", page.bookmarkCount + " bookmarks saved")
+                        TextButton { text: Lang.t("Yöneticiyi aç", "Open the manager"); strong: true; onClicked: page.bookmarksRequested() }
+                    }
+                }
+                Card {
+                    visible: page.section === "bookmarks"
+                    heading: Lang.t("başka tarayıcıdan", "from another browser")
+                    note: Lang.t("Firefox ve Chromium ailesinden yer imleri ve geçmiş. Dosyalar yalnızca okunur.", "Bookmarks and history from Firefox and Chromium relatives. Their files are only read.")
+                    TextButton { text: Lang.t("İçe aktar…", "Import…"); onClicked: page.importRequested() }
+                }
+
+                // ---- shortcuts ----
+                Card {
+                    visible: page.section === "keys"
+                    Repeater {
+                        model: [
+                            ["Ctrl+T", Lang.t("Yeni sekme", "New tab")], ["Ctrl+K", Lang.t("Komut kutusu", "Command box")], ["Ctrl+L", Lang.t("Adres", "Address")],
+                            ["Ctrl+W", Lang.t("Sekmeyi kapat", "Close the tab")], ["Ctrl+Shift+T", Lang.t("Kapatılanı geri aç", "Reopen closed tab")], ["Ctrl+Tab", Lang.t("Sonraki sekme", "Next tab")],
+                            ["Ctrl+Shift+P", Lang.t("Sekmeyi sabitle", "Pin the tab")], ["Alt+1 … 6", Lang.t("Çalışma alanları", "Workspaces")], ["Ctrl+\\", Lang.t("Bölünmüş ekran", "Split view")],
+                            ["Ctrl+D", Lang.t("Yer imi", "Bookmark")], ["Ctrl+Shift+O", Lang.t("Yer imi yöneticisi", "Bookmark manager")], ["Ctrl+H", Lang.t("Geçmiş", "History")],
+                            ["Ctrl+J", Lang.t("İndirmeler", "Downloads")], ["Alt+R", Lang.t("Okuma modu", "Reading mode")], ["Alt+P", Lang.t("Küçük video penceresi", "Mini video window")],
+                            ["Ctrl+Shift+L", Lang.t("Parolayı doldur", "Fill the password")], ["Ctrl+F", Lang.t("Sayfada ara", "Find in page")], ["Shift+Esc", Lang.t("Kaynaklar", "Resources")],
+                            ["Ctrl+B", Lang.t("Yan paneli daralt", "Narrow the side bar")], ["F11", Lang.t("Tam ekran", "Full screen")], ["Ctrl+Q", Lang.t("Çıkış", "Quit")]
+                        ]
+                        Line {
+                            id: shortcut
+                            required property var modelData
+                            label: modelData[1]
+                            Rectangle {
+                                implicitWidth: key.implicitWidth + 20
+                                implicitHeight: 26
+                                radius: 8
+                                color: Theme.raised
+                                Text { id: key; anchors.centerIn: parent; text: shortcut.modelData[0]; color: Theme.accent; font.family: Theme.pixel; font.pixelSize: 17 }
+                            }
+                        }
+                    }
+                }
+
+                // ---- about ----
+                Card {
+                    visible: page.section === "about"
+                    Image { source: Qt.resolvedUrl("../data/velum.svg"); sourceSize: Qt.size(160, 160); Layout.preferredWidth: 80; Layout.preferredHeight: 80 }
+                    Text { text: "Velum " + Qt.application.version; color: Theme.text; font.pixelSize: 24; font.weight: Font.ExtraBold }
+                    Note { font.pixelSize: 13; text: Lang.t("Sakin ve gizlilik odaklı bir tarayıcı. Motor: Qt WebEngine (Chromium). Engelleyici: Brave adblock-rust.", "A calm, private browser. Engine: Qt WebEngine (Chromium). Blocker: Brave adblock-rust.") }
+                    Note { text: Lang.t("Varsayılan tarayıcı yapmak için: xdg-settings set default-web-browser velum.desktop", "To make it the default browser: xdg-settings set default-web-browser velum.desktop") }
                 }
             }
         }

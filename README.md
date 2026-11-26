@@ -86,7 +86,7 @@ Ctrl+, opens the settings: language (system, Turkish, English), search engine (D
 
 ## Look
 
-Rounded windows with thin title bars, a little pixel lettering and a start page with the time, date, search and bookmarks, after [vamola.dev](https://vamola.dev). Palettes (in the settings): Catppuccin Mocha (default), Gruvbox, Nord, Tokyo Night, or the desktop theme written by Quickshell. The bundled fonts Google Sans Flex and VT323 are under the SIL Open Font License (see `data/fonts`).
+Rounded windows with thin title bars, a little pixel lettering and a start page with the time, date, search and bookmarks, after [vamola.dev](https://vamola.dev). Tabs go down the side or along the top. Ten themes (Catppuccin Mocha, Macchiato, Frappé and Latte, Rosé Pine, Everforest, Gruvbox, Nord, Tokyo Night, or the desktop theme written by Quickshell) with a choice of accent colour. The first start asks for language, theme, layout and search engine; the settings, a tab of their own (Ctrl+,), keep all of it. The bundled fonts Google Sans Flex and VT323 are under the SIL Open Font License (see `data/fonts`).
 
 ## Laptops with two graphics cards
 

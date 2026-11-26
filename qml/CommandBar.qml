@@ -55,8 +55,9 @@ Item {
         }
         for (let i = 0; i < (tabModel ? tabModel.count : 0); i++) {
             const t = tabModel.get(i)
-            if (t.title !== "" && (q === "" || has(t.title) || has(t.pageUrl)))
-                out.push({ kind: "tab", icon: "panel", title: t.title, note: Lang.t("Sekmeye geç", "Switch to tab"), index: i })
+            const name = t.kind === "settings" ? Lang.t("Ayarlar", "Settings") : t.title
+            if (name !== "" && (q === "" || has(name) || has(t.pageUrl)))
+                out.push({ kind: "tab", icon: "panel", title: name, note: Lang.t("Sekmeye geç", "Switch to tab"), index: i })
         }
         for (const s of shortcuts)
             if (q !== "" && (has(s.title) || has(s.url)))

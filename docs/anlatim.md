@@ -336,6 +336,19 @@ Güvenlik kuralları:
 
 Test (`tests/run-keyring.sh`) kendi geçici anahtarlığını açar; seninkine dokunamaz.
 
+## 7y. Ayarlar sekmesi, iki düzen, karşılama
+
+```
+qml/SettingsPage.qml   ayarlar: solda kategoriler, sağda kartlar
+qml/ThemePicker.qml    temaların küçük resimleri + vurgu rengi
+qml/LayoutPicker.qml   dikey / yatay seçimi
+qml/TopBar.qml         yatay düzen
+qml/Welcome.qml        ilk açılış adımları
+```
+- Ayarlar bir **sekme**: modeldeki `kind` alanı `"settings"` ise sayfanın yerine ayarlar gösterilir; o sekmede bir adrese gidersen sıradan sekmeye döner.
+- İki düzen aynı sekme listesini ve aynı `TabItem`'i kullanır (`horizontal: true`). Kalkan ve indirme düğmeleri ortak bileşen oldu.
+- Karşılama yalnızca normal açılışta ve daha önce görülmediyse gelir; ayarlardan yeniden açılabilir.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

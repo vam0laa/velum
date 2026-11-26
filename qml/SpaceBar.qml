@@ -12,6 +12,15 @@ Flow {
     signal edit(int id)
     signal add()
     spacing: 6
+    // the width of everything on one line, for rows that must not wrap it
+    readonly property real naturalWidth: {
+        let width = 0
+        const list = spaces, shown = space
+        for (let i = 0; i < children.length; i++)
+            if (children[i].visible && children[i].implicitWidth > 0)
+                width += children[i].implicitWidth + spacing
+        return Math.ceil(width)
+    }
 
     Repeater {
         model: bar.spaces

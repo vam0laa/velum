@@ -152,7 +152,37 @@ Item {
             t.check("broken saved workspaces give the default one", w.readSpaces("{x").length === 1 && w.readSpaces('[{"id":-1,"name":"a"}]')[0].id === 1)
             w.togglePin(0); w.closeOthers(w.tabIndexOf(inFirst) >= 0 ? w.tabIndexOf(inFirst) : w.current)
 
-            w.openSettings(); t.check("the settings page opens", true)
+            // the settings are a tab of their own
+            w.openTab(t.page("before"))
+            const was = w.current
+            w.openSettings("privacy")
+            const settingsAt = w.current
+            t.check("settings open in a tab", w.onSettings && !w.onStartPage && w.prefs.visible && w.prefs.section === "privacy")
+            w.current = was; t.check("another tab hides them", !w.onSettings && !w.prefs.visible)
+            const made = count()
+            w.openSettings(); t.check("the same tab is used again", w.current === settingsAt && count() === made && w.prefs.section === "privacy")
+            for (const s of w.prefs.sections) w.openSettings(s.key)
+            t.check("every category opens", w.prefs.section === "about" && w.prefs.sections.length === 8)
+            t.check("the command box finds the settings tab", bar.find("ayarlar").some(r => r.kind === "tab"))
+            w.view.url = t.page("left"); t.check("going somewhere makes it an ordinary tab", !w.onSettings)
+            w.closeTab(w.current)
+            // both layouts
+            w.horizontalTabs = true; w.openTab(t.page("h1")); w.openTab(t.page("h2"))
+            const top = w.current; w.moveTab(top, w.pinnedCount)
+            t.check("the horizontal layout works on the same tabs", w.pageAt(w.pinnedCount).endsWith("h2") && w.view !== null)
+            w.closeTab(w.current); w.closeTab(w.visibleTabs().find(i => w.pageAt(i).endsWith("h1")))
+            w.horizontalTabs = false
+            Theme.palette = "latte"; t.check("a light theme is known as light", !Theme.dark)
+            Theme.accentChoice = "pink"; t.check("the accent can be chosen", String(Theme.accent) === String(Theme.pink))
+            Theme.accentChoice = ""; Theme.palette = "mocha"; t.check("every theme has all its colours", Theme.themes.every(x => [...Array(15).keys()].every(i => String(Theme.colorOf(x.key, i)).startsWith("#"))))
+            // the welcome pages
+            w.welcomed = false; w.welcome.open()
+            t.check("the welcome starts at the first page", w.welcome.step === 0)
+            w.welcome.next(); w.welcome.next(); w.welcome.back(); t.check("it moves between pages", w.welcome.step === 1)
+            for (let i = 0; i < 10; i++) w.welcome.next()
+            t.check("finishing is remembered", w.welcomed && !w.welcome.opened)
+            w.current = was
+            w.closeTab(w.current)
             w.downloadFolder = "/tmp/somewhere"; t.check("a download folder can be chosen", w.downloadFolder === "/tmp/somewhere"); w.downloadFolder = ""
             const menu = w.pageMenu
             menu.describe({ linkUrl: "https://a.example/", selectedText: "  word  " })

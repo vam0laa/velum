@@ -15,6 +15,12 @@ ApplicationWindow {
     property string profileName: "velum"   // the folder logins are kept in; tests use their own
     property int current: 0
     property bool compactSidebar: false
+    property bool horizontalTabs: false     // the tabs along the top instead of down the side
+    property bool greet: false              // show the welcome pages if they were never seen
+    property bool welcomed: false
+    property alias welcome: welcome
+    property alias prefs: prefs
+    readonly property bool onSettings: view !== null && view.kind === "settings"
     property bool pageFullScreen: false
     property int moves: 0             // counts reorderings, so that "view" is looked up again
     property int pinnedCount: 0
@@ -51,7 +57,7 @@ ApplicationWindow {
     readonly property var ask: asks.find(a => a.page === view) ?? null
     // the page of the current tab; "views.count" and "moves" make this update when tabs change
     readonly property WebEngineView view: (moves, views.count > 0) ? views.itemAt(current) as WebEngineView : null
-    readonly property bool onStartPage: view !== null && (view.url.toString() === "" || view.url.toString() === "about:blank") && !view.loading
+    readonly property bool onStartPage: view !== null && !onSettings && (view.url.toString() === "" || view.url.toString() === "about:blank") && !view.loading
 
     width: 1280
     height: 800
@@ -115,6 +121,8 @@ ApplicationWindow {
         followCurrent()
         // the chosen tab was already visible or hidden before "current" settled
         Qt.callLater(() => view?.load_())
+        if (greet && !welcomed)
+            Qt.callLater(() => welcome.open())
     }
 
     function readSession(text) {
@@ -193,6 +201,8 @@ ApplicationWindow {
         property alias downloadFolder: window.downloadFolder
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
+        property alias horizontalTabs: window.horizontalTabs
+        property alias welcomed: window.welcomed
         property alias readerSize: window.readerSize
         property string neverSave: "[]"
         property string spaces: "[]"
@@ -211,7 +221,7 @@ ApplicationWindow {
 
     // Adds a tab after the others, in this workspace unless another is named.
     function appendTab(url, title, lazy, inWorkspace) {
-        tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0, space: inWorkspace ?? space })
+        tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0, space: inWorkspace ?? space, kind: "" })
         touchSession()
     }
 
@@ -382,10 +392,8 @@ ApplicationWindow {
 
     function openBookmarks() { bookmarksPage.open() }
     function openImport() { importPanel.open() }
-    function openPasswords() {
-        settings.section = 4
-        settings.open()
-    }
+    function openPasswords() { openSettings("passwords") }
+    function openDownloads() { (horizontalTabs ? topBar : side).openDownloads() }
 
     // Takes bookmarks (and history) of another browser. Returns the sentence to show.
     function importFrom(path, withHistory) {
@@ -416,7 +424,7 @@ ApplicationWindow {
 
     // Ctrl+D: bookmark the page, or remove the bookmark it already has
     function toggleBookmark() {
-        if (onStartPage)
+        if (onStartPage || onSettings)
             return
         const url = String(view.url)
         const at = shortcuts.findIndex(s => s.url === url)
@@ -431,11 +439,11 @@ ApplicationWindow {
             request.downloadDirectory = downloadFolder
         request.accept()            // saved into your downloads folder, never opened
         downloads = [request].concat(downloads)
-        side.openDownloads()
+        openDownloads()
         // a tab that was opened only to fetch the file is closed again
         for (let i = tabs.count - 1; i >= 0 && tabs.count > 1; i--) {
             const page = views.itemAt(i) as WebEngineView
-            if (page && page === view && tabs.get(i).pageUrl === "")
+            if (page && page === view && tabs.get(i).pageUrl === "" && tabs.get(i).kind === "")
                 closeTab(i)
         }
     }
@@ -683,7 +691,7 @@ ApplicationWindow {
             return
         }
         const color = c => String(c)
-        const look = { size: readerSize, dark: Theme.surface.hslLightness < 0.5, minutes: Lang.t("dk okuma", "min read"),
+        const look = { size: readerSize, dark: Theme.dark, minutes: Lang.t("dk okuma", "min read"),
                        colors: { back: color(Theme.surface), text: color(Theme.text), dim: color(Theme.dim), accent: color(Theme.accent), card: color(Theme.frame), line: color(Theme.line) } }
         page.runJavaScript(reader.enter(look), WebEngineScript.ApplicationWorld, found => {
             if (found === true)
@@ -795,7 +803,7 @@ ApplicationWindow {
         if (page.accounts.length === 1)
             fillAccount(page, page.accounts[0].user)
         else
-            accountMenu.popup(card.width + side.width - accountMenu.width, 40)
+            accountMenu.popup(window.width - accountMenu.width - 20, window.horizontalTabs ? topBar.height + 40 : 40)
     }
 
     function fillAccount(page, user) {
@@ -864,13 +872,29 @@ ApplicationWindow {
     }
 
     function findInPage() {
-        if (!onStartPage)
+        if (!onStartPage && !onSettings)
             findBar.open()
     }
     // the box belongs to the page it was opened on
     onViewChanged: findBar.close()
 
-    function openSettings() { settings.open() }
+    // Goes to the settings tab of this workspace, making one if there is none.
+    function openSettings(section) {
+        if (section)
+            prefs.section = section
+        let at = visibleTabs().find(i => tabs.get(i).kind === "settings")
+        if (at === undefined) {
+            // an empty tab turns into it
+            if (onStartPage && !tabs.get(current).pinned) {
+                at = current
+            } else {
+                appendTab("", "", false)
+                at = tabs.count - 1
+            }
+            tabs.setProperty(at, "kind", "settings")
+        }
+        current = at
+    }
 
     function showCommandHistory() {
         commandBar.show(false, "", true)
@@ -924,10 +948,14 @@ ApplicationWindow {
     function demo(action) {
         if (action === "resources")
             resources.open()
-        else if (action.startsWith("settings:")) {
-            settings.section = Number(action.slice(9))
-            settings.open()
+        else if (action.startsWith("settings:"))
+            openSettings(action.slice(9))
+        else if (action.startsWith("welcome:")) {
+            welcome.open()
+            welcome.step = Number(action.slice(8))
         }
+        else if (action === "horizontal")
+            horizontalTabs = true
         else if (action.startsWith("menu:")) {
             const kind = action.slice(5)
             pageMenu.view = view
@@ -972,14 +1000,16 @@ ApplicationWindow {
         commandBar.show(true, "")
     }
 
-    RowLayout {
+    GridLayout {
         anchors { fill: parent; margins: window.pageFullScreen ? 0 : 8 }
-        spacing: window.pageFullScreen ? 0 : 8
+        columns: window.horizontalTabs ? 1 : 2
+        rowSpacing: window.pageFullScreen ? 0 : 8
+        columnSpacing: window.pageFullScreen ? 0 : 8
 
         Sidebar {
             id: side
             Layout.fillHeight: true
-            visible: !window.pageFullScreen
+            visible: !window.pageFullScreen && !window.horizontalTabs
             compact: window.compactSidebar
             onToggle: window.compactSidebar = !window.compactSidebar
             onSearch: window.editAddress()
@@ -1006,6 +1036,33 @@ ApplicationWindow {
             onSpaceAdd: spaceDialog.show(0, "", false)
         }
 
+        TopBar {
+            id: topBar
+            Layout.fillWidth: true
+            visible: !window.pageFullScreen && window.horizontalTabs
+            view: window.view
+            tabModel: tabs
+            current: window.current
+            pinnedCount: window.pinnedCount
+            host: window.currentHost
+            downloads: window.downloads
+            spaces: window.spaces
+            space: window.space
+            onPicked: i => window.current = i
+            onClosed: i => window.closeTab(i)
+            onNewTab: window.newTab()
+            onMoved: (from, to) => window.moveTab(from, to)
+            onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
+            onReloadPage: window.view.reload()
+            onClearData: clearDialog.open()
+            onSettings: window.openSettings()
+            onShowFolder: folder => Qt.openUrlExternally("file://" + folder.split("/").map(encodeURIComponent).join("/"))
+            onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
+            onSpaceChosen: id => window.switchSpace(id)
+            onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
+            onSpaceAdd: spaceDialog.show(0, "", false)
+        }
+
         // the page, in a window of its own
         Panel {
             id: card
@@ -1013,9 +1070,9 @@ ApplicationWindow {
             Layout.fillHeight: true
             chrome: !window.pageFullScreen
             fill: Theme.window
-            title: window.onStartPage ? Lang.t("başlangıç", "start") : window.view && window.view.title !== "" ? window.view.title : window.currentHost
+            title: window.onSettings ? Lang.t("ayarlar", "settings") : window.onStartPage ? Lang.t("başlangıç", "start") : window.view && window.view.title !== "" ? window.view.title : window.currentHost
             stripe: Theme.rainbow[Math.max(0, window.current) % Theme.rainbow.length]
-            minimizable: true
+            minimizable: !window.horizontalTabs
             maximizable: true
             closable: true
             onMinimize: window.compactSidebar = !window.compactSidebar
@@ -1043,6 +1100,7 @@ ApplicationWindow {
                         required property int index
                         required property string startUrl
                         required property bool lazy
+                        required property string kind
                         property bool started: false
                         property bool crashed: false
                         property string loginOrigin: ""     // set while a login form is shown
@@ -1185,6 +1243,9 @@ ApplicationWindow {
                         }
                         onUrlChanged: {
                             window.closeReader(web)      // sites that change page without loading
+                            // going somewhere turns the settings tab into an ordinary one
+                            if (kind !== "" && url.toString() !== "" && url.toString() !== "about:blank")
+                                tabs.setProperty(index, "kind", "")
                             if (lazy && !started)
                                 return
                             tabs.setProperty(index, "pageUrl", String(url))
@@ -1357,6 +1418,31 @@ ApplicationWindow {
                 Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.pixelSize: 13; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
             }
 
+            SettingsPage {
+                id: prefs
+                x: window.splitShown ? window.view.x : 0
+                width: window.splitShown ? window.view.width : parent.width
+                height: parent.height
+                visible: window.onSettings
+                sleepMode: window.sleepMode
+                restoreSession: window.restoreSession
+                downloadFolder: window.downloadFolder
+                horizontalTabs: window.horizontalTabs
+                compactSidebar: window.compactSidebar
+                neverSites: window.neverSave
+                bookmarkCount: window.shortcuts.length
+                onSleepModeChosen: mode => window.sleepMode = mode
+                onRestoreSessionChosen: on => window.restoreSession = on
+                onDownloadFolderChosen: folder => window.downloadFolder = folder
+                onLayoutChosen: h => window.horizontalTabs = h
+                onCompactChosen: on => window.compactSidebar = on
+                onClearRequested: clearDialog.open()
+                onAskAgain: origin => window.askAgainFor(origin)
+                onBookmarksRequested: window.openBookmarks()
+                onImportRequested: window.openImport()
+                onWelcomeRequested: welcome.open()
+            }
+
             StartPage {
                 id: start
                 x: window.splitShown ? window.view.x : 0
@@ -1379,17 +1465,12 @@ ApplicationWindow {
         }
     }
 
-    SettingsPage {
-        id: settings
-        sleepMode: window.sleepMode
-        restoreSession: window.restoreSession
-        downloadFolder: window.downloadFolder
-        onSleepModeChosen: mode => window.sleepMode = mode
-        onRestoreSessionChosen: on => window.restoreSession = on
-        onDownloadFolderChosen: folder => window.downloadFolder = folder
-        onClearRequested: clearDialog.open()
-        neverSites: window.neverSave
-        onAskAgain: origin => window.askAgainFor(origin)
+    Welcome {
+        id: welcome
+        horizontalTabs: window.horizontalTabs
+        onLayoutChosen: h => window.horizontalTabs = h
+        onImportRequested: window.openImport()
+        onFinished: window.welcomed = true
     }
 
     ResourcePanel {
@@ -1451,7 +1532,8 @@ ApplicationWindow {
             { name: Lang.t("Yer imleri: düzenle, klasörle", "Bookmarks: edit and sort"), keys: "Ctrl+Shift+O", run: () => Qt.callLater(window.openBookmarks) },
             { name: Lang.t("Başka tarayıcıdan aktar", "Import from another browser"), keys: "", run: () => Qt.callLater(window.openImport) },
             { name: Lang.t("Geçmiş", "History"), keys: "Ctrl+H", run: () => Qt.callLater(window.showCommandHistory) },
-            { name: Lang.t("İndirmeler", "Downloads"), keys: "Ctrl+J", run: () => side.openDownloads() },
+            { name: Lang.t("İndirmeler", "Downloads"), keys: "Ctrl+J", run: () => window.openDownloads() },
+            { name: window.horizontalTabs ? Lang.t("Dikey sekmelere geç", "Move the tabs to the side") : Lang.t("Yatay sekmelere geç", "Move the tabs to the top"), keys: "", run: () => window.horizontalTabs = !window.horizontalTabs },
             { name: Lang.t("Kaynaklar: hangi sekme ne kadar yiyor", "Resources: what each tab uses"), keys: "Shift+Esc", run: () => resources.open() },
             { name: Lang.t("Diğer sekmeleri uyut", "Put other tabs to sleep"), keys: "", run: () => window.sleepOthers() },
             { name: Lang.t("Yan paneli daralt ya da genişlet", "Narrow or widen the side bar"), keys: "Ctrl+B", run: () => window.compactSidebar = !window.compactSidebar },
@@ -1542,7 +1624,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+,"; onActivated: window.openSettings() }
     Shortcut { sequence: "Shift+Escape"; onActivated: resources.open() }
     Shortcut { sequence: "Ctrl+H"; onActivated: window.showCommandHistory() }
-    Shortcut { sequence: "Ctrl+J"; onActivated: side.openDownloads() }
+    Shortcut { sequence: "Ctrl+J"; onActivated: window.openDownloads() }
     Shortcut { sequence: "Ctrl+Shift+Del"; onActivated: clearDialog.open() }
     Shortcut { sequence: "Ctrl+K"; onActivated: commandBar.show(false, "") }
     Shortcut { sequence: "Ctrl+W"; onActivated: window.closeTab(window.current) }

@@ -14,20 +14,26 @@ ItemDelegate {
     property bool shown: true          // false: it belongs to another workspace
     property bool current: false
     property bool compact: false
-    readonly property string label: title === "" ? Lang.t("Yeni sekme", "New tab") : title
+    required property string kind      // "" a web page, "settings" Velum's settings
+    property bool horizontal: false    // in the bar along the top
+    property real wide: 200            // how wide a horizontal tab may be
+    readonly property string label: kind === "settings" ? Lang.t("Ayarlar", "Settings") : title === "" ? Lang.t("Yeni sekme", "New tab") : title
     readonly property color tone: Theme.rainbow[Math.max(0, index) % Theme.rainbow.length]
     signal picked(int index)
     signal closed(int index)
     signal menuRequested(int index)
-    signal dragged(int index, real sceneY)
+    signal dragged(int index, point at)
     // set by the list: the last pinned tab draws a divider under itself
     property bool lastPinned: false
 
-    height: shown ? 42 : 0
+    width: !horizontal ? (ListView.view?.width ?? 0) : !shown ? 0 : compact ? 48 : wide
+    height: horizontal ? 36 : shown ? 42 : 0
     visible: shown
     padding: 0
-    bottomPadding: 4
-    bottomInset: 4
+    bottomPadding: horizontal ? 0 : 4
+    bottomInset: horizontal ? 0 : 4
+    rightPadding: horizontal ? 4 : 0
+    rightInset: horizontal ? 4 : 0
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
     onClicked: picked(index)
@@ -42,11 +48,11 @@ ItemDelegate {
         }
         // a small coloured mark, one colour per tab
         Rectangle {
-            x: 3
-            anchors.verticalCenter: parent.verticalCenter
-            width: 3
+            x: row.horizontal ? (parent.width - width) / 2 : 3
+            y: row.horizontal ? parent.height - height - 2 : (parent.height - height) / 2
+            width: !row.horizontal ? 3 : row.current ? 22 : 8
             radius: 2
-            height: row.current ? 18 : 8
+            height: row.horizontal ? 3 : row.current ? 18 : 8
             color: row.tone
             opacity: row.current ? 1 : 0.55
             Behavior on height { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
@@ -65,11 +71,11 @@ ItemDelegate {
                 anchors.fill: parent
                 source: row.siteIcon
                 sourceSize: Qt.size(36, 36)
-                visible: !row.loading && status === Image.Ready
+                visible: !row.loading && row.kind === "" && status === Image.Ready
             }
             Icon {
                 anchors.centerIn: parent
-                name: "globe"
+                name: row.kind === "settings" ? "settings" : "globe"
                 size: 17
                 color: row.tone
                 visible: !row.loading && !favicon.visible
@@ -130,8 +136,8 @@ ItemDelegate {
     Hint {
         text: row.label
         shown: row.compact && row.hovered
-        x: row.width + 8
-        y: (row.height - height) / 2
+        x: row.horizontal ? 0 : row.width + 8
+        y: row.horizontal ? row.height + 6 : (row.height - height) / 2
     }
 
     // the middle mouse button closes a tab, as in other browsers; pinned tabs are safe from it
@@ -147,16 +153,19 @@ ItemDelegate {
     DragHandler {
         id: drag
         target: null
-        xAxis.enabled: false
+        xAxis.enabled: row.horizontal
+        yAxis.enabled: !row.horizontal
         grabPermissions: PointerHandler.CanTakeOverFromAnything
-        onCentroidChanged: if (active) row.dragged(row.index, centroid.scenePosition.y)
+        onCentroidChanged: if (active) row.dragged(row.index, centroid.scenePosition)
     }
     opacity: drag.active ? 0.7 : 1
 
     Rectangle {
         visible: row.lastPinned
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 1; leftMargin: 6; rightMargin: 6 }
-        height: 2
+        x: row.horizontal ? row.width - 3 : 6
+        y: row.horizontal ? 8 : row.height - 3
+        width: row.horizontal ? 2 : row.width - 12
+        height: row.horizontal ? row.height - 16 : 2
         color: Theme.peach
         opacity: 0.6
     }

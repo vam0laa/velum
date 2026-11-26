@@ -73,7 +73,10 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
+    // the welcome pages are not shown to development runs
+    const bool greet = !args.isSet(shot) && !args.isSet(demo) && !args.isSet(box);
     engine.setInitialProperties({{QStringLiteral("startUrls"), start},
+                                 {QStringLiteral("greet"), greet},
                                  {QStringLiteral("hasWidevine"), !cdm.isEmpty()}});
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);

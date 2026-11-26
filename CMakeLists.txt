@@ -71,6 +71,13 @@ qt_add_qml_module(velum
         qml/LoginScript.qml
         qml/PasswordBar.qml
         qml/PasswordList.qml
+        qml/ThemePicker.qml
+        qml/LayoutPicker.qml
+        qml/Card.qml
+        qml/ShieldButton.qml
+        qml/DownloadButton.qml
+        qml/TopBar.qml
+        qml/Welcome.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml

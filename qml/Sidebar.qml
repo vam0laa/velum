@@ -31,10 +31,9 @@ Panel {
     signal clearData()
     signal settings()
     property var downloads: []
-    readonly property int running: downloads.filter(d => !d.isFinished).length
     signal showFolder(string folder)
     signal clearDownloads()
-    function openDownloads() { downloadsPanel.open() }
+    function openDownloads() { downloadButton.show() }
 
     title: compact ? "" : "velum"
     stripe: Theme.mauve
@@ -61,32 +60,12 @@ Panel {
             Item { Layout.fillWidth: true; visible: !side.compact }
             IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "back"; hint: Lang.t("Geri (Alt+Sol)", "Back (Alt+Left)"); hintBeside: side.compact; enabled: side.view?.canGoBack ?? false; onClicked: side.view.goBack() }
             IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "forward"; hint: Lang.t("İleri (Alt+Sağ)", "Forward (Alt+Right)"); hintBeside: side.compact; enabled: side.view?.canGoForward ?? false; onClicked: side.view.goForward() }
-            IconButton {
-                id: shieldButton
+            ShieldButton {
                 Layout.alignment: Qt.AlignHCenter
-                symbol: "shield"
-                hint: Lang.t("Koruma", "Protection")
-                hintBeside: side.compact
-                readonly property int blocked: Shield.blockedCount(side.host, Shield.revision)
-                opacity: Shield.enabled && !Shield.allowed(side.host, Shield.revision) ? 1 : 0.45
-                onClicked: shieldPanel.open()
-                Rectangle {
-                    visible: shieldButton.blocked > 0
-                    anchors { right: parent.right; top: parent.top; rightMargin: -2; topMargin: -2 }
-                    height: 14
-                    width: Math.max(14, badge.implicitWidth + 6)
-                    radius: 7
-                    color: Theme.green
-                    Text { id: badge; anchors.centerIn: parent; text: shieldButton.blocked > 99 ? "99+" : shieldButton.blocked; color: Theme.onAccent; font.pixelSize: 9; font.weight: Font.Bold }
-                }
-                ShieldPanel {
-                    id: shieldPanel
-                    host: side.host
-                    x: side.compact ? parent.width + 8 : parent.width - width
-                    y: side.compact ? 0 : parent.height + 6
-                    onReload: side.reloadPage()
-                    onClearRequested: side.clearData()
-                }
+                host: side.host
+                beside: side.compact
+                onReload: side.reloadPage()
+                onClearRequested: side.clearData()
             }
             IconButton {
                 Layout.alignment: Qt.AlignHCenter
@@ -149,7 +128,6 @@ Panel {
             interactive: contentHeight > height   // otherwise dragging belongs to the tabs
             currentIndex: side.current
             delegate: TabItem {
-                width: ListView.view.width
                 compact: side.compact
                 current: index === side.current
                 shown: pinned || space === side.space
@@ -157,8 +135,8 @@ Panel {
                 onClosed: i => side.closed(i)
                 onMenuRequested: i => side.menuRequested(i)
                 lastPinned: index === side.pinnedCount - 1 && index < ListView.view.count - 1
-                onDragged: (i, sceneY) => {
-                    const point = list.contentItem.mapFromItem(null, 0, sceneY)
+                onDragged: (i, at) => {
+                    const point = list.contentItem.mapFromItem(null, at.x, at.y)
                     const over = list.indexAt(width / 2, point.y)
                     if (over >= 0 && over !== i)
                         side.moved(i, over)
@@ -216,26 +194,14 @@ Panel {
             hintBeside: side.compact
             onClicked: side.settings()
         }
-        IconButton {
+        DownloadButton {
             id: downloadButton
             Layout.alignment: Qt.AlignHCenter
-            symbol: "download"
-            hint: Lang.t("İndirmeler (Ctrl+J)", "Downloads (Ctrl+J)")
-            hintBeside: side.compact
-            onClicked: downloadsPanel.open()
-            Rectangle {
-                visible: side.running > 0
-                anchors { right: parent.right; top: parent.top }
-                width: 9; height: 9; radius: 5; color: Theme.green
-            }
-            DownloadsPanel {
-                id: downloadsPanel
-                downloads: side.downloads
-                x: side.compact ? parent.width + 8 : parent.width - width
-                y: side.compact ? parent.height - height : -height - 6
-                onShowFolder: folder => side.showFolder(folder)
-                onClearFinished: side.clearDownloads()
-            }
+            downloads: side.downloads
+            beside: side.compact
+            above: true
+            onShowFolder: folder => side.showFolder(folder)
+            onClearFinished: side.clearDownloads()
         }
         }
     }
