@@ -129,7 +129,7 @@ qt_add_qml_module(velum
         qml/TextButton.qml
         qml/ConfirmDialog.qml
     RESOURCES data/velum.svg data/sky.jpg data/sky-night.jpg data/scanline.png data/logos/tr.svg data/logos/gb.svg data/logos/duckduckgo.png data/logos/brave.png data/logos/google.png data/logos/startpage.svg data/logos/ublock.png data/logos/darkreader.png data/logos/sponsorblock.png data/fonts/VT323-Regular.ttf data/fonts/GoogleSansFlex.woff
-    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h ${NOTIFIER_HEADER} src/files.h src/updatebridge.h src/importbridge.h src/passwordbridge.h src/storebridge.h src/defaultbrowser.h
+    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h ${NOTIFIER_HEADER} src/files.h src/gpubridge.h src/updatebridge.h src/importbridge.h src/passwordbridge.h src/storebridge.h src/defaultbrowser.h
     IMPORTS QtQuick
 )
 set_target_properties(velum PROPERTIES QT_QML_MODULE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Velum)

@@ -26,7 +26,7 @@ Item {
     property alias videoOut: bar.videoOut
     signal video()
 
-    Shadow { visible: panel.chrome && panel.shadow && !Theme.glass }
+    Shadow { visible: panel.chrome && panel.shadow && !Theme.seeThrough }
     Rectangle { anchors.fill: parent; visible: panel.chrome; color: panel.fill; radius: Theme.corner; border.width: Theme.web ? 2 : 1; border.color: Theme.web ? Theme.edge : Theme.line }
     Rectangle { anchors { fill: parent; margins: -2 } visible: panel.chrome && Theme.web; color: "transparent"; border.width: 2; border.color: Theme.line }
     TitleBar {

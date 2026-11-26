@@ -163,7 +163,7 @@ Item {
             const made = count()
             w.openSettings(); t.check("the same tab is used again", w.current === settingsAt && count() === made && w.prefs.section === "privacy")
             for (const s of w.prefs.sections) w.openSettings(s.key)
-            t.check("every category opens", w.prefs.section === "about" && w.prefs.sections.length === 12)
+            t.check("every category opens", w.prefs.section === "about" && w.prefs.sections.length === 13)
             t.check("the command box finds the settings tab", bar.find("ayarlar").some(r => r.kind === "tab"))
             w.view.url = t.page("left"); t.check("going somewhere makes it an ordinary tab", !w.onSettings)
             w.closeTab(w.current)
@@ -221,6 +221,18 @@ Item {
             Theme.glass = false; t.check("without glass they are solid", Theme.frameBack.a === 1 && Theme.sheetBack.a === 1)
             Theme.motion = false; t.check("animations can be switched off", Theme.quick === 0 && Theme.smooth === 0)
             Theme.motion = true
+            // speed
+            w.setPowerMode("game"); t.check("game mode stills the interface", Theme.calm && Theme.smooth === 0 && !Theme.seeThrough && w.autoSleep)
+            t.check("and freezes tabs within seconds", w.freezeAfter === 5000 && w.sleepTarget(6000, 1, false, false, false) === 1)
+            t.check("sound keeps playing", w.sleepTarget(6000, 1, false, true, false) === 0)
+            w.setPowerMode("saver"); t.check("saver sleeps tabs quickly", w.discardAfter === 180000)
+            w.setPowerMode("nonsense"); t.check("balanced again, your look untouched", w.powerMode === "balanced" && !Theme.calm && Theme.motion)
+            const pile = [{ index: 1, mb: 300, since: 50 }, { index: 2, mb: 200, since: 10 }, { index: 3, mb: 500, since: 90 }]
+            t.check("the longest unseen tabs go first, only as many as needed", w.pickToSleep(pile, 1400, 1000).join() === "2,1")
+            t.check("nothing goes under the limit", w.pickToSleep(pile, 900, 1000).length === 0)
+            w.memoryLimit = 1; w.keepUnderLimit(); t.check("the limit measures memory", w.memoryUsed >= 0); w.memoryLimit = 0
+            w.openSettings("speed"); t.check("performance settings open", w.prefs.section === "speed" && !w.prefs.nothingFound)
+            w.closeTab(w.current)
             // designing the home page
             w.keepWidgets(["clock", "tasks", "timer", "tasks", "bogus"])
             t.check("widgets are kept once, known ones only", w.homeWidgets.join() === "clock,tasks,timer")
@@ -240,7 +252,7 @@ Item {
             sheet.editor.visible = false; sheet.cssEdited(""); w.keepWords("", ""); w.keepTasks([]); w.keepWidgets(["clock", "date", "calendar", "shield"])
             w.closeTab(w.current)
             // the welcome pages
-            w.welcomed = false; w.welcome.open()
+            t.check("the welcome screen is not made until needed", w.welcome === null); w.welcomed = false; w.showWelcome()
             t.check("the welcome starts at the first page", w.welcome.step === 0)
             w.welcome.next(); w.welcome.next(); w.welcome.back(); t.check("it moves between pages", w.welcome.step === 1)
             WebStore.fetched = []

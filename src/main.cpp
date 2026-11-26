@@ -1,5 +1,6 @@
 #include <QCommandLineParser>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QIcon>
@@ -11,6 +12,8 @@
 #include <QTimer>
 #include <QtWebEngineQuick>
 
+#include <cstdio>
+
 #include "address.h"
 #include "graphics.h"
 #include "instance.h"
@@ -18,13 +21,37 @@
 
 int main(int argc, char *argv[])
 {
+    // VELUM_TIMING=1 prints how long the start took, up to the first picture on screen
+    QElapsedTimer sinceStart;
+    sinceStart.start();
+
     // The engine reads its switches once, while starting. So this comes before everything else.
     const QString cdm = widevine::forCommandLine(widevine::find());
-    if (!cdm.isEmpty()) {
-        QByteArray flags = qgetenv("QTWEBENGINE_CHROMIUM_FLAGS");
+    QByteArray flags = qgetenv("QTWEBENGINE_CHROMIUM_FLAGS");
+    if (!cdm.isEmpty())
         flags += " --widevine-path=" + cdm.toLocal8Bit();
-        qputenv("QTWEBENGINE_CHROMIUM_FLAGS", flags.trimmed());
+    // the acceleration setting; a forced start that never got going is given up
+    QCoreApplication::setOrganizationName(QStringLiteral("velum"));
+    QCoreApplication::setApplicationName(QStringLiteral("velum"));
+    bool forced = false;
+    {
+        QSettings settings;
+        const QString wanted = graphics::cleanMode(settings.value(QStringLiteral("graphics/mode")).toString());
+        const QString mode = graphics::safeMode(wanted, settings.value(QStringLiteral("graphics/pending")).toBool());
+        if (mode != wanted) {
+            settings.setValue(QStringLiteral("graphics/mode"), mode);
+            settings.setValue(QStringLiteral("graphics/fellBack"), true);
+        }
+        forced = mode == QLatin1String("boost");
+        settings.setValue(QStringLiteral("graphics/pending"), forced);
+#ifdef Q_OS_LINUX
+        flags += ' ' + graphics::engineFlags(mode, true);
+#else
+        flags += ' ' + graphics::engineFlags(mode, false);
+#endif
     }
+    if (!flags.trimmed().isEmpty())
+        qputenv("QTWEBENGINE_CHROMIUM_FLAGS", flags.trimmed());
 
     graphics::prepare();
 
@@ -93,6 +120,21 @@ int main(int argc, char *argv[])
         QObject *window = engine.rootObjects().constFirst();
         QObject::connect(&instance, &Instance::received, window,
                          [window](const QStringList &urls) { QMetaObject::invokeMethod(window, "openExternal", Q_ARG(QVariant, urls)); });
+    }
+
+    // still running a while later, or closed properly: the forced start worked
+    if (forced) {
+        const auto worked = [] { QSettings().setValue(QStringLiteral("graphics/pending"), false); };
+        QTimer::singleShot(15000, &app, worked);
+        QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, worked);
+    }
+
+    if (qEnvironmentVariableIsSet("VELUM_TIMING") && !engine.rootObjects().isEmpty()) {
+        std::fprintf(stderr, "velum: interface loaded after %lld ms\n", sinceStart.elapsed());
+        if (auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst()))
+            QObject::connect(window, &QQuickWindow::frameSwapped, window,
+                             [sinceStart] { std::fprintf(stderr, "velum: first picture after %lld ms\n", sinceStart.elapsed()); },
+                             Qt::SingleShotConnection);
     }
 
     if (args.isSet(demo) && !engine.rootObjects().isEmpty()) {

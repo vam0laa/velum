@@ -125,7 +125,7 @@ Item {
                                 NumberAnimation { target: said; property: "opacity"; to: 1; duration: Theme.smooth }
                             }
                         }
-                        Timer { interval: 3400; repeat: true; running: root.visible && root.page.visible && pill.words.length > 1; onTriggered: Theme.motion ? swap.restart() : pill.word++ }
+                        Timer { interval: 3400; repeat: true; running: root.visible && root.page.visible && pill.words.length > 1 && !Theme.calm; onTriggered: Theme.moving ? swap.restart() : pill.word++ }
                     }
                 }
 

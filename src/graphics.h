@@ -16,6 +16,17 @@ bool hybridWithNvidia(const QString &drm);
 // answers of "hyprctl monitors -j" and "hyprctl getoption xwayland:force_zero_scaling -j".
 double xwaylandScale(const QByteArray &monitors, const QByteArray &zeroScaling);
 
+// The acceleration setting: "auto" (the engine decides), "boost" or "off".
+QString cleanMode(const QString &mode);
+
+// The engine switches for that setting, to be added to its command line. `linux_` adds the
+// video decoding switches that only Linux has.
+QByteArray engineFlags(const QString &mode, bool linux_);
+
+// A forced start that never reported success is not tried again: `pending` says the last
+// start in `mode` did not finish. Returns the mode to use now.
+QString safeMode(const QString &mode, bool pending);
+
 // Chooses how to draw. Must run before the application is made.
 // VELUM_WAYLAND=1 keeps Wayland; VELUM_USE_NVIDIA=1 leaves the graphics cards alone.
 void prepare();

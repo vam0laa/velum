@@ -9,5 +9,5 @@ Rectangle {
     height: parent.height
     z: -1
     color: Theme.hardShadow
-    visible: Theme.web && !Theme.glass
+    visible: Theme.web && !Theme.seeThrough
 }

@@ -95,8 +95,13 @@ ApplicationWindow {
     }
     property bool greet: false              // show the welcome pages if they were never seen
     property bool welcomed: false
-    property alias welcome: welcome
-    property alias prefs: prefs
+    property var welcome: null          // made when first shown
+    function showWelcome() {
+        if (!welcome)
+            welcome = welcomeScreen.createObject(scene)
+        welcome.open()
+    }
+    readonly property Item prefs: prefsLoader.item
     property var extensions: []             // the installed ones
     property bool fetchingExtension: false
     property var wantedExtension: null      // waiting for your yes: { text, file }
@@ -114,9 +119,57 @@ ApplicationWindow {
     property var shortcuts: []
     property alias bookmarks: bookmarksPage
     property int sleepMode: 1                    // 0 never, 1 early, 2 relaxed
-    readonly property bool autoSleep: sleepMode > 0
-    readonly property int freezeAfter: (sleepMode === 2 ? 5 : 2) * 60 * 1000      // milliseconds unseen
-    readonly property int discardAfter: (sleepMode === 2 ? 20 : 10) * 60 * 1000
+    // "balanced", "game" (background tabs stand still, nothing moves) or "saver"
+    property string powerMode: "balanced"
+    readonly property bool autoSleep: sleepMode > 0 || powerMode !== "balanced"
+    readonly property int freezeAfter: powerMode === "game" ? 5000 : powerMode === "saver" ? 30000
+        : (sleepMode === 2 ? 5 : 2) * 60 * 1000      // milliseconds unseen
+    readonly property int discardAfter: powerMode === "game" ? 5 * 60 * 1000 : powerMode === "saver" ? 3 * 60 * 1000
+        : (sleepMode === 2 ? 20 : 10) * 60 * 1000
+    property int memoryLimit: 0           // megabytes Velum should stay under; 0: no limit
+    property int memoryUsed: 0            // megabytes, as last measured for the limit
+    Binding { target: Theme; property: "calm"; value: window.powerMode !== "balanced" }
+    function setPowerMode(mode) {
+        powerMode = ["game", "saver"].includes(mode) ? mode : "balanced"
+        say(powerMode === "game" ? Lang.t("Oyun modu: arka sekmeler birkaç saniyede donar.", "Game mode: background tabs freeze within seconds.")
+          : powerMode === "saver" ? Lang.t("Tasarruf modu: arka sekmeler çabuk uyur.", "Saver mode: background tabs sleep quickly.")
+          : Lang.t("Dengeli mod.", "Balanced mode."))
+    }
+
+    // Which tabs to put away so that `used` comes down to `limit`: the ones unseen the
+    // longest first. `candidates`: [{ index, mb, since }].
+    function pickToSleep(candidates, used, limit) {
+        const chosen = []
+        for (const c of candidates.slice().sort((a, b) => a.since - b.since)) {
+            if (used <= limit)
+                break
+            chosen.push(c.index)
+            used -= c.mb
+        }
+        return chosen
+    }
+    function keepUnderLimit() {
+        const pages = []
+        for (let i = 0; i < tabs.count; i++)
+            pages.push(views.itemAt(i) as WebEngineView)
+        const pids = pages.map(p => p && p.lifecycleState !== WebEngineView.LifecycleState.Discarded ? p.renderProcessPid : 0)
+        const found = Resources.sample(pids)
+        memoryUsed = Math.round(found.total.memory)
+        if (memoryLimit <= 0 || memoryUsed <= memoryLimit)
+            return
+        const candidates = []
+        pages.forEach((page, i) => {
+            if (!page || page.visible || page === miniPage || page.hiddenSince === 0 || pids[i] <= 0 || tabs.get(i).pinned || page.recentlyAudible
+                    || page.loading || page.recommendedState === WebEngineView.LifecycleState.Active)
+                return
+            // tabs of one site may share a process: each counts its part
+            const sharing = pids.filter(p => p === pids[i]).length
+            candidates.push({ index: i, mb: (found[String(pids[i])]?.memory ?? 0) / sharing, since: page.hiddenSince })
+        })
+        for (const i of pickToSleep(candidates, memoryUsed, memoryLimit))
+            (views.itemAt(i) as WebEngineView).lifecycleState = WebEngineView.LifecycleState.Discarded
+    }
+    Timer { interval: 20000; repeat: true; running: window.memoryLimit > 0; triggeredOnStart: true; onTriggered: window.keepUnderLimit() }
     property bool restoreSession: true
     property string downloadFolder: ""   // "" = the system downloads folder
     // split view: two pages side by side. The pair is remembered as the pages themselves,
@@ -211,7 +264,7 @@ ApplicationWindow {
         // the chosen tab was already visible or hidden before "current" settled
         Qt.callLater(() => view?.load_())
         if (greet && !welcomed)
-            Qt.callLater(() => welcome.open())
+            Qt.callLater(showWelcome)
     }
 
     function readSession(text) {
@@ -289,6 +342,8 @@ ApplicationWindow {
         property alias restoreSession: window.restoreSession
         property alias downloadFolder: window.downloadFolder
         property alias sleepMode: window.sleepMode
+        property alias powerMode: window.powerMode
+        property alias memoryLimit: window.memoryLimit
         property alias compactSidebar: window.compactSidebar
         property alias tabsOnTop: window.horizontalTabs
         property alias startBack: window.startBackground
@@ -1120,7 +1175,7 @@ ApplicationWindow {
                 sleepTab(i)
     }
 
-    Timer { interval: 30000; repeat: true; running: window.autoSleep; onTriggered: window.sleepIdleTabs(Date.now()) }
+    Timer { interval: window.powerMode === "balanced" ? 30000 : 5000; repeat: true; running: window.autoSleep; onTriggered: window.sleepIdleTabs(Date.now()) }
 
     function measure() {
         const pages = []
@@ -1148,6 +1203,7 @@ ApplicationWindow {
 
     // Goes to the settings tab of this workspace, making one if there is none.
     function openSettings(section) {
+        prefsLoader.wanted = true
         if (section)
             prefs.section = section
         let at = visibleTabs().find(i => tabs.get(i).kind === "settings")
@@ -1219,7 +1275,7 @@ ApplicationWindow {
         else if (action.startsWith("settings:"))
             openSettings(action.slice(9))
         else if (action.startsWith("welcome:")) {
-            welcome.open()
+            showWelcome()
             welcome.step = Number(action.slice(8))
         }
         else if (action === "horizontal")
@@ -1469,9 +1525,11 @@ ApplicationWindow {
 
                             profile: window.profile
                             // an empty tab lets the glass through; a web page gets a solid sheet
-                            backgroundColor: Theme.glass && (url.toString() === "" || url.toString() === "about:blank") ? "transparent" : Theme.surface
+                            backgroundColor: Theme.seeThrough && (url.toString() === "" || url.toString() === "about:blank") ? "transparent" : Theme.surface
                             settings.fullScreenSupportEnabled: true      // video full screen
                             settings.errorPageEnabled: false             // Velum explains problems itself
+                            // saving power: nothing starts playing by itself
+                            settings.playbackRequiresUserGesture: window.powerMode === "saver"
                             // a bad certificate is never accepted, only explained
                             onCertificateError: error => {
                                 if (error.isMainFrame)
@@ -1766,46 +1824,61 @@ ApplicationWindow {
                     Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
                 }
 
-                SettingsPage {
-                    id: prefs
+                // made the first time it is opened, then kept
+                Loader {
+                    id: prefsLoader
                     x: window.splitShown ? window.view.x : 0
                     width: window.splitShown ? window.view.width : parent.width
                     height: parent.height
+                    property bool wanted: false
+                    active: wanted
                     visible: window.onSettings
-                    sleepMode: window.sleepMode
-                    restoreSession: window.restoreSession
-                    downloadFolder: window.downloadFolder
-                    horizontalTabs: window.horizontalTabs
-                    compactSidebar: window.compactSidebar
-                    neverSites: window.neverSave
-                    bookmarkCount: window.shortcuts.length
-                    onSleepModeChosen: mode => window.sleepMode = mode
-                    onRestoreSessionChosen: on => window.restoreSession = on
-                    onDownloadFolderChosen: folder => window.downloadFolder = folder
-                    onLayoutChosen: h => window.horizontalTabs = h
-                    onCompactChosen: on => window.compactSidebar = on
-                    onClearRequested: clearDialog.open()
-                    onAskAgain: origin => window.askAgainFor(origin)
-                    onBookmarksRequested: window.openBookmarks()
-                    onImportRequested: window.openImport()
-                    onWelcomeRequested: welcome.open()
-                    startBackground: window.startBackground
-                    startPicture: window.startPicture
-                    showClock: window.showClock
-                    showShield: window.showShield
-                    showNote: window.showNote
-                    showFrequent: window.showFrequent
-                    showBookmarkBar: window.showBookmarkBar
-                    onStartChanged: (name, value) => window.setStart(name, value)
-                    onDesignRequested: { window.openTab(""); Qt.callLater(() => start.editor?.open(0)) }
-                    extensions: window.extensions
-                    fetchingExtension: window.fetchingExtension
-                    onAddFromStore: typed => window.askExtension(typed, false)
-                    onAddFromFile: path => window.askExtension(path, true)
-                    onOpenStore: window.openTab("https://chromewebstore.google.com/")
-                    onOpenExtensionPage: address => window.openTab(String(address))
-                    onEnableExtension: (extension, on) => window.enableExtension(extension, on)
-                    onRemoveExtension: extension => window.removeExtension(extension)
+                    onVisibleChanged: if (visible) wanted = true
+                    sourceComponent: Component {
+                        SettingsPage {
+                            sleepMode: window.sleepMode
+                            powerMode: window.powerMode
+                            memoryLimit: window.memoryLimit
+                            memoryUsed: window.memoryUsed
+                            onPowerModeChosen: mode => window.setPowerMode(mode)
+                            onMemoryLimitChosen: mb => window.memoryLimit = mb
+                            onResourcesRequested: resources.open()
+                            onOpenPage: address => window.openTab(address)
+                            restoreSession: window.restoreSession
+                            downloadFolder: window.downloadFolder
+                            horizontalTabs: window.horizontalTabs
+                            compactSidebar: window.compactSidebar
+                            neverSites: window.neverSave
+                            bookmarkCount: window.shortcuts.length
+                            onSleepModeChosen: mode => window.sleepMode = mode
+                            onRestoreSessionChosen: on => window.restoreSession = on
+                            onDownloadFolderChosen: folder => window.downloadFolder = folder
+                            onLayoutChosen: h => window.horizontalTabs = h
+                            onCompactChosen: on => window.compactSidebar = on
+                            onClearRequested: clearDialog.open()
+                            onAskAgain: origin => window.askAgainFor(origin)
+                            onBookmarksRequested: window.openBookmarks()
+                            onImportRequested: window.openImport()
+                            onWelcomeRequested: window.showWelcome()
+                            startBackground: window.startBackground
+                            startPicture: window.startPicture
+                            showClock: window.showClock
+                            showShield: window.showShield
+                            showNote: window.showNote
+                            showFrequent: window.showFrequent
+                            showBookmarkBar: window.showBookmarkBar
+                            onStartChanged: (name, value) => window.setStart(name, value)
+                            onDesignRequested: { window.openTab(""); Qt.callLater(() => start.editor?.open(0)) }
+                            extensions: window.extensions
+                            fetchingExtension: window.fetchingExtension
+                            onAddFromStore: typed => window.askExtension(typed, false)
+                            onAddFromFile: path => window.askExtension(path, true)
+                            onOpenStore: window.openTab("https://chromewebstore.google.com/")
+                            onOpenExtensionPage: address => window.openTab(String(address))
+                            onEnableExtension: (extension, on) => window.enableExtension(extension, on)
+                            onRemoveExtension: extension => window.removeExtension(extension)
+                        }
+                    }
                 }
 
                 StartPage {
@@ -1855,14 +1928,17 @@ ApplicationWindow {
         }
     }
 
-    Welcome {
-        id: welcome
-        horizontalTabs: window.horizontalTabs
-        onLayoutChosen: h => window.horizontalTabs = h
-        onImportRequested: window.openImport()
-        onFinished: window.welcomed = true
-        installed: window.extensions.map(e => e.name)
-        onExtensionsChosen: ids => window.queueExtensions(ids)
+    Component {
+        id: welcomeScreen
+        Welcome {
+            id: welcome
+            horizontalTabs: window.horizontalTabs
+            onLayoutChosen: h => window.horizontalTabs = h
+            onImportRequested: window.openImport()
+            onFinished: window.welcomed = true
+            installed: window.extensions.map(e => e.name)
+            onExtensionsChosen: ids => window.queueExtensions(ids)
+        }
     }
 
     ResourcePanel {
@@ -1979,7 +2055,7 @@ ApplicationWindow {
         id: themeWash
         parent: window.Overlay.overlay
         z: 100000
-        target: welcome.opened ? welcome.contentItem : scene
+        target: window.welcome?.opened ? window.welcome.contentItem : scene
         Component.onCompleted: Theme.washer = themeWash.run
         Component.onDestruction: if (Theme.washer === themeWash.run) Theme.washer = null
     }
@@ -2002,6 +2078,9 @@ ApplicationWindow {
         AppMenuItem { text: Lang.t("Okuma modu", "Reading mode"); keys: "Alt+R"; enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleReader() }
         AppMenuItem { text: Lang.t("Küçük video penceresi", "Mini video window"); keys: "Alt+P"; enabled: !window.onStartPage && !window.onSettings; onTriggered: window.toggleMini() }
         AppMenuItem { text: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"); keys: "Ctrl+\\"; onTriggered: window.toggleSplit() }
+        AppMenuLine {}
+        AppMenuItem { text: (window.powerMode === "game" ? "✓  " : "") + Lang.t("Oyun modu", "Game mode"); onTriggered: window.setPowerMode(window.powerMode === "game" ? "balanced" : "game") }
+        AppMenuItem { text: (window.powerMode === "saver" ? "✓  " : "") + Lang.t("Tasarruf modu", "Saver mode"); onTriggered: window.setPowerMode(window.powerMode === "saver" ? "balanced" : "saver") }
         AppMenuLine {}
         AppMenuItem { text: Lang.t("Ayarlar", "Settings"); keys: "Ctrl+,"; onTriggered: window.openSettings() }
         AppMenuItem { text: Lang.t("Velum'dan çık", "Quit Velum"); keys: "Ctrl+Q"; onTriggered: Qt.quit() }

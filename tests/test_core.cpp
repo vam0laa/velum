@@ -368,6 +368,18 @@ private slots:
         QCOMPARE(graphics::xwaylandScale(R"([{"scale":40}])", on), 0.0);
     }
 
+    void accelerationSetting()
+    {
+        QCOMPARE(graphics::cleanMode("rubbish"), "auto");
+        QCOMPARE(graphics::engineFlags("auto", true), QByteArray());
+        QCOMPARE(graphics::engineFlags("off", true), QByteArray("--disable-gpu"));
+        QVERIFY(graphics::engineFlags("boost", true).contains("AcceleratedVideoDecodeLinuxGL"));
+        QVERIFY(!graphics::engineFlags("boost", false).contains("Linux"));
+        QCOMPARE(graphics::safeMode("boost", true), "auto");
+        QCOMPARE(graphics::safeMode("boost", false), "boost");
+        QCOMPARE(graphics::safeMode("off", true), "off");
+    }
+
     void updateVersions()
     {
         QCOMPARE(update::compare("0.1.0-beta.2", "0.1.0-beta.1"), 1);

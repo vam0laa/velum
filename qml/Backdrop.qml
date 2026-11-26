@@ -12,7 +12,7 @@ Item {
         visible: backdrop.mode === "sky"
         source: Qt.resolvedUrl(Theme.night ? "../data/sky-night.jpg" : "../data/sky.jpg")
         fillMode: Image.PreserveAspectCrop
-        opacity: Theme.glass ? Theme.solidity : 1
+        opacity: Theme.seeThrough ? Theme.solidity : 1
     }
     Item {
         anchors.fill: parent

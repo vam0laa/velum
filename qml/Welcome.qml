@@ -102,7 +102,7 @@ Popup {
                 x: -size * 0.45; y: -size * 0.4
                 Behavior on glow { ColorAnimation { duration: 600 } }
                 SequentialAnimation on y {
-                    running: welcome.opened && Theme.motion
+                    running: welcome.opened && Theme.moving
                     loops: Animation.Infinite
                     NumberAnimation { to: -180; duration: 7000; easing.type: Easing.InOutSine }
                     NumberAnimation { to: -300; duration: 7000; easing.type: Easing.InOutSine }

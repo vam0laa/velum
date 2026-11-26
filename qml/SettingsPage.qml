@@ -18,6 +18,13 @@ Rectangle {
     property string section: "general"
     property string query: ""
     signal sleepModeChosen(int mode)
+    property string powerMode: "balanced"
+    property int memoryLimit
+    property int memoryUsed
+    signal powerModeChosen(string mode)
+    signal memoryLimitChosen(int mb)
+    signal resourcesRequested()
+    signal openPage(string address)
     signal restoreSessionChosen(bool on)
     signal downloadFolderChosen(string folder)
     signal layoutChosen(bool horizontal)
@@ -57,6 +64,7 @@ Rectangle {
         { key: "privacy", icon: "shield", label: Lang.t("Gizlilik ve güvenlik", "Privacy and security") },
         { key: "passwords", icon: "key", label: Lang.t("Parolalar", "Passwords") },
         { key: "tabs", icon: "panel", label: Lang.t("Sekmeler", "Tabs") },
+        { key: "speed", icon: "gauge", label: Lang.t("Performans", "Performance") },
         { key: "downloads", icon: "download", label: Lang.t("İndirilenler", "Downloads") },
         { key: "extensions", icon: "puzzle", label: Lang.t("Eklentiler", "Extensions"), divided: true },
         { key: "bookmarks", icon: "star", label: Lang.t("Yer imleri", "Bookmarks") },
@@ -70,7 +78,7 @@ Rectangle {
         const q = query.trim().toLocaleLowerCase()
         return q === "" ? section === key : String(words).toLocaleLowerCase().indexOf(q) >= 0
     }
-    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
+    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
 
     color: Theme.sheetBack
 
@@ -393,6 +401,59 @@ Rectangle {
                         onAllow: origin => page.askAgain(origin)
                     }
                     onVisibleChanged: if (visible) page.refresh()
+                }
+
+                // ---- performance ----
+                Group {
+                    id: speed1
+                    wanted: page.shows("speed", "performans oyun tasarruf pil ısı ram bellek mod performance game saver battery memory")
+                    heading: Lang.t("Hız ve bellek", "Speed and memory")
+                    symbol: "gauge"
+                    Line {
+                        label: Lang.t("Mod", "Mode")
+                        Segments {
+                            options: [{ key: "balanced", label: Lang.t("Dengeli", "Balanced") }, { key: "game", label: Lang.t("Oyun", "Game") }, { key: "saver", label: Lang.t("Tasarruf", "Saver") }]
+                            current: page.powerMode
+                            onChosen: key => page.powerModeChosen(key)
+                        }
+                    }
+                    Note {
+                        text: page.powerMode === "game" ? Lang.t("Baktığın dışındaki sekmeler birkaç saniyede donar, 5 dakikada bellekten çıkar; animasyon ve cam kapalı. Ses çalan ve sabit sekmeler çalışmaya devam eder.", "Tabs you are not looking at freeze within seconds and leave memory after 5 minutes; no animations or glass. Tabs playing sound and pinned tabs carry on.")
+                            : page.powerMode === "saver" ? Lang.t("Arka sekmeler 30 saniyede donar, 3 dakikada uyur; animasyon ve cam kapalı, videolar kendiliğinden başlamaz.", "Background tabs freeze after 30 seconds and sleep after 3 minutes; no animations or glass, videos do not start by themselves.")
+                            : Lang.t("Uyutma süreleri Sekmeler bölümündeki gibi; görünüm senin ayarında.", "Tabs sleep as set under Tabs; the look is as you set it.")
+                    }
+                    Line {
+                        label: Lang.t("Bellek sınırı", "Memory limit")
+                        Dropdown {
+                            options: [{ key: 0, label: Lang.t("Sınır yok", "No limit") }, { key: 1024, label: "1 GB" }, { key: 2048, label: "2 GB" }, { key: 3072, label: "3 GB" }, { key: 4096, label: "4 GB" }, { key: 6144, label: "6 GB" }]
+                            current: page.memoryLimit
+                            onChosen: key => page.memoryLimitChosen(key)
+                        }
+                    }
+                    Note {
+                        visible: page.memoryLimit > 0
+                        text: Lang.t("Aşılınca en uzun süredir bakmadığın sekmeler uyutulur; baktığın, ses çalan ve sabit sekmelere dokunulmaz. Bu yüzden sınır bazen aşılabilir.", "Above it, the tabs unseen the longest are put to sleep; shown, sounding and pinned tabs are left alone, so it can be exceeded.")
+                              + (page.memoryUsed > 0 ? "\n" + Lang.t("Şu an: ", "Now: ") + page.memoryUsed + " MB" : "")
+                    }
+                    TextButton { Layout.fillWidth: true; implicitHeight: 40; text: Lang.t("Hangi sekme ne kadar kullanıyor?", "What does each tab use?"); onClicked: page.resourcesRequested() }
+                }
+                Group {
+                    id: speed2
+                    wanted: page.shows("speed", "ekran kartı hızlandırma gpu video donanım graphics acceleration hardware")
+                    heading: Lang.t("Ekran kartı", "Graphics card")
+                    symbol: "gauge"
+                    Line {
+                        label: Lang.t("Hızlandırma", "Acceleration")
+                        Dropdown {
+                            options: [{ key: "auto", label: Lang.t("Otomatik", "Automatic") }, { key: "boost", label: Lang.t("Zorla (güçlü)", "Forced") }, { key: "off", label: Lang.t("Kapalı", "Off") }]
+                            current: Gpu.mode
+                            onChosen: key => Gpu.mode = key
+                        }
+                    }
+                    Note { text: Lang.t("\"Zorla\" sayfa çizimini ve video çözmeyi ekran kartına verir; sürücüye göre işlemciyi ve ısıyı azaltabilir. Sayfalar bozuk görünürse \"Otomatik\"e dön.", "\"Forced\" hands drawing and video decoding to the graphics card; depending on the driver it can lower load and heat. If pages look wrong, go back to \"Automatic\".") }
+                    Note { visible: Gpu.fellBack; color: Theme.danger; text: Lang.t("Son açılış \"Zorla\" ile yarıda kaldığı için Otomatik'e dönüldü.", "The last start did not finish in forced mode, so it went back to automatic.") }
+                    Note { visible: Gpu.changed; text: Lang.t("Değişiklik Velum'u kapatıp açınca geçerli olur.", "The change applies after restarting Velum.") }
+                    TextButton { Layout.fillWidth: true; implicitHeight: 40; text: Lang.t("Ekran kartı durumunu göster", "Show graphics status"); onClicked: page.openPage("chrome://gpu") }
                 }
 
                 // ---- tabs ----

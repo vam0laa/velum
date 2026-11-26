@@ -71,6 +71,28 @@ double xwaylandScale(const QByteArray &monitors, const QByteArray &zeroScaling)
     return scale >= 0.5 && scale <= 4 ? scale : 0;
 }
 
+QString cleanMode(const QString &mode)
+{
+    return mode == QLatin1String("boost") || mode == QLatin1String("off") ? mode : QStringLiteral("auto");
+}
+
+QByteArray engineFlags(const QString &mode, bool linux_)
+{
+    if (mode == QLatin1String("off"))
+        return "--disable-gpu";
+    if (mode != QLatin1String("boost"))
+        return {};
+    QByteArray flags = "--ignore-gpu-blocklist --enable-gpu-rasterization --enable-zero-copy";
+    if (linux_)
+        flags += " --enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL";
+    return flags;
+}
+
+QString safeMode(const QString &mode, bool pending)
+{
+    return mode == QLatin1String("boost") && pending ? QStringLiteral("auto") : cleanMode(mode);
+}
+
 void restoreEnvironment()
 {
     for (const auto &[name, value] : std::as_const(borrowed))

@@ -22,7 +22,7 @@ Item {
         }
     }
     SequentialAnimation on opacity {
-        running: Theme.motion && star.visible
+        running: Theme.moving && star.visible
         loops: Animation.Infinite
         PauseAnimation { duration: star.delay }
         NumberAnimation { to: 0.25; duration: 900 }

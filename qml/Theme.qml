@@ -20,6 +20,9 @@ QtObject {
     property bool glass: false             // see-through windows; the desktop blurs behind them
     property real solidity: 0.72           // how opaque the glass is: 0.55, 0.72 or 0.88
     property bool motion: true             // false: nothing slides or grows
+    property bool calm: false              // set by the game and saver modes: rest both of these
+    readonly property bool moving: motion && !calm
+    readonly property bool seeThrough: glass && !calm
 
     property Settings saved: Settings {
         category: "look"
@@ -34,7 +37,7 @@ QtObject {
     // set by the window: applies a change of colours with an animation
     property var washer: null
     function change(apply) {
-        if (washer && motion)
+        if (washer && moving)
             washer(apply)
         else
             apply()
@@ -114,9 +117,9 @@ QtObject {
 
     // The backgrounds of the window itself. Popups and menus stay solid, to be readable.
     // The layers lie on each other, so each one is thinner than the whole should look.
-    readonly property color frameBack: glass ? Qt.alpha(frame, solidity * 0.6) : frame
-    readonly property color paneBack: glass ? Qt.alpha(window, solidity * 0.65) : window
-    readonly property color sheetBack: glass ? Qt.alpha(surface, solidity * 0.35) : surface
+    readonly property color frameBack: seeThrough ? Qt.alpha(frame, solidity * 0.6) : frame
+    readonly property color paneBack: seeThrough ? Qt.alpha(window, solidity * 0.65) : window
+    readonly property color sheetBack: seeThrough ? Qt.alpha(surface, solidity * 0.35) : surface
     readonly property var rainbow: [accent, mauve, pink, green, peach]
 
     property FontLoader pixelFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/VT323-Regular.ttf") }
@@ -133,6 +136,6 @@ QtObject {
     readonly property int gap: 8
     readonly property int sidebar: 280
     readonly property int strip: 60
-    readonly property int quick: motion ? 120 : 0
-    readonly property int smooth: motion ? 220 : 0
+    readonly property int quick: moving ? 120 : 0
+    readonly property int smooth: moving ? 220 : 0
 }
