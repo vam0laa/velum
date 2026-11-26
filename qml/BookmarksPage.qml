@@ -86,9 +86,9 @@ Popup {
         selectionColor: Theme.accent
         selectedTextColor: Theme.accentInk
         placeholderTextColor: Theme.dim
-        font.pixelSize: 17
+        font.family: Theme.ui; font.pixelSize: Theme.size(17)
         selectByMouse: true
-        background: Rectangle { radius: 0; color: Theme.frame; border.color: field.activeFocus ? Theme.accent : Theme.line }
+        background: Rectangle { radius: Theme.radius; color: Theme.frame; border.color: field.activeFocus ? Theme.accent : Theme.line }
     }
 
     component Entry: AbstractButton {
@@ -97,8 +97,8 @@ Popup {
         Layout.fillWidth: true
         implicitHeight: 32
         hoverEnabled: true
-        contentItem: Text { text: entry.text; textFormat: Text.PlainText; elide: Text.ElideRight; color: entry.current ? Theme.text : Theme.dim; font.pixelSize: 17; leftPadding: 10; rightPadding: 8; verticalAlignment: Text.AlignVCenter }
-        background: Rectangle { radius: 0; color: entry.current ? Theme.raised : entry.hovered ? Theme.surface : "transparent" }
+        contentItem: Text { text: entry.text; textFormat: Text.PlainText; elide: Text.ElideRight; color: entry.current ? Theme.text : Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(17); leftPadding: 10; rightPadding: 8; verticalAlignment: Text.AlignVCenter }
+        background: Rectangle { radius: Theme.radius; color: entry.current ? Theme.raised : entry.hovered ? Theme.surface : "transparent" }
     }
 
     RowLayout {
@@ -136,7 +136,7 @@ Popup {
             Layout.fillHeight: true
             Layout.margins: 8
             color: Theme.surface
-            radius: 0
+            radius: Theme.radius
 
             ColumnLayout {
                 anchors.fill: parent
@@ -172,7 +172,7 @@ Popup {
                     Layout.fillWidth: true
                     visible: page.editing > -2
                     implicitHeight: form.implicitHeight + 20
-                    radius: 0
+                    radius: Theme.radius
                     color: Theme.window
                     border.color: Theme.accent
                     ColumnLayout {
@@ -193,7 +193,7 @@ Popup {
                         }
                         RowLayout {
                             Layout.fillWidth: true
-                            Text { Layout.fillWidth: true; text: page.error; color: Theme.danger; font.pixelSize: 16; wrapMode: Text.WordWrap }
+                            Text { Layout.fillWidth: true; text: page.error; color: Theme.danger; font.family: Theme.ui; font.pixelSize: Theme.size(16); wrapMode: Text.WordWrap }
                             TextButton { text: Lang.t("Vazgeç", "Cancel"); onClicked: page.editing = -2 }
                             TextButton { text: Lang.t("Kaydet", "Save"); strong: true; onClicked: page.commit() }
                         }
@@ -222,19 +222,19 @@ Popup {
                         padding: 0
                         hoverEnabled: true
                         onClicked: { page.close(); page.chosen(modelData.url) }
-                        background: Rectangle { radius: 0; color: row.hovered ? Theme.raised : Theme.window }
+                        background: Rectangle { radius: Theme.radius; color: row.hovered ? Theme.raised : Theme.window }
                         contentItem: RowLayout {
                             spacing: 10
                             Rectangle {
                                 Layout.leftMargin: 8
-                                implicitWidth: 30; implicitHeight: 30; radius: 0
+                                implicitWidth: 30; implicitHeight: 30; radius: Theme.radius
                                 color: Theme.rainbow[row.modelData.index % Theme.rainbow.length]
-                                Text { anchors.centerIn: parent; text: String(row.modelData.title).charAt(0).toLocaleUpperCase(); textFormat: Text.PlainText; color: Theme.accentInk; font.pixelSize: 18; font.weight: Font.Normal }
+                                Text { anchors.centerIn: parent; text: String(row.modelData.title).charAt(0).toLocaleUpperCase(); textFormat: Text.PlainText; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: Theme.size(18); font.weight: Font.Normal }
                             }
                             Column {
                                 Layout.fillWidth: true
-                                Text { width: parent.width; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.pixelSize: 17 }
-                                Text { width: parent.width; text: (row.modelData.folder !== "" && page.folder === "*" ? row.modelData.folder + "  ·  " : "") + Address.display(row.modelData.url); textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 14 }
+                                Text { width: parent.width; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17) }
+                                Text { width: parent.width; text: (row.modelData.folder !== "" && page.folder === "*" ? row.modelData.folder + "  ·  " : "") + Address.display(row.modelData.url); textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(14) }
                             }
                             Row {
                                 Layout.rightMargin: 6
@@ -251,7 +251,7 @@ Popup {
                         visible: list.count === 0
                         text: page.query !== "" ? Lang.t("Eşleşen yer imi yok.", "No bookmark matches.") : Lang.t("Henüz yer imi yok. Bir sayfada Ctrl+D'ye bas.", "No bookmarks yet. Press Ctrl+D on a page.")
                         color: Theme.dim
-                        font.pixelSize: 17
+                        font.family: Theme.ui; font.pixelSize: Theme.size(17)
                     }
                 }
 
@@ -263,7 +263,7 @@ Popup {
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
                         color: Theme.dim
-                        font.pixelSize: 16
+                        font.family: Theme.ui; font.pixelSize: Theme.size(16)
                     }
                     TextButton { visible: page.undo !== null; implicitHeight: 28; text: Lang.t("Geri al", "Undo"); onClicked: { const u = page.undo; page.undo = null; page.restored(u.item, u.index) } }
                 }

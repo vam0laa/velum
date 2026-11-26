@@ -2,15 +2,19 @@ pragma Singleton
 import QtCore
 import QtQuick
 
-// One place for every colour, font and size. The look is webcore: square windows with
-// blue title bars, pixel lettering and a sky behind the start page.
+// One place for every colour, font and size. There are two looks: the everyday one,
+// laid out like the browsers you know in soft colours, and a hidden webcore one with
+// square blue windows, pixel lettering and a sky.
 QtObject {
     id: theme
-    property string palette: "auto"        // a key of "palettes", "desktop", or "auto"
-    // "auto" is the bright blue by day and the night blue from the evening on
+    property string palette: "mocha"       // a key of "palettes", or "desktop"
+    property string style: "classic"       // "classic", or "webcore": the easter egg
+    readonly property bool web: style === "webcore"
+    // webcore is bright blue by day and night blue from the evening on
     property int hour: new Date().getHours()
-    readonly property string shown: palette !== "auto" ? palette : hour >= 7 && hour < 19 ? "cybercore" : "night"
-    readonly property bool night: shown === "night"
+    readonly property string shown: web ? (hour >= 7 && hour < 19 ? "cybercore" : "night")
+                                        : palette === "cybercore" || palette === "night" || !(palette === "desktop" || palettes[palette]) ? "mocha" : palette
+    readonly property bool night: web && shown === "night"
     property Timer clock: Timer { interval: 30000; running: true; repeat: true; onTriggered: theme.hour = new Date().getHours() }
     property string accentChoice: ""       // "" keeps the palette's own accent
     property bool glass: false             // see-through windows; the desktop blurs behind them
@@ -19,15 +23,27 @@ QtObject {
 
     property Settings saved: Settings {
         category: "look"
-        property alias scheme: theme.palette
+        property alias colors: theme.palette
+        property alias style: theme.style
         property alias accent: theme.accentChoice
         property alias glass: theme.glass
         property alias solidity: theme.solidity
         property alias motion: theme.motion
     }
 
+    // Words typed into the address field that are not addresses. True: handled here.
+    function secret(typed) {
+        const word = String(typed).trim().toLowerCase()
+        if (word !== "velum:webcore" && word !== "velum:classic")
+            return false
+        style = word === "velum:webcore" && !web ? "webcore" : "classic"
+        return true
+    }
+
     // frame, window, card, raised, title, line, text, dim, accent, accentInk, mauve, pink, green, peach, danger
     readonly property var palettes: ({
+        dark:       ["#1c1b22", "#2b2a33", "#2b2a33", "#42414d", "#52525e", "#52525e", "#fbfbfe", "#b1b1bd", "#6ea8ff", "#0c0c14", "#c6a1ff", "#ff9ee0", "#7ee0a1", "#ffb36b", "#ff7a8a"],
+        light:      ["#e8e8ee", "#f9f9fb", "#f9f9fb", "#ffffff", "#dddde6", "#cfcfd8", "#15141a", "#5b5b66", "#0061e0", "#ffffff", "#7a3fd0", "#c2188a", "#0f7b4f", "#a84e00", "#c50042"],
         night:      ["#0d1124", "#171c33", "#171c33", "#10142a", "#26306a", "#3a478c", "#c3cdee", "#8590ba", "#6473d6", "#f0f3ff", "#a58be0", "#d27cc4", "#5fbf9c", "#d9a066", "#e0708c"],
         cybercore:  ["#050a5c", "#c9d8ff", "#eef3ff", "#ffffff", "#b4c6ff", "#1a2cff", "#0b17a8", "#46549c", "#1a2cff", "#ffffff", "#6a22d6", "#c2188a", "#08765a", "#a84e00", "#c8102e"],
         mocha:      ["#11111b", "#181825", "#1e1e2e", "#313244", "#45475a", "#45475a", "#cdd6f4", "#a6adc8", "#89b4fa", "#11111b", "#cba6f7", "#f5c2e7", "#a6e3a1", "#fab387", "#f38ba8"],
@@ -43,7 +59,7 @@ QtObject {
 
     // what the pickers offer, in order
     readonly property var themes: [
-        { key: "auto", label: Lang.t("Saate göre", "By the clock") }, { key: "night", label: Lang.t("Cybercore gece", "Cybercore night") }, { key: "cybercore", label: Lang.t("Cybercore gündüz", "Cybercore day") }, { key: "mocha", label: "Mocha" }, { key: "macchiato", label: "Macchiato" }, { key: "frappe", label: "Frappé" }, { key: "latte", label: "Latte" },
+        { key: "mocha", label: "Mocha" }, { key: "macchiato", label: "Macchiato" }, { key: "frappe", label: "Frappé" }, { key: "latte", label: "Latte" }, { key: "dark", label: Lang.t("Koyu", "Dark") }, { key: "light", label: Lang.t("Açık", "Light") },
         { key: "rosepine", label: "Rosé Pine" }, { key: "everforest", label: "Everforest" }, { key: "gruvbox", label: "Gruvbox" }, { key: "nord", label: "Nord" },
         { key: "tokyo", label: "Tokyo Night" }, { key: "desktop", label: Lang.t("Masaüstü", "Desktop") }
     ]
@@ -54,9 +70,7 @@ QtObject {
 
     // colour i of any theme, used by the pickers to draw previews
     function colorOf(key, i) {
-        if (key === "auto")
-            key = shown
-        const base = palettes[key] ?? palettes.cybercore
+        const base = palettes[key] ?? palettes.mocha
         if (key === "desktop")
             return DesktopColors.colors[desktopRoles[i]] ?? base[i]
         return base[i]
@@ -71,7 +85,7 @@ QtObject {
     readonly property color line: pick(5)
     readonly property color text: pick(6)
     readonly property color dim: pick(7)
-    readonly property color accent: pick(accents[accentChoice] ?? 8)
+    readonly property color accent: pick(web ? 8 : accents[accentChoice] ?? 8)
     readonly property color accentInk: pick(9)
     readonly property color mauve: pick(10)
     readonly property color pink: pick(11)
@@ -97,10 +111,13 @@ QtObject {
 
     property FontLoader pixelFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/VT323-Regular.ttf") }
     readonly property string pixel: pixelFont.name      // has the Turkish letters
-    readonly property string ui: pixelFont.name         // pixel letters everywhere
+    property FontLoader sansFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/GoogleSansFlex.woff") }
+    readonly property string ui: web ? pixelFont.name : sansFont.name
+    // sizes are written for the small pixel letters; the other font needs less
+    function size(n) { return web ? n : Math.round(n / 1.3) }
 
-    readonly property int radius: 0        // everything is square
-    readonly property int corner: 0
+    readonly property int radius: web ? 0 : 8      // buttons, fields, rows
+    readonly property int corner: web ? 0 : 12     // windows
     readonly property int gap: 8
     readonly property int sidebar: 280
     readonly property int strip: 60

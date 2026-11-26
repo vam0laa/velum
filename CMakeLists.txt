@@ -42,6 +42,8 @@ qt_add_qml_module(velum
         qml/IconButton.qml
         qml/TabItem.qml
         qml/StartPage.qml
+        qml/ClassicStart.qml
+        qml/WebStart.qml
         qml/Icon.qml
         qml/Hint.qml
         qml/AppMenu.qml
@@ -92,7 +94,7 @@ qt_add_qml_module(velum
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
-    RESOURCES data/velum.svg data/sky.jpg data/sky-night.jpg data/scanline.png data/fonts/VT323-Regular.ttf
+    RESOURCES data/velum.svg data/sky.jpg data/sky-night.jpg data/scanline.png data/fonts/VT323-Regular.ttf data/fonts/GoogleSansFlex.woff
     SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h src/importbridge.h src/passwordbridge.h src/storebridge.h
     IMPORTS QtQuick
 )

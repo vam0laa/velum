@@ -94,6 +94,10 @@ Item {
             return
         const newTab = forNewTab
         open = false
+        if (r.kind === "go" && Theme.secret(input.text)) {
+            dismissed()
+            return
+        }
         if (r.kind === "tab")
             tabChosen(r.index)
         else if (r.kind === "command")
@@ -145,7 +149,7 @@ Item {
                     color: Theme.text
                     selectionColor: Theme.accent
                     selectedTextColor: Theme.accentInk
-                    font.pixelSize: 21
+                    font.family: Theme.ui; font.pixelSize: Theme.size(21)
                     selectByMouse: true
                     background: null
                     onTextEdited: bar.refresh()
@@ -181,12 +185,12 @@ Item {
                     hoverEnabled: true
                     onHoveredChanged: if (hovered) list.currentIndex = index
                     onClicked: bar.choose(index)
-                    background: Rectangle { radius: 0; color: row.ListView.isCurrentItem ? Theme.raised : "transparent" }
+                    background: Rectangle { radius: Theme.radius; color: row.ListView.isCurrentItem ? Theme.raised : "transparent" }
                     contentItem: RowLayout {
                         spacing: 10
                         Icon { Layout.leftMargin: 10; name: row.modelData.icon; size: 16; color: row.ListView.isCurrentItem ? Theme.accent : Theme.dim }
-                        Text { Layout.fillWidth: true; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.pixelSize: 17 }
-                        Text { Layout.rightMargin: 12; Layout.maximumWidth: row.width * 0.4; text: row.modelData.note; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 14 }
+                        Text { Layout.fillWidth: true; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17) }
+                        Text { Layout.rightMargin: 12; Layout.maximumWidth: row.width * 0.4; text: row.modelData.note; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(14) }
                     }
                 }
             }

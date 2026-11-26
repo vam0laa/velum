@@ -41,21 +41,30 @@ ItemDelegate {
     Accessible.name: label
 
     // on the blue strip an idle tab is a darker folder; the current one joins the toolbar
-    readonly property color ink: !horizontal ? (current ? Theme.text : Theme.dim) : current ? Theme.text : "#dbe6ff"
+    readonly property color ink: current ? Theme.text : horizontal && Theme.web ? "#dbe6ff" : Theme.dim
 
     background: Item {
         // vertical: a row, outlined when chosen
         Rectangle {
             anchors.fill: parent
             visible: !row.horizontal
-            color: row.current ? Theme.raised : row.hovered ? Theme.title : "transparent"
-            border.width: row.current ? 2 : 0
+            radius: Theme.radius
+            color: row.current ? Theme.raised : row.hovered ? (Theme.web ? Theme.title : Qt.alpha(Theme.raised, 0.5)) : "transparent"
+            border.width: Theme.web && row.current ? 2 : 0
             border.color: Theme.line
+        }
+        // everyday look: a rounded tab, filled when it is the current one
+        Rectangle {
+            anchors { fill: parent; topMargin: 1; bottomMargin: 3 }
+            visible: row.horizontal && !Theme.web
+            radius: 9
+            color: row.current ? Theme.raised : row.hovered ? Qt.alpha(Theme.raised, 0.45) : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.quick } }
         }
         Shape {
             id: folder
             anchors.fill: parent
-            visible: row.horizontal
+            visible: row.horizontal && Theme.web
             preferredRendererType: Shape.CurveRenderer
             ShapePath {
                 strokeWidth: 2
@@ -112,7 +121,7 @@ ItemDelegate {
             textFormat: Text.PlainText     // a page title is never treated as markup
             color: row.ink
             opacity: row.asleep > 0 ? 0.55 : 1
-            font.pixelSize: 17
+            font.family: Theme.ui; font.pixelSize: Theme.size(17)
             font.weight: row.current ? Font.DemiBold : Font.Normal
             elide: Text.ElideRight
             visible: !row.compact

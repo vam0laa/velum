@@ -14,21 +14,22 @@ AbstractButton {
         id: label
         text: button.text
         color: button.strong ? Theme.accentInk : Theme.text
-        font.pixelSize: 18
-        leftPadding: button.down ? 2 : 0
-        topPadding: button.down ? 2 : 0
+        font.family: Theme.ui; font.pixelSize: Theme.size(18)
+        leftPadding: Theme.web && button.down ? 2 : 0
+        topPadding: Theme.web && button.down ? 2 : 0
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }
     background: Item {
-        Rectangle { x: 3; y: 3; width: parent.width; height: parent.height; color: Theme.hardShadow; visible: !button.down }
+        Rectangle { x: 3; y: 3; width: parent.width; height: parent.height; color: Theme.hardShadow; visible: Theme.web && !button.down }
         Rectangle {
-            x: button.down ? 2 : 0
+            x: Theme.web && button.down ? 2 : 0
             y: x
+            radius: Theme.radius
             width: parent.width
             height: parent.height
             color: button.strong ? (button.hovered ? Theme.barDeep : Theme.accent) : button.hovered ? Theme.title : Theme.raised
-            border.width: 2
+            border.width: Theme.web ? 2 : 0
             border.color: Theme.line
         }
     }

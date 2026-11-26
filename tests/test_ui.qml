@@ -184,13 +184,18 @@ Item {
             w.prefs.startChanged("showNote", false); w.prefs.startChanged("startBackground", "dots")
             t.check("the start page follows the settings", !w.showNote && w.startBackground === "dots")
             w.showNote = true; w.startBackground = "glow"
-            Theme.palette = "auto"
+            t.check("the everyday look is the default", !Theme.web && Theme.shown === "mocha" && Theme.radius > 0)
+            t.check("the theme list does not give the secret away", Theme.themes.every(x => x.key !== "cybercore" && x.key !== "night"))
+            t.check("ordinary words are not secret", !Theme.secret("webcore") && !Theme.secret("velum.dev") && !Theme.web)
+            w.view.url = t.page("egg"); const addressBefore = String(w.view.url)
+            bar.show(false, "  Velum:WebCore "); bar.choose(0)
+            t.check("typing velum:webcore opens the hidden look without leaving the page", Theme.web && !bar.open && String(w.view.url) === addressBefore && Theme.radius === 0)
             const hourNow = Theme.hour
-            Theme.hour = 12; const day = Theme.shown; Theme.hour = 22; const late = Theme.shown; Theme.hour = 6; const early = Theme.shown
-            t.check("by the clock: bright by day, night blue after dark", day === "cybercore" && late === "night" && early === "night" && !Theme.dark === false)
+            Theme.hour = 12; const day = Theme.shown; Theme.hour = 22; const late = Theme.shown
+            t.check("webcore is bright by day and blue by night", day === "cybercore" && late === "night")
+            Theme.hour = 12; t.check("text on blue is white", String(Theme.accentInk) === "#ffffff" && String(Theme.barInk) === "#ffffff")
             Theme.hour = hourNow
-            Theme.palette = "cybercore"
-            t.check("text on blue is white", String(Theme.accentInk) === "#ffffff" && String(Theme.barInk) === "#ffffff")
+            t.check("typing it again goes back", Theme.secret("velum:webcore") && !Theme.web && Theme.shown === "mocha")
             Theme.palette = "mocha"
             Theme.glass = true
             t.check("glass makes the backgrounds see-through, popups stay solid", Theme.frameBack.a < 0.6 && Theme.paneBack.a < 0.6 && Theme.window.a === 1)

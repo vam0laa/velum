@@ -17,18 +17,19 @@ ApplicationWindow {
     property bool compactSidebar: false
     property bool horizontalTabs: true     // the tabs along the top instead of down the side
     // the start page, as you set it up
-    property string startBackground: "sky"
+    property string startBackground: "glow"
     property string startPicture: ""
     property bool showClock: true
     property bool showShield: true
     property bool showNote: false
-    property bool showFrequent: false
+    property bool showFrequent: true
     property string note: ""
     property var frequentPages: []
     property string iconFolder: ""          // "" keeps no site icons
     property int iconRevision: 0
     property var iconsSaved: ({})       // this run: site -> the icon last written
     property var iconNames: []          // sites that have an icon on disk
+    property bool showBookmarkBar: true
     property bool greet: false              // show the welcome pages if they were never seen
     property bool welcomed: false
     property alias welcome: welcome
@@ -226,13 +227,14 @@ ApplicationWindow {
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
         property alias tabsOnTop: window.horizontalTabs
-        property alias startSky: window.startBackground
+        property alias startBackdrop: window.startBackground
         property alias startPicture: window.startPicture
         property alias showClock: window.showClock
         property alias startNotice: window.showShield
         property alias startNote: window.showNote
-        property alias startFrequent: window.showFrequent
+        property alias startPlaces: window.showFrequent
         property alias note: window.note
+        property alias bookmarkBar: window.showBookmarkBar
         property alias welcomed: window.welcomed
         property alias readerSize: window.readerSize
         property string neverSave: "[]"
@@ -262,7 +264,7 @@ ApplicationWindow {
         appendTab(url, "", false)
         current = tabs.count - 1
         if (String(url) === "")
-            Qt.callLater(() => start.field.forceActiveFocus())
+            Qt.callLater(() => start.field?.forceActiveFocus())
         return views.itemAt(current) as WebEngineView
     }
 
@@ -1235,6 +1237,11 @@ ApplicationWindow {
             onClearData: clearDialog.open()
             onSettings: window.openSettings()
             onHome: window.goHome()
+            bookmarks: window.shortcuts
+            showBookmarks: window.showBookmarkBar
+            iconFor: window.iconNames.length >= 0 && window.iconRevision >= 0 ? url => window.iconFor(url) : url => ""
+            onOpenBookmark: address => window.navigate(address, false)
+            onImportRequested: window.openImport()
             onMaximize: window.toggleWindowFullScreen()
             onCloseTabRequested: window.closeTab(window.current)
             pageButtons.storeButton: card.storeButton
@@ -1491,7 +1498,7 @@ ApplicationWindow {
                 x: window.view?.x ?? 0
                 z: 3
                 height: 3
-                radius: 0
+                radius: Theme.radius
                 width: (window.view?.width ?? 0) * (busy ? Math.max(0.08, window.view.loadProgress / 100) : 1)
                 opacity: busy ? 1 : 0
                 gradient: Gradient {
@@ -1585,7 +1592,7 @@ ApplicationWindow {
                     anchors.centerIn: parent
                     spacing: 14
                     Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "pip"; size: 48; color: Theme.mauve }
-                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("Video küçük pencerede oynuyor", "The video is playing in the small window"); color: Theme.text; font.pixelSize: 23; font.weight: Font.Normal }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("Video küçük pencerede oynuyor", "The video is playing in the small window"); color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(23); font.weight: Font.Normal }
                     TextButton { anchors.horizontalCenter: parent.horizontalCenter; strong: true; text: Lang.t("Buraya geri al", "Bring it back"); onClicked: window.closeMini() }
                 }
             }
@@ -1597,7 +1604,7 @@ ApplicationWindow {
                 z: 3
                 width: readerControls.implicitWidth + 14
                 height: 42
-                radius: 0
+                radius: Theme.radius
                 color: Theme.window
                 border.color: Theme.line
                 Row {
@@ -1625,16 +1632,16 @@ ApplicationWindow {
                 anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: window.notice !== "" ? 18 : -10 }
                 width: Math.min(parent.width - 24, noticeText.implicitWidth + 32)
                 height: 38
-                radius: 0
+                radius: Theme.radius
                 z: 3
                 opacity: window.notice !== "" ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Theme.smooth } }
                 Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
-                Shadow { radius: 0 }
+                Shadow { radius: Theme.radius }
                 color: Theme.raised
                 border.color: Theme.line
-                Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.pixelSize: 17; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+                Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
             }
 
             SettingsPage {
@@ -1666,6 +1673,7 @@ ApplicationWindow {
                 showShield: window.showShield
                 showNote: window.showNote
                 showFrequent: window.showFrequent
+                showBookmarkBar: window.showBookmarkBar
                 onStartChanged: (name, value) => window[name] = value
                 extensions: window.extensions
                 fetchingExtension: window.fetchingExtension
@@ -1684,7 +1692,6 @@ ApplicationWindow {
                 height: parent.height
                 visible: window.onStartPage
                 hasWidevine: window.hasWidevine
-                field.pageUrl: ""
                 shortcuts: window.shortcuts.slice(0, 10)
                 total: window.shortcuts.length
                 onManage: window.openBookmarks()
@@ -1704,7 +1711,8 @@ ApplicationWindow {
                 onRemoveShortcut: i => window.removeShortcut(i)
                 onGo: target => {
                     window.view.url = target
-                    field.text = ""
+                    if (start.field)
+                        start.field.text = ""
                     window.view.forceActiveFocus()
                 }
             }

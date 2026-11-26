@@ -35,10 +35,10 @@ int main(int argc, char *argv[])
     app.setApplicationVersion(QStringLiteral(VELUM_VERSION));
     app.setDesktopFileName(QStringLiteral("velum"));
     app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/Velum/data/velum.svg")));
-    // pixel letters for every text of the interface; pages keep their own fonts
-    const int font = QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/Velum/data/fonts/VT323-Regular.ttf"));
+    // the interface's own lettering for anything that does not choose a font
+    const int font = QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/Velum/data/fonts/GoogleSansFlex.woff"));
     if (font >= 0)
-        app.setFont(QFont(QFontDatabase::applicationFontFamilies(font).value(0), 12));
+        app.setFont(QFont(QFontDatabase::applicationFontFamilies(font).value(0)));
 
     // "Basic" is the plainest control style; every colour and shape in Velum is our own.
     QQuickStyle::setStyle(QStringLiteral("Basic"));

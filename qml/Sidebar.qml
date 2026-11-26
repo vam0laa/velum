@@ -95,11 +95,11 @@ Panel {
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: 2
-            radius: 0
+            radius: Theme.radius
             color: "transparent"
             Rectangle {
                 height: parent.height
-                radius: 0
+                radius: Theme.radius
                 color: Theme.accent
                 width: parent.width * (side.view?.loadProgress ?? 0) / 100
                 visible: side.view?.loading ?? false
@@ -119,8 +119,8 @@ Panel {
             background: Rectangle { color: add.hovered ? Theme.title : Theme.raised; border.width: 2; border.color: Theme.line; opacity: add.down ? 0.8 : 1 }
             contentItem: Item {
                 Icon { x: side.compact ? (parent.width - width) / 2 : 14; anchors.verticalCenter: parent.verticalCenter; name: "plus"; color: Theme.accent; size: 17 }
-                Text { x: 42; visible: !side.compact; anchors.verticalCenter: parent.verticalCenter; text: Lang.t("Yeni sekme", "New tab"); color: Theme.text; font.pixelSize: 17; font.weight: Font.Normal }
-                Text { visible: !side.compact; anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter } text: "Ctrl+T"; color: Theme.dim; font.pixelSize: 14 }
+                Text { x: 42; visible: !side.compact; anchors.verticalCenter: parent.verticalCenter; text: Lang.t("Yeni sekme", "New tab"); color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); font.weight: Font.Normal }
+                Text { visible: !side.compact; anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter } text: "Ctrl+T"; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(14) }
             }
             Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
         }

@@ -33,9 +33,15 @@ Item {
     signal spaceAdd()
     signal maximize()
     signal closeTabRequested()
+    property var bookmarks: []
+    property bool showBookmarks: true
+    property var iconFor: url => ""
+    signal openBookmark(url address)
+    signal importRequested()
+    readonly property bool bookmarkRow: showBookmarks && !Theme.web
     function openDownloads() { downloadButton.show() }
 
-    implicitHeight: 90
+    implicitHeight: Theme.web ? 90 : bookmarkRow ? 122 : 90
 
     // the strip with the tabs
     Rectangle {
@@ -43,17 +49,18 @@ Item {
         width: parent.width
         height: 42
         gradient: Gradient {
-            GradientStop { position: 0; color: Theme.stripTop }
-            GradientStop { position: 1; color: Theme.stripBottom }
+            GradientStop { position: 0; color: Theme.web ? Theme.stripTop : Theme.frameBack }
+            GradientStop { position: 1; color: Theme.web ? Theme.stripBottom : Theme.frameBack }
         }
         RowLayout {
             anchors { fill: parent; leftMargin: 10; rightMargin: 8; topMargin: 6 }
             spacing: 8
 
             Item {
+                visible: Theme.web
                 implicitWidth: logo.implicitWidth + 6
                 implicitHeight: 34
-                component Word: Text { text: "VELUM"; font.pixelSize: 30; y: 2 }
+                component Word: Text { text: "VELUM"; font.family: Theme.pixel; font.pixelSize: 30; y: 2 }
                 Word { x: -2; color: Theme.night ? "#3a9fb8" : "#3ff5ff" }
                 Word { x: 2; color: Theme.night ? "#b0479c" : "#ff3fd0" }
                 Word { id: logo; color: Theme.night ? "#dfe8ff" : "#ffffff" }
@@ -124,25 +131,27 @@ Item {
                 onClicked: bar.newTab()
                 Accessible.name: Lang.t("Yeni sekme", "New tab")
                 background: Rectangle { color: add.hovered ? Qt.alpha("#ffffff", 0.25) : "transparent" }
-                contentItem: Icon { name: "plus"; size: 20; color: Theme.barInk }
+                contentItem: Icon { name: "plus"; size: 20; color: Theme.web ? Theme.barInk : Theme.text }
                 Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: add.hovered; y: add.height + 6 }
             }
             Item { Layout.fillWidth: true }
-            WindowButton { kind: "max"; hint: Lang.t("Tam ekran (F11)", "Full screen (F11)"); onClicked: bar.maximize() }
-            WindowButton { kind: "close"; hint: Lang.t("Sekmeyi kapat (Ctrl+W)", "Close the tab (Ctrl+W)"); onClicked: bar.closeTabRequested() }
+            WindowButton { visible: Theme.web; kind: "max"; hint: Lang.t("Tam ekran (F11)", "Full screen (F11)"); onClicked: bar.maximize() }
+            WindowButton { visible: Theme.web; kind: "close"; hint: Lang.t("Sekmeyi kapat (Ctrl+W)", "Close the tab (Ctrl+W)"); onClicked: bar.closeTabRequested() }
         }
     }
 
     // the toolbar
     Rectangle {
-        anchors { top: strip.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        id: tools
+        anchors { top: strip.bottom; left: parent.left; right: parent.right }
+        height: 48
         color: Theme.paneBack
-        Rectangle { width: parent.width; height: 2; color: Theme.edge }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: Theme.line }
+        Rectangle { visible: Theme.web; width: parent.width; height: 2; color: Theme.edge }
+        Rectangle { visible: Theme.web || !bar.bookmarkRow; anchors.bottom: parent.bottom; width: parent.width; height: Theme.web ? 2 : 1; color: Theme.line }
 
         RowLayout {
             anchors { fill: parent; leftMargin: 10; rightMargin: 12; topMargin: 2; bottomMargin: 2 }
-            spacing: 9
+            spacing: Theme.web ? 9 : 4
             IconButton { symbol: "back"; hint: Lang.t("Geri (Alt+Sol)", "Back (Alt+Left)"); enabled: bar.view?.canGoBack ?? false; onClicked: bar.view.goBack() }
             IconButton { symbol: "forward"; hint: Lang.t("İleri (Alt+Sağ)", "Forward (Alt+Right)"); enabled: bar.view?.canGoForward ?? false; onClicked: bar.view.goForward() }
             IconButton {
@@ -162,6 +171,49 @@ Item {
             ShieldButton { host: bar.host; onReload: bar.reloadPage(); onClearRequested: bar.clearData() }
             DownloadButton { id: downloadButton; downloads: bar.downloads; onShowFolder: folder => bar.showFolder(folder); onClearFinished: bar.clearDownloads() }
             IconButton { symbol: "settings"; hint: Lang.t("Ayarlar (Ctrl+,)", "Settings (Ctrl+,)"); onClicked: bar.settings() }
+        }
+    }
+
+    // your bookmarks, one click away
+    Rectangle {
+        visible: bar.bookmarkRow
+        anchors { top: tools.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        color: Theme.paneBack
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
+        ListView {
+            id: marks
+            anchors { fill: parent; leftMargin: 10; rightMargin: 10; bottomMargin: 4 }
+            orientation: ListView.Horizontal
+            clip: true
+            spacing: 2
+            boundsBehavior: Flickable.StopAtBounds
+            model: bar.bookmarks.slice(0, 40)
+            delegate: AbstractButton {
+                id: mark
+                required property var modelData
+                required property int index
+                height: marks.height
+                width: Math.min(180, caption.implicitWidth + 38)
+                hoverEnabled: true
+                focusPolicy: Qt.NoFocus
+                onClicked: bar.openBookmark(modelData.url)
+                background: Rectangle { radius: 7; color: mark.hovered ? Theme.raised : "transparent" }
+                contentItem: Item {
+                    Image { id: icon; x: 8; anchors.verticalCenter: parent.verticalCenter; width: 15; height: 15; source: bar.iconFor(mark.modelData.url); cache: false; sourceSize: Qt.size(32, 32) }
+                    Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; visible: icon.status !== Image.Ready; width: 15; height: 15; radius: 4; color: Theme.rainbow[mark.index % Theme.rainbow.length]
+                        Text { anchors.centerIn: parent; text: String(mark.modelData.title).charAt(0).toLocaleUpperCase(); textFormat: Text.PlainText; color: Theme.accentInk; font.family: Theme.ui; font.pixelSize: 10 } }
+                    Text { id: caption; x: 29; width: Math.min(implicitWidth, 144); anchors.verticalCenter: parent.verticalCenter; text: mark.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.family: Theme.ui; font.pixelSize: 12 }
+                }
+            }
+        }
+        TextButton {
+            visible: bar.bookmarks.length === 0
+            x: 10
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: -2
+            implicitHeight: 24
+            text: Lang.t("Yer imlerini içe aktar…", "Import bookmarks…")
+            onClicked: bar.importRequested()
         }
     }
 }

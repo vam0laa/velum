@@ -12,10 +12,10 @@ MenuItem {
         text: item.text
         textFormat: Text.PlainText
         color: item.enabled ? Theme.text : Theme.dim
-        font.pixelSize: 17
+        font.family: Theme.ui; font.pixelSize: Theme.size(17)
         leftPadding: 8
         elide: Text.ElideRight
         verticalAlignment: Text.AlignVCenter
     }
-    background: Rectangle { radius: 0; color: item.highlighted ? Theme.raised : "transparent" }
+    background: Rectangle { radius: Theme.radius; color: item.highlighted ? Theme.raised : "transparent" }
 }

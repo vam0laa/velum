@@ -23,10 +23,12 @@ Rectangle {
     signal video()
 
     implicitHeight: 28
-    color: Theme.bar
+    color: Theme.web ? Theme.bar : "transparent"
 
     // the stripes
+    Rectangle { visible: !Theme.web; anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 1; color: Theme.line; opacity: 0.6 }
     Column {
+        visible: Theme.web
         anchors.fill: parent
         spacing: 2
         Repeater {
@@ -43,8 +45,9 @@ Rectangle {
             text: bar.title
             textFormat: Text.PlainText
             elide: Text.ElideRight
-            color: Theme.barInk
-            font.pixelSize: 20
+            color: Theme.web ? Theme.barInk : Theme.dim
+            leftPadding: Theme.web ? 0 : 5
+            font.family: Theme.ui; font.pixelSize: Theme.size(20)
         }
         PageButtons {
             storeButton: bar.storeButton

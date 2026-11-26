@@ -49,9 +49,9 @@ ColumnLayout {
                 color: Theme.text
                 selectionColor: Theme.accent
                 selectedTextColor: Theme.accentInk
-                font.pixelSize: 17
+                font.family: Theme.ui; font.pixelSize: Theme.size(17)
                 selectByMouse: true
-                background: Rectangle { radius: 0; color: Theme.frame; border.color: address.activeFocus ? Theme.accent : Theme.line }
+                background: Rectangle { radius: Theme.radius; color: Theme.frame; border.color: address.activeFocus ? Theme.accent : Theme.line }
                 onAccepted: add.clicked()
             }
             TextButton {
@@ -72,7 +72,7 @@ ColumnLayout {
             visible: panel.extensions.length === 0
             text: Lang.t("Henüz eklenti yok.", "No extensions yet.")
             color: Theme.dim
-            font.pixelSize: 17
+            font.family: Theme.ui; font.pixelSize: Theme.size(17)
         }
         Repeater {
             model: panel.extensions
@@ -81,7 +81,7 @@ ColumnLayout {
                 required property var modelData
                 Layout.fillWidth: true
                 implicitHeight: column.implicitHeight + 20
-                radius: 0
+                radius: Theme.radius
                 color: Theme.surface
                 ColumnLayout {
                     id: column

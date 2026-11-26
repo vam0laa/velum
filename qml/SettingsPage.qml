@@ -32,6 +32,7 @@ Rectangle {
     property bool showShield
     property bool showNote
     property bool showFrequent
+    property bool showBookmarkBar
     signal startChanged(string name, var value)      // a property of the window and its new value
     property var extensions: []
     property bool fetchingExtension
@@ -89,9 +90,9 @@ Rectangle {
         Layout.fillWidth: true
         Layout.minimumHeight: 40
         spacing: 12
-        Text { id: name; Layout.fillWidth: true; color: Theme.text; font.pixelSize: 17; wrapMode: Text.WrapAtWordBoundaryOrAnywhere }
+        Text { id: name; Layout.fillWidth: true; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); wrapMode: Text.WrapAtWordBoundaryOrAnywhere }
     }
-    component Note: Text { Layout.fillWidth: true; color: Theme.dim; font.pixelSize: 16; wrapMode: Text.WordWrap }
+    component Note: Text { Layout.fillWidth: true; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(16); wrapMode: Text.WordWrap }
 
     RowLayout {
         anchors.fill: parent
@@ -116,7 +117,7 @@ Rectangle {
                     Layout.bottomMargin: 10
                     text: Lang.t("Ayarlar", "Settings")
                     color: Theme.text
-                    font.pixelSize: 22
+                    font.family: Theme.ui; font.pixelSize: Theme.size(22)
                     font.weight: Font.Normal
                 }
                 Repeater {
@@ -130,10 +131,10 @@ Rectangle {
                         hoverEnabled: true
                         onClicked: page.section = modelData.key
                         Accessible.name: modelData.label
-                        background: Rectangle { color: entry.chosen ? Theme.accent : entry.hovered ? Theme.title : "transparent" }
+                        background: Rectangle { radius: Theme.radius; color: entry.chosen ? (Theme.web ? Theme.accent : Theme.raised) : entry.hovered ? (Theme.web ? Theme.title : Qt.alpha(Theme.raised, 0.5)) : "transparent" }
                         contentItem: Item {
-                            Icon { x: 9; anchors.verticalCenter: parent.verticalCenter; name: entry.modelData.icon; size: 15; color: entry.chosen ? Theme.accentInk : Theme.text }
-                            Text { anchors { left: parent.left; leftMargin: 32; right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter } text: entry.modelData.label; elide: Text.ElideRight; color: entry.chosen ? Theme.accentInk : Theme.text; font.pixelSize: 17; font.weight: entry.chosen ? Font.Bold : Font.Normal }
+                            Icon { x: 9; anchors.verticalCenter: parent.verticalCenter; name: entry.modelData.icon; size: 15; color: entry.chosen ? (Theme.web ? Theme.accentInk : Theme.accent) : Theme.text }
+                            Text { anchors { left: parent.left; leftMargin: 32; right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter } text: entry.modelData.label; elide: Text.ElideRight; color: entry.chosen && Theme.web ? Theme.accentInk : Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(17); font.weight: entry.chosen ? Font.Bold : Font.Normal }
                         }
                     }
                 }
@@ -164,13 +165,14 @@ Rectangle {
                 y: 18
                 spacing: 8
 
-                Text { text: page.current.label; color: Theme.text; font.pixelSize: 29; font.weight: Font.Normal; Layout.bottomMargin: 12 }
+                Text { text: page.current.label; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(29); font.weight: Font.Normal; Layout.bottomMargin: 12 }
 
                 // ---- appearance ----
                 Card {
                     visible: page.section === "look"
                     heading: Lang.t("Renkler", "Colours")
                     Line {
+                        visible: !Theme.web
                         label: Lang.t("Tema", "Theme")
                         Dropdown {
                             options: Theme.themes.map(x => ({ key: x.key, label: x.label, color: Theme.colorOf(x.key, 8) }))
@@ -179,6 +181,7 @@ Rectangle {
                         }
                     }
                     Line {
+                        visible: !Theme.web
                         label: Lang.t("Vurgu rengi", "Accent colour")
                         AccentDots {}
                     }
@@ -201,6 +204,12 @@ Rectangle {
                         on: page.compactSidebar
                         onClicked: page.compactChosen(!page.compactSidebar)
                     }
+                    Toggle {
+                        visible: page.horizontalTabs && !Theme.web
+                        label: Lang.t("Yer imi çubuğu", "Bookmarks bar")
+                        on: page.showBookmarkBar
+                        onClicked: page.startChanged("showBookmarkBar", !page.showBookmarkBar)
+                    }
                     Toggle { label: Lang.t("Cam görünüm", "Glass look"); note: Lang.t("Saydam pencereler", "See-through windows"); on: Theme.glass; onClicked: Theme.glass = !Theme.glass }
                     Line {
                         visible: Theme.glass
@@ -217,9 +226,10 @@ Rectangle {
                     visible: page.section === "look"
                     heading: Lang.t("Ana sayfa", "Start page")
                     Line {
+                        visible: !Theme.web
                         label: Lang.t("Arka plan", "Background")
                         Dropdown {
-                            options: [{ key: "sky", label: Lang.t("Gökyüzü", "Sky") }, { key: "plain", label: Lang.t("Sade", "Plain") }, { key: "dots", label: Lang.t("Noktalar", "Dots") }, { key: "image", label: Lang.t("Resim", "Picture") }]
+                            options: [{ key: "glow", label: Lang.t("Işıltı", "Glow") }, { key: "plain", label: Lang.t("Sade", "Plain") }, { key: "dots", label: Lang.t("Noktalar", "Dots") }, { key: "image", label: Lang.t("Resim", "Picture") }]
                             current: page.startBackground
                             onChosen: key => {
                                 if (key === "image" && page.startPicture === "")
@@ -230,7 +240,7 @@ Rectangle {
                         }
                     }
                     Line {
-                        visible: page.startBackground === "image"
+                        visible: !Theme.web && page.startBackground === "image"
                         label: page.startPicture
                         TextButton { text: Lang.t("Resim seç…", "Choose…"); onClicked: pictures.open() }
                     }
@@ -387,9 +397,9 @@ Rectangle {
                             Rectangle {
                                 implicitWidth: key.implicitWidth + 20
                                 implicitHeight: 26
-                                radius: 0
+                                radius: Theme.radius
                                 color: Theme.raised
-                                Text { id: key; anchors.centerIn: parent; text: shortcut.modelData[0]; color: Theme.accent; font.family: Theme.pixel; font.pixelSize: 22 }
+                                Text { id: key; anchors.centerIn: parent; text: shortcut.modelData[0]; color: Theme.accent; font.family: Theme.ui; font.pixelSize: Theme.size(22) }
                             }
                         }
                     }
@@ -399,8 +409,8 @@ Rectangle {
                 Card {
                     visible: page.section === "about"
                     Image { source: Qt.resolvedUrl("../data/velum.svg"); sourceSize: Qt.size(160, 160); Layout.preferredWidth: 80; Layout.preferredHeight: 80 }
-                    Text { text: "Velum " + Qt.application.version; color: Theme.text; font.pixelSize: 31; font.weight: Font.Normal }
-                    Note { font.pixelSize: 17; text: Lang.t("Sakin ve gizlilik odaklı bir tarayıcı. Motor: Qt WebEngine (Chromium). Engelleyici: Brave adblock-rust.", "A calm, private browser. Engine: Qt WebEngine (Chromium). Blocker: Brave adblock-rust.") }
+                    Text { text: "Velum " + Qt.application.version; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(31); font.weight: Font.Normal }
+                    Note { font.family: Theme.ui; font.pixelSize: Theme.size(17); text: Lang.t("Sakin ve gizlilik odaklı bir tarayıcı. Motor: Qt WebEngine (Chromium). Engelleyici: Brave adblock-rust.", "A calm, private browser. Engine: Qt WebEngine (Chromium). Blocker: Brave adblock-rust.") }
                     Note { text: Lang.t("Varsayılan tarayıcı yapmak için: xdg-settings set default-web-browser velum.desktop", "To make it the default browser: xdg-settings set default-web-browser velum.desktop") }
                 }
             }

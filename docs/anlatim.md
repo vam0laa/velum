@@ -382,6 +382,12 @@ Eklentinin 32 harflik kimliği, onu imzalayan anahtarın özetidir. `verifiedZip
 
 Pencere yöneticisi Velum'u yeniden boyutlandırınca bazen yeni kare çizilmiyor, eski yarım kare esnetilip kırpılıyordu. `WAYLAND_DEBUG=client` günlüğünde bu açıkça görüldü: yeni boyut bildiriliyor, `attach` (yeni kare) gelmiyor. Çare `graphics.cpp`'de `QSG_RENDER_LOOP=basic`: çizim ana iş parçacığında yapılır.
 
+## İki görünüm
+
+`Theme.style` ya `"classic"` ya `"webcore"`. Bütün bileşenler aynı; köşe yarıçapı (`Theme.radius`), yazı tipi (`Theme.ui`), yazı boyutu (`Theme.size()`) ve gölgeler görünüme göre değişir. Ana sayfanın iki yüzü var: `ClassicStart.qml` ve `WebStart.qml`; verileri `StartPage.qml` tutar.
+
+Gizli görünüm: adres ya da arama kutusuna `velum:webcore` yazılınca açılır, tekrar yazınca kapanır (`Theme.secret`).
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

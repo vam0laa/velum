@@ -10,6 +10,6 @@ ToolTip {
     padding: 5
     leftPadding: 9
     rightPadding: 9
-    contentItem: Text { text: tip.text; textFormat: Text.PlainText; color: Theme.text; font.pixelSize: 16 }
-    background: Rectangle { color: Theme.raised; border.width: 2; border.color: Theme.line; Shadow { reach: 3 } }
+    contentItem: Text { text: tip.text; textFormat: Text.PlainText; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(16) }
+    background: Rectangle { radius: Theme.radius; color: Theme.raised; border.width: Theme.web ? 2 : 1; border.color: Theme.line; Shadow { reach: 3 } }
 }

@@ -27,8 +27,8 @@ Item {
     signal video()
 
     Shadow { visible: panel.chrome && panel.shadow && !Theme.glass }
-    Rectangle { anchors.fill: parent; visible: panel.chrome; color: panel.fill; border.width: 2; border.color: Theme.edge }
-    Rectangle { anchors { fill: parent; margins: -2 } visible: panel.chrome; color: "transparent"; border.width: 2; border.color: Theme.line }
+    Rectangle { anchors.fill: parent; visible: panel.chrome; color: panel.fill; radius: Theme.corner; border.width: Theme.web ? 2 : 1; border.color: Theme.web ? Theme.edge : Theme.line }
+    Rectangle { anchors { fill: parent; margins: -2 } visible: panel.chrome && Theme.web; color: "transparent"; border.width: 2; border.color: Theme.line }
     TitleBar {
         id: bar
         visible: panel.chrome
@@ -49,7 +49,8 @@ Item {
             topMargin: panel.chrome ? bar.height + 2 : 0
             leftMargin: panel.chrome ? 2 : 0
             rightMargin: panel.chrome ? 2 : 0
-            bottomMargin: panel.chrome ? 2 : 0
+            // square web pages stay clear of rounded corners
+            bottomMargin: panel.chrome ? (Theme.web ? 2 : 6) : 0
         }
     }
 }

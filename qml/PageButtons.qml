@@ -28,7 +28,7 @@ Row {
         background: Rectangle { color: pill.hovered ? Theme.title : Theme.raised; border.color: Theme.line }
         contentItem: Item {
             Icon { x: 6; anchors.verticalCenter: parent.verticalCenter; name: pill.symbol; size: 13; color: Theme.text }
-            Text { id: label; x: 25; anchors.verticalCenter: parent.verticalCenter; text: pill.text; color: Theme.text; font.pixelSize: 16 }
+            Text { id: label; x: 25; anchors.verticalCenter: parent.verticalCenter; text: pill.text; color: Theme.text; font.family: Theme.ui; font.pixelSize: Theme.size(16) }
         }
         Hint { text: pill.hint; shown: pill.hovered; y: 26 }
     }

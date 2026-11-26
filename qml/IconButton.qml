@@ -19,8 +19,8 @@ AbstractButton {
     contentItem: Item {
         Icon {
             anchors.centerIn: parent
-            anchors.horizontalCenterOffset: button.down && !button.flat ? 2 : 0
-            anchors.verticalCenterOffset: button.down && !button.flat ? 2 : 0
+            anchors.horizontalCenterOffset: Theme.web && button.down && !button.flat ? 2 : 0
+            anchors.verticalCenterOffset: Theme.web && button.down && !button.flat ? 2 : 0
             name: button.symbol
             size: button.iconSize
             color: button.enabled ? button.tone : Theme.dim
@@ -28,14 +28,15 @@ AbstractButton {
         }
     }
     background: Item {
-        Rectangle { x: 3; y: 3; width: parent.width; height: parent.height; color: Theme.hardShadow; visible: !button.flat && !button.down }
+        Rectangle { x: 3; y: 3; width: parent.width; height: parent.height; color: Theme.hardShadow; visible: Theme.web && !button.flat && !button.down }
         Rectangle {
-            x: button.down && !button.flat ? 2 : 0
+            x: Theme.web && button.down && !button.flat ? 2 : 0
             y: x
             width: parent.width
             height: parent.height
-            color: button.hovered && button.enabled ? Theme.title : button.flat ? "transparent" : Theme.raised
-            border.width: button.flat ? 0 : 2
+            radius: Theme.radius
+            color: button.hovered && button.enabled ? (Theme.web ? Theme.title : Theme.raised) : !Theme.web || button.flat ? "transparent" : Theme.raised
+            border.width: Theme.web && !button.flat ? 2 : 0
             border.color: Theme.line
         }
     }

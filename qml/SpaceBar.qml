@@ -40,7 +40,7 @@ Flow {
             Accessible.name: label
             Behavior on implicitWidth { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
             background: Rectangle {
-                radius: 0
+                radius: Theme.radius
                 color: chip.current ? Theme.raised : chip.hovered ? Theme.title : Qt.alpha(Theme.raised, 0.55)
                 border.width: chip.current ? 2 : 1
                 border.color: Theme.line
@@ -55,7 +55,7 @@ Flow {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 color: Theme.text
-                font.pixelSize: 16
+                font.family: Theme.ui; font.pixelSize: Theme.size(16)
                 font.weight: Font.Normal
             }
             TapHandler {

@@ -44,13 +44,13 @@ Bevel {
             color: Theme.text
             selectionColor: Theme.accent
             selectedTextColor: Theme.accentInk
-            font.pixelSize: 17
+            font.family: Theme.ui; font.pixelSize: Theme.size(17)
             background: null
             onTextEdited: bar.search(text, false)
             Keys.onReturnPressed: event => bar.search(text, event.modifiers & Qt.ShiftModifier)
             Keys.onEscapePressed: bar.close()
         }
-        Text { Layout.rightMargin: 6; visible: field.text !== ""; text: bar.matches === 0 ? Lang.t("yok", "none") : bar.current + "/" + bar.matches; color: Theme.dim; font.pixelSize: 16 }
+        Text { Layout.rightMargin: 6; visible: field.text !== ""; text: bar.matches === 0 ? Lang.t("yok", "none") : bar.current + "/" + bar.matches; color: Theme.dim; font.family: Theme.ui; font.pixelSize: Theme.size(16) }
         IconButton { implicitWidth: 28; implicitHeight: 28; iconSize: 14; symbol: "up"; hint: Lang.t("Önceki (Shift+Enter)", "Previous (Shift+Enter)"); enabled: bar.matches > 0; onClicked: bar.search(field.text, true) }
         IconButton { implicitWidth: 28; implicitHeight: 28; iconSize: 14; symbol: "down"; hint: Lang.t("Sonraki (Enter)", "Next (Enter)"); enabled: bar.matches > 0; onClicked: bar.search(field.text, false) }
         IconButton { implicitWidth: 28; implicitHeight: 28; iconSize: 13; symbol: "close"; hint: Lang.t("Kapat (Esc)", "Close (Esc)"); onClicked: bar.close() }
