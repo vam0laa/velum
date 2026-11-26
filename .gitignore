@@ -1,3 +1,7 @@
 build/
 blocker/target/
 *.log
+# working notes, kept on the maintainer's computer
+docs/envanter.md
+docs/yol-haritasi.md
+docs/olcum.md

@@ -2,9 +2,9 @@
 
 A calm, private web browser on the open source Qt WebEngine (Chromium).
 
-**Status: stage 1.** Not ready to be your daily browser.
+**Status: beta.** [Download for Windows or Linux](https://github.com/vam0laa/velum/releases/latest).
 
-Measured memory use is in [docs/olcum.md](docs/olcum.md).
+
 
 ## Build and run
 
@@ -65,7 +65,7 @@ Three modes in the menu and in Settings → Performance: balanced, game (backgro
 
 ## Windows (beta)
 
-The Windows version is built on GitHub (`.github/workflows/windows.yml`) and published with `scripts/release.sh VERSION`, which signs the release on the maintainer's computer with a key that is never uploaded. Releases are at [velum-releases](https://github.com/vam0laa/velum-releases). Velum looks for a newer one, downloads it, checks its signature and installs it when you close Velum. The installer is not code signed yet, so Windows SmartScreen warns the first time. Passwords go to the Windows Credential Manager; site notifications are not shown yet.
+The Windows version is built on GitHub (`.github/workflows/windows.yml`) and published with `scripts/release.sh VERSION`, which signs the release on the maintainer's computer with a key that is never uploaded. Releases are at [the releases page](https://github.com/vam0laa/velum/releases). Velum looks for a newer one, downloads it, checks its signature and installs it when you close Velum. The installer is not code signed yet, so Windows SmartScreen warns the first time. Passwords go to the Windows Credential Manager; site notifications are not shown yet.
 
 ## Keys
 
@@ -104,7 +104,7 @@ Import in the bookmark manager takes bookmarks (with folders) and the last 90 da
 
 ## Download and updates
 
-[Releases](https://github.com/vam0laa/velum-releases/releases/latest): an installer for Windows and an AppImage for Linux (make it executable, then run it). Both look for a newer release, download it quietly, check its signature and put it in place when Velum is closed. The AppImage replaces its own file, so keep it where you may write. A Velum you built or installed yourself does not update itself.
+[Releases](https://github.com/vam0laa/velum/releases/latest): an installer for Windows and an AppImage for Linux (make it executable, then run it). Both look for a newer release, download it quietly, check its signature and put it in place when Velum is closed. The AppImage replaces its own file, so keep it where you may write. A Velum you built or installed yourself does not update itself.
 
 ## What it does not do yet
 

@@ -55,9 +55,9 @@ public:
             return;
         set(QStringLiteral("checking"));
 #ifdef Q_OS_WIN
-        const QString latest = QStringLiteral("https://github.com/vam0laa/velum-releases/releases/latest/download/update.json");
+        const QString latest = QStringLiteral("https://github.com/vam0laa/velum/releases/latest/download/update.json");
 #else
-        const QString latest = QStringLiteral("https://github.com/vam0laa/velum-releases/releases/latest/download/update-linux.json");
+        const QString latest = QStringLiteral("https://github.com/vam0laa/velum/releases/latest/download/update-linux.json");
 #endif
         QNetworkReply *manifest = get(QUrl(latest));
         connect(manifest, &QNetworkReply::finished, this, [this, manifest, latest] {
@@ -69,7 +69,7 @@ public:
             connect(signature, &QNetworkReply::finished, this, [this, signature, body] {
                 signature->deleteLater();
                 const auto release = update::verify(body, signature->read(4096), VELUM_UPDATE_KEY,
-                    QStringLiteral("https://github.com/vam0laa/velum-releases/releases/download/"));
+                    QStringLiteral("https://github.com/vam0laa/velum/releases/download/"));
                 if (signature->error() != QNetworkReply::NoError || !release)
                     return set(QStringLiteral("failed"));
                 // only ever forward: an old, properly signed release is not installed again

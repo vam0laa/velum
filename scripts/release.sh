@@ -1,13 +1,14 @@
 #!/bin/sh
 # Publishes a release for Windows and Linux: builds both on GitHub, signs their
-# descriptions here with the release key, and puts everything in the public releases
-# repository.   scripts/release.sh 0.1.0-beta.2 ["what is new"]
+# descriptions here with the release key, and puts everything on the releases page of the
+# code repository. Copies up to 0.1.0-beta.2 look in the old releases repository, so the
+# same release goes there too.   scripts/release.sh 0.1.0-beta.2 ["what is new"]
 # YES=1 answers the last question (only after you have agreed to this very release).
 set -eu
 version=${1:?usage: release.sh VERSION [notes]}
 notes=${2:-"Velum $version"}
 code=vam0laa/velum
-releases=vam0laa/velum-releases
+old=vam0laa/velum-releases
 key=${VELUM_KEY:-$HOME/.config/velum-release/signing.pem}
 cd "$(dirname "$0")/.."
 
@@ -17,7 +18,7 @@ echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$' || { echo 
 [ "$(openssl pkey -in "$key" -pubout -outform DER | tail -c 32 | od -An -tx1 | tr -d ' \n')" = "$(cat data/update.pub)" ] \
     || { echo "this key does not match data/update.pub"; exit 1; }
 [ -z "$(git status --porcelain)" ] || { echo "commit your changes first"; exit 1; }
-if gh release view "v$version" --repo "$releases" >/dev/null 2>&1; then echo "v$version is already released"; exit 1; fi
+if gh release view "v$version" --repo "$code" >/dev/null 2>&1; then echo "v$version is already released"; exit 1; fi
 commit=$(git rev-parse HEAD)
 git push -q
 
@@ -54,9 +55,9 @@ setup="$work/Velum-$version-setup.exe"
 image="$work/Velum-$version-x86_64.AppImage"
 [ -f "$setup" ] && [ -f "$image" ] || { echo "the builds are not of version $version (run again with REBUILD=1)"; exit 1; }
 
-# describe FILE: what an installed Velum is told about it
+# describe FILE REPOSITORY: what an installed Velum is told about it
 describe() {
-    python3 -I - "$version" "$1" "$releases" "$notes" <<'PY'
+    python3 -I - "$version" "$1" "$2" "$notes" <<'PY'
 import hashlib, json, os, sys
 version, path, repo, notes = sys.argv[1:5]
 data = open(path, "rb").read()
@@ -65,8 +66,12 @@ print(json.dumps({"version": version,
                   "sha256": hashlib.sha256(data).hexdigest(), "size": len(data), "notes": notes}, ensure_ascii=False, indent=1))
 PY
 }
-describe "$setup" > "$work/update.json"
-describe "$image" > "$work/update-linux.json"
+# each place has descriptions that point at its own files
+for repo in "$code" "$old"; do
+    mkdir "$work/${repo#*/}"
+    describe "$setup" "$repo" > "$work/${repo#*/}/update.json"
+    describe "$image" "$repo" > "$work/${repo#*/}/update-linux.json"
+done
 
 # the last look before the signature makes these files trusted by every installed Velum
 echo "built from $(git rev-parse --short HEAD), by runs $windows (Windows) and $linux (Linux)"
@@ -79,11 +84,15 @@ if [ "${YES:-}" != 1 ]; then
     [ "$answer" = yes ] || { echo "nothing was signed or published"; exit 1; }
 fi
 
-for m in update.json update-linux.json; do
-    openssl pkeyutl -sign -rawin -inkey "$key" -in "$work/$m" | base64 -w0 > "$work/$m.sig"
+for repo in "$code" "$old"; do
+    d="$work/${repo#*/}"
+    for m in update.json update-linux.json; do
+        openssl pkeyutl -sign -rawin -inkey "$key" -in "$d/$m" | base64 -w0 > "$d/$m.sig"
+    done
+    # published as an ordinary release: the updater asks GitHub for the latest one
+    target=
+    [ "$repo" = "$code" ] && target="--target $commit"
+    gh release create "v$version" --repo "$repo" $target --title "Velum $version (beta)" --notes "$notes" \
+        "$setup" "$image" "$d/update.json" "$d/update.json.sig" "$d/update-linux.json" "$d/update-linux.json.sig"
+    echo "released: https://github.com/$repo/releases/tag/v$version"
 done
-
-# published as an ordinary release: the updater asks GitHub for the latest one
-gh release create "v$version" --repo "$releases" --title "Velum $version (beta)" --notes "$notes" \
-    "$setup" "$image" "$work/update.json" "$work/update.json.sig" "$work/update-linux.json" "$work/update-linux.json.sig"
-echo "released: https://github.com/$releases/releases/tag/v$version"
