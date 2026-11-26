@@ -10,7 +10,8 @@ Item {
     property Item page
     property alias field: search
     readonly property bool wide: width >= 1080
-    readonly property real dayPart: (page.now.getHours() * 3600 + page.now.getMinutes() * 60 + page.now.getSeconds()) / 86400
+    // a brighter shade stands out on dark themes, a deeper one on light themes
+    function strong(tone) { return Theme.dark ? Qt.lighter(tone, 1.15) : Qt.darker(tone, 1.15) }
 
     // 0 → 1 each time the page is shown
     property real arrived: 1
@@ -245,7 +246,7 @@ Item {
                         font.letterSpacing: -4
                         lineHeight: 0.84
                     }
-                    Digits { text: Qt.formatTime(root.page.now, "HH"); color: Qt.lighter(Theme.accent, 1.15) }
+                    Digits { text: Qt.formatTime(root.page.now, "HH"); color: root.strong(Theme.accent) }
                     Digits { Layout.topMargin: -font.pixelSize * 0.3; text: Qt.formatTime(root.page.now, "mm"); color: Theme.accent }
                     Label { Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 8; text: root.page.now.getDate() + " " + root.page.locale_.monthName(root.page.now.getMonth()) + " " + root.page.locale_.dayName(root.page.now.getDay()); color: Theme.dim; font.pixelSize: 15; font.variableAxes: Theme.axes(650) }
                 }
@@ -264,25 +265,19 @@ Item {
                             anchors { left: parent.left; leftMargin: 24; verticalCenter: parent.verticalCenter }
                             spacing: -4
                             Label { text: root.page.locale_.dayName(root.page.now.getDay()); color: Theme.accent; font.pixelSize: 15; font.variableAxes: Theme.axes(700) }
-                            Label { text: root.page.now.getDate(); color: Qt.lighter(Theme.accent, 1.2); font.pixelSize: 58; font.variableAxes: Theme.axes(850) }
+                            Label { text: root.page.now.getDate(); color: root.strong(Theme.accent); font.pixelSize: 58; font.variableAxes: Theme.axes(850) }
                             Label { text: root.page.locale_.monthName(root.page.now.getMonth()) + "  •"; color: Theme.accent; font.pixelSize: 14; font.variableAxes: Theme.axes(700) }
                         }
                     }
                     Widget {
                         visible: root.page.showClock
-                        implicitHeight: 176
-                        DayRing { anchors.centerIn: parent; width: 156; height: 156; part: root.dayPart }
-                        Column {
-                            anchors.centerIn: parent
-                            Label { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("%" + Math.floor(root.dayPart * 100), Math.floor(root.dayPart * 100) + "%"); font.pixelSize: 24; font.variableAxes: Theme.axes(800) }
-                            Label { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("gün geçti", "of the day"); color: Theme.dim; font.pixelSize: 12 }
-                            Label {
-                                readonly property int rest: Math.max(0, Math.round((1 - root.dayPart) * 1440))
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: Lang.t(Math.floor(rest / 60) + " sa " + rest % 60 + " dk kaldı", Math.floor(rest / 60) + " h " + rest % 60 + " min left")
-                                color: Theme.dim
-                                font.pixelSize: 11
-                            }
+                        implicitHeight: calendar.implicitHeight + 32
+                        MonthCard {
+                            id: calendar
+                            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 16 }
+                            now: root.page.now
+                            names: root.page.locale_
+                            mondayFirst: Lang.turkish
                         }
                     }
                     Widget {
@@ -297,7 +292,7 @@ Item {
                                 Icon { name: "shield"; size: 16; color: Theme.mauve; anchors.verticalCenter: parent.verticalCenter }
                                 Label { text: Lang.t("Kalkan", "Shield"); color: Theme.mauve; font.pixelSize: 15; font.variableAxes: Theme.axes(700) }
                             }
-                            Label { text: Number(root.page.blocked).toLocaleString(root.page.locale_, "f", 0); color: Qt.lighter(Theme.mauve, 1.15); font.pixelSize: 46; font.variableAxes: Theme.axes(850) }
+                            Label { text: Number(root.page.blocked).toLocaleString(root.page.locale_, "f", 0); color: root.strong(Theme.mauve); font.pixelSize: 46; font.variableAxes: Theme.axes(850) }
                             Label { width: parent.width; elide: Text.ElideRight; text: Lang.t("reklam ve izleyici engellendi", "ads and trackers blocked"); color: Theme.mauve; font.pixelSize: 12 }
                         }
                     }

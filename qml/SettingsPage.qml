@@ -275,7 +275,7 @@ Rectangle {
                     wanted: page.shows("home", "ana sayfa home saat kalkan not sık gidilen arka plan background")
                     heading: Lang.t("Ana sayfada neler olsun", "What the home page shows")
                     symbol: "home"
-                    Toggle { label: Lang.t("Saat, tarih ve günün ilerleyişi", "Clock, date and the day's progress"); on: page.showClock; onClicked: page.startChanged("showClock", !page.showClock) }
+                    Toggle { label: Lang.t("Saat, tarih ve takvim", "Clock, date and calendar"); on: page.showClock; onClicked: page.startChanged("showClock", !page.showClock) }
                     Toggle { label: Lang.t("Kalkan sayacı", "Shield counter"); on: page.showShield; onClicked: page.startChanged("showShield", !page.showShield) }
                     Toggle { label: Lang.t("Not defteri", "Note"); on: page.showNote; onClicked: page.startChanged("showNote", !page.showNote) }
                     Toggle { label: Lang.t("Sık gidilenler", "Most visited"); note: Lang.t("Geçmişinden, bu bilgisayarda", "From your history, on this computer"); on: page.showFrequent; onClicked: page.startChanged("showFrequent", !page.showFrequent) }

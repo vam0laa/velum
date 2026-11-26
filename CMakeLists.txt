@@ -43,7 +43,7 @@ qt_add_qml_module(velum
         qml/TabItem.qml
         qml/StartPage.qml
         qml/ClassicStart.qml
-        qml/DayRing.qml
+        qml/MonthCard.qml
         qml/WebStart.qml
         qml/Icon.qml
         qml/Hint.qml
