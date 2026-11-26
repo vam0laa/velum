@@ -16,7 +16,7 @@ ColumnLayout {
     signal openPage(url address)
     signal enable(var extension, bool on)
     signal remove(var extension)
-    spacing: 12
+    spacing: 14
 
     function localPath(url) { return decodeURIComponent(String(url).replace("file://", "")) }
 

@@ -162,9 +162,15 @@ Item {
             const made = count()
             w.openSettings(); t.check("the same tab is used again", w.current === settingsAt && count() === made && w.prefs.section === "privacy")
             for (const s of w.prefs.sections) w.openSettings(s.key)
-            t.check("every category opens", w.prefs.section === "about" && w.prefs.sections.length === 9)
+            t.check("every category opens", w.prefs.section === "about" && w.prefs.sections.length === 12)
             t.check("the command box finds the settings tab", bar.find("ayarlar").some(r => r.kind === "tab"))
             w.view.url = t.page("left"); t.check("going somewhere makes it an ordinary tab", !w.onSettings)
+            w.closeTab(w.current)
+            // searching the settings, and the default browser button
+            w.openSettings("general"); w.prefs.query = "cookie"; t.check("searching finds cards across categories", !w.prefs.nothingFound && w.prefs.shows("privacy", "cookies") && !w.prefs.shows("tabs", "sleep"))
+            w.prefs.query = "zzzz"; t.check("a search with no match says so", w.prefs.nothingFound)
+            w.prefs.query = ""; t.check("clearing returns to the category", w.prefs.shows("general", "x") && !w.prefs.shows("privacy", "x"))
+            DefaultBrowser.make(); t.check("the default browser button works", DefaultBrowser.current)
             w.closeTab(w.current)
             // both layouts
             w.horizontalTabs = true; w.openTab(t.page("h1")); w.openTab(t.page("h2"))
@@ -174,7 +180,7 @@ Item {
             w.horizontalTabs = false
             Theme.palette = "latte"; t.check("a light theme is known as light", !Theme.dark)
             Theme.accentChoice = "pink"; t.check("the accent can be chosen", String(Theme.accent) === String(Theme.pink))
-            Theme.accentChoice = ""; Theme.palette = "mocha"; t.check("every theme has all its colours", Theme.themes.every(x => [...Array(15).keys()].every(i => String(Theme.colorOf(x.key, i)).startsWith("#"))))
+            Theme.accentChoice = ""; Theme.palette = "lucid"; t.check("every theme has all its colours", Theme.themes.every(x => [...Array(15).keys()].every(i => String(Theme.colorOf(x.key, i)).startsWith("#"))))
             // the start page
             History.pages = [{ url: "https://a.example/1", title: "A" }, { url: "https://a.example/2", title: "A2" }, { url: "https://b.example/", title: "" }]
             w.refreshFrequent()
@@ -184,7 +190,7 @@ Item {
             w.prefs.startChanged("showNote", false); w.prefs.startChanged("startBackground", "dots")
             t.check("the start page follows the settings", !w.showNote && w.startBackground === "dots")
             w.showNote = true; w.startBackground = "glow"
-            t.check("the everyday look is the default", !Theme.web && Theme.shown === "mocha" && Theme.radius > 0)
+            t.check("the everyday look is the default", !Theme.web && Theme.shown === "lucid" && Theme.radius > 0)
             t.check("the theme list does not give the secret away", Theme.themes.every(x => x.key !== "cybercore" && x.key !== "night"))
             t.check("ordinary words are not secret", !Theme.secret("webcore") && !Theme.secret("velum.dev") && !Theme.web)
             w.view.url = t.page("egg"); const addressBefore = String(w.view.url)
@@ -195,8 +201,8 @@ Item {
             t.check("webcore is bright by day and blue by night", day === "cybercore" && late === "night")
             Theme.hour = 12; t.check("text on blue is white", String(Theme.accentInk) === "#ffffff" && String(Theme.barInk) === "#ffffff")
             Theme.hour = hourNow
-            t.check("typing it again goes back", Theme.secret("velum:webcore") && !Theme.web && Theme.shown === "mocha")
-            Theme.palette = "mocha"
+            t.check("typing it again goes back", Theme.secret("velum:webcore") && !Theme.web && Theme.shown === "lucid")
+            Theme.palette = "lucid"
             Theme.glass = true
             t.check("glass makes the backgrounds see-through, popups stay solid", Theme.frameBack.a < 0.6 && Theme.paneBack.a < 0.6 && Theme.window.a === 1)
             Theme.glass = false; t.check("without glass they are solid", Theme.frameBack.a === 1 && Theme.sheetBack.a === 1)

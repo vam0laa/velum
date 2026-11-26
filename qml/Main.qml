@@ -17,12 +17,12 @@ ApplicationWindow {
     property bool compactSidebar: false
     property bool horizontalTabs: true     // the tabs along the top instead of down the side
     // the start page, as you set it up
-    property string startBackground: "glow"
+    property string startBackground: "plain"
     property string startPicture: ""
     property bool showClock: true
     property bool showShield: true
     property bool showNote: false
-    property bool showFrequent: true
+    property bool showFrequent: false
     property string note: ""
     property var frequentPages: []
     property string iconFolder: ""          // "" keeps no site icons
@@ -227,12 +227,12 @@ ApplicationWindow {
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
         property alias tabsOnTop: window.horizontalTabs
-        property alias startBackdrop: window.startBackground
+        property alias startBack: window.startBackground
         property alias startPicture: window.startPicture
         property alias showClock: window.showClock
         property alias startNotice: window.showShield
         property alias startNote: window.showNote
-        property alias startPlaces: window.showFrequent
+        property alias startVisited: window.showFrequent
         property alias note: window.note
         property alias bookmarkBar: window.showBookmarkBar
         property alias welcomed: window.welcomed

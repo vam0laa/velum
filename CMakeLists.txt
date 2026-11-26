@@ -43,6 +43,7 @@ qt_add_qml_module(velum
         qml/TabItem.qml
         qml/StartPage.qml
         qml/ClassicStart.qml
+        qml/DayRing.qml
         qml/WebStart.qml
         qml/Icon.qml
         qml/Hint.qml
@@ -95,7 +96,7 @@ qt_add_qml_module(velum
         qml/TextButton.qml
         qml/ConfirmDialog.qml
     RESOURCES data/velum.svg data/sky.jpg data/sky-night.jpg data/scanline.png data/fonts/VT323-Regular.ttf data/fonts/GoogleSansFlex.woff
-    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h src/importbridge.h src/passwordbridge.h src/storebridge.h
+    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h src/importbridge.h src/passwordbridge.h src/storebridge.h src/defaultbrowser.h
     IMPORTS QtQuick
 )
 set_target_properties(velum PROPERTIES QT_QML_MODULE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Velum)

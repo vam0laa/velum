@@ -7,13 +7,13 @@ import QtQuick
 // square blue windows, pixel lettering and a sky.
 QtObject {
     id: theme
-    property string palette: "mocha"       // a key of "palettes", or "desktop"
+    property string palette: "lucid"       // a key of "palettes", or "desktop"
     property string style: "classic"       // "classic", or "webcore": the easter egg
     readonly property bool web: style === "webcore"
     // webcore is bright blue by day and night blue from the evening on
     property int hour: new Date().getHours()
     readonly property string shown: web ? (hour >= 7 && hour < 19 ? "cybercore" : "night")
-                                        : palette === "cybercore" || palette === "night" || !(palette === "desktop" || palettes[palette]) ? "mocha" : palette
+                                        : palette === "cybercore" || palette === "night" || !(palette === "desktop" || palettes[palette]) ? "lucid" : palette
     readonly property bool night: web && shown === "night"
     property Timer clock: Timer { interval: 30000; running: true; repeat: true; onTriggered: theme.hour = new Date().getHours() }
     property string accentChoice: ""       // "" keeps the palette's own accent
@@ -23,7 +23,7 @@ QtObject {
 
     property Settings saved: Settings {
         category: "look"
-        property alias colors: theme.palette
+        property alias tone: theme.palette
         property alias style: theme.style
         property alias accent: theme.accentChoice
         property alias glass: theme.glass
@@ -42,6 +42,7 @@ QtObject {
 
     // frame, window, card, raised, title, line, text, dim, accent, accentInk, mauve, pink, green, peach, danger
     readonly property var palettes: ({
+        lucid:      ["#080d0e", "#161d1e", "#0e1415", "#1b2223", "#263032", "#2c3739", "#dee4e4", "#9fadae", "#80d4dc", "#00363b", "#b6c6ef", "#e6b8e4", "#a6d6a2", "#f3b996", "#ffb4ab"],
         dark:       ["#1c1b22", "#2b2a33", "#2b2a33", "#42414d", "#52525e", "#52525e", "#fbfbfe", "#b1b1bd", "#6ea8ff", "#0c0c14", "#c6a1ff", "#ff9ee0", "#7ee0a1", "#ffb36b", "#ff7a8a"],
         light:      ["#e8e8ee", "#f9f9fb", "#f9f9fb", "#ffffff", "#dddde6", "#cfcfd8", "#15141a", "#5b5b66", "#0061e0", "#ffffff", "#7a3fd0", "#c2188a", "#0f7b4f", "#a84e00", "#c50042"],
         night:      ["#0d1124", "#171c33", "#171c33", "#10142a", "#26306a", "#3a478c", "#c3cdee", "#8590ba", "#6473d6", "#f0f3ff", "#a58be0", "#d27cc4", "#5fbf9c", "#d9a066", "#e0708c"],
@@ -59,7 +60,7 @@ QtObject {
 
     // what the pickers offer, in order
     readonly property var themes: [
-        { key: "mocha", label: "Mocha" }, { key: "macchiato", label: "Macchiato" }, { key: "frappe", label: "Frappé" }, { key: "latte", label: "Latte" }, { key: "dark", label: Lang.t("Koyu", "Dark") }, { key: "light", label: Lang.t("Açık", "Light") },
+        { key: "lucid", label: "Lucid" }, { key: "mocha", label: "Mocha" }, { key: "macchiato", label: "Macchiato" }, { key: "frappe", label: "Frappé" }, { key: "latte", label: "Latte" }, { key: "dark", label: Lang.t("Koyu", "Dark") }, { key: "light", label: Lang.t("Açık", "Light") },
         { key: "rosepine", label: "Rosé Pine" }, { key: "everforest", label: "Everforest" }, { key: "gruvbox", label: "Gruvbox" }, { key: "nord", label: "Nord" },
         { key: "tokyo", label: "Tokyo Night" }, { key: "desktop", label: Lang.t("Masaüstü", "Desktop") }
     ]
@@ -70,7 +71,7 @@ QtObject {
 
     // colour i of any theme, used by the pickers to draw previews
     function colorOf(key, i) {
-        const base = palettes[key] ?? palettes.mocha
+        const base = palettes[key] ?? palettes.lucid
         if (key === "desktop")
             return DesktopColors.colors[desktopRoles[i]] ?? base[i]
         return base[i]
@@ -115,6 +116,8 @@ QtObject {
     readonly property string ui: web ? pixelFont.name : sansFont.name
     // sizes are written for the small pixel letters; the other font needs less
     function size(n) { return web ? n : Math.round(n / 1.3) }
+    // real weights of the variable font; the pixel font has only one
+    function axes(weight) { return web ? ({}) : ({ "wght": weight }) }
 
     readonly property int radius: web ? 0 : 8      // buttons, fields, rows
     readonly property int corner: web ? 0 : 12     // windows

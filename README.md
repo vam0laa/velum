@@ -88,7 +88,7 @@ Ctrl+, opens the settings: language (system, Turkish, English), search engine (D
 
 ## Look
 
-Laid out the way browsers people know are: rounded tabs on top, a toolbar, a bookmarks bar, and a start page with the Velum mark, a wide search box, your sites as cards, your most visited places and a note if wanted. Tabs can go down the side instead. Twelve colour themes (Catppuccin Mocha by default, Macchiato, Frappé, Latte, plain Dark and Light, Rosé Pine, Everforest, Gruvbox, Nord, Tokyo Night, or the desktop theme written by Quickshell) with a choice of accent; glass and motion can be switched. The first start asks for language, theme, layout and search engine; the settings are a tab of their own (Ctrl+,). Nothing on the start page asks the network for anything. The bundled fonts Google Sans Flex and VT323 are under the SIL Open Font License (see `data/fonts`).
+Laid out the way browsers people know are: rounded tabs on top (or down the side), a toolbar and a bookmarks bar. The home page has a big headline with a changing word, search and your sites beside a tall clock, a date tile, a ring showing how much of the day has passed and a counter of what the shield blocked; each can be switched off, and none of it asks the network for anything. The settings are a tab with categories, cards and a search over all of them. Colour themes: Lucid (default, near-black and teal), Catppuccin, plain Dark and Light, Rosé Pine, Everforest, Gruvbox, Nord, Tokyo Night or the desktop theme, with a choice of accent. The bundled fonts Google Sans Flex and VT323 are under the SIL Open Font License (see `data/fonts`).
 
 ## Laptops with two graphics cards
 

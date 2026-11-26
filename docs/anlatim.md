@@ -388,6 +388,14 @@ Pencere yöneticisi Velum'u yeniden boyutlandırınca bazen yeni kare çizilmiyo
 
 Gizli görünüm: adres ya da arama kutusuna `velum:webcore` yazılınca açılır, tekrar yazınca kapanır (`Theme.secret`).
 
+## Ana sayfa ve ayarlar (son hali)
+
+- `qml/ClassicStart.qml`: Lucid tarzı iki sütun. Dönen kelime bir `SequentialAnimation` ile yukarı kayıp yenisiyle değişir. Dar pencerede sütunlar alt alta gelir.
+- `qml/DayRing.qml`: günün ne kadarı geçti; dolu kısım sinüs dalgasıyla `Canvas`'a çizilir.
+- `qml/SettingsPage.qml`: kategoriler ve kartlar; arama kutusu her kartın anahtar kelimelerine bakar (`shows`).
+- `src/defaultbrowser.h`: "Varsayılan yap" düğmesi, `xdg-settings` ile.
+- Kalın yazılar `Theme.axes()` ile: yazı tipinin gerçek ağırlık ekseni.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.
