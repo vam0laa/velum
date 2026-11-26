@@ -198,7 +198,8 @@ Item {
             t.check("site icon names are safe file names", w.iconName("https://www.vamola.dev/x") === "vamola.dev" && w.iconName("https://..%2f/x") === "" && w.iconName("about:blank") === "")
             w.prefs.startChanged("showNote", false); w.prefs.startChanged("startBackground", "dots")
             t.check("the start page follows the settings", !w.showNote && w.startBackground === "dots")
-            w.showNote = true; w.startBackground = "glow"
+            w.setStart("showNote", true); w.startBackground = "glow"
+            t.check("a switch adds its widget", w.showNote && w.homeWidgets.includes("note"))
             t.check("the everyday look is the default", !Theme.web && Theme.shown === "lucid" && Theme.radius > 0)
             t.check("the theme list does not give the secret away", Theme.themes.every(x => x.key !== "cybercore" && x.key !== "night"))
             t.check("ordinary words are not secret", !Theme.secret("webcore") && !Theme.secret("velum.dev") && !Theme.web)
@@ -220,6 +221,24 @@ Item {
             Theme.glass = false; t.check("without glass they are solid", Theme.frameBack.a === 1 && Theme.sheetBack.a === 1)
             Theme.motion = false; t.check("animations can be switched off", Theme.quick === 0 && Theme.smooth === 0)
             Theme.motion = true
+            // designing the home page
+            w.keepWidgets(["clock", "tasks", "timer", "tasks", "bogus"])
+            t.check("widgets are kept once, known ones only", w.homeWidgets.join() === "clock,tasks,timer")
+            w.openTab(""); const sheet = w.startPage
+            sheet.moveWidget("timer", -1); t.check("widgets move", w.homeWidgets.join() === "clock,timer,tasks")
+            sheet.setWidget("timer", false); sheet.setWidget("calendar", true); t.check("and are removed and added", w.homeWidgets.join() === "clock,tasks,calendar")
+            sheet.tasksEdited([{ text: "süt al", done: false }]); t.check("tasks are kept", w.homeTasks.length === 1 && sheet.tasks[0].text === "süt al")
+            sheet.wordsEdited("  Benim  ", "bir\n\n iki \n"); t.check("your own words are used", w.homeHeadline === "Benim" && w.homeWords.join() === "bir,iki")
+            sheet.setTimer(10); t.check("the timer is set", sheet.timerText === "10:00" && w.homeTimer === 10)
+            sheet.toggleTimer(); t.check("and runs", sheet.timerRunning); sheet.setTimer(1000); t.check("within limits", !sheet.timerRunning && w.homeTimer === 120)
+            sheet.cssEdited("/* x */ .pill, .clock { color: #ff0000; font-size: 40px; border-radius: 4 }\n.widget{background:#11223344;opacity:0.5}")
+            t.check("the style sheet is read", sheet.css(["pill"], "color", "") === "#ff0000" && sheet.css(["clock"], "font-size", 0) === 40 && sheet.cssErrors.length === 0)
+            t.check("css colours with transparency are turned round", sheet.css(["calendar", "widget"], "background", "") === "#44112233" && sheet.css(["widget"], "opacity", 1) === 0.5)
+            sheet.cssEdited(".nope { color: red } .pill { position: fixed; color: url(http://x); font-size: 9000px; background: rgb(1,2,3) }\n.clock { color: blue")
+            t.check("mistakes are reported and left out", sheet.cssErrors.length >= 5 && sheet.css(["pill"], "color", "none") === "none" && sheet.css(["pill"], "background", "") === "#ff010203")
+            sheet.editor.open(2); t.check("the design panel opens", sheet.editor.visible)
+            sheet.editor.visible = false; sheet.cssEdited(""); w.keepWords("", ""); w.keepTasks([]); w.keepWidgets(["clock", "date", "calendar", "shield"])
+            w.closeTab(w.current)
             // the welcome pages
             w.welcomed = false; w.welcome.open()
             t.check("the welcome starts at the first page", w.welcome.step === 0)

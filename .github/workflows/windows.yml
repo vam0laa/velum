@@ -65,7 +65,7 @@ jobs:
           -DOPENSSL_ROOT_DIR="$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build build -- -k 0
 
       - name: Test
         shell: pwsh

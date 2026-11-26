@@ -18,7 +18,7 @@ qt_standard_project_setup(REQUIRES 6.9)
 # what differs between the systems
 if(WIN32)
     set(SYSTEM_SOURCES src/passwords_win.cpp src/procinfo_win.cpp)
-    set(SYSTEM_LIBS advapi32 psapi ws2_32 userenv bcrypt ntdll crypt32)
+    set(SYSTEM_LIBS advapi32 psapi ws2_32 userenv bcrypt ntdll crypt32 synchronization)
     set(NOTIFIER_HEADER src/notifier_win.h)
     set(BLOCKER_NAME velumblock.lib)
 else()
@@ -69,6 +69,11 @@ qt_add_qml_module(velum
         qml/StartPage.qml
         qml/ClassicStart.qml
         qml/MonthCard.qml
+        qml/HomeCss.qml
+        qml/HomeBox.qml
+        qml/HomeText.qml
+        qml/HomeWidget.qml
+        qml/HomeEditor.qml
         qml/Recommended.qml
         qml/ThemeWash.qml
         qml/BrowserPreview.qml

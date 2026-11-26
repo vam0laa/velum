@@ -43,6 +43,7 @@ Rectangle {
     property bool showFrequent
     property bool showBookmarkBar
     signal startChanged(string name, var value)      // a property of the window and its new value
+    signal designRequested()
 
     readonly property string folderShown: downloadFolder !== "" ? downloadFolder
         : Files.toPath(StandardPaths.writableLocation(StandardPaths.DownloadLocation))
@@ -275,7 +276,8 @@ Rectangle {
                     wanted: page.shows("home", "ana sayfa home saat kalkan not sık gidilen arka plan background")
                     heading: Lang.t("Ana sayfada neler olsun", "What the home page shows")
                     symbol: "home"
-                    Toggle { label: Lang.t("Saat, tarih ve takvim", "Clock, date and calendar"); on: page.showClock; onClicked: page.startChanged("showClock", !page.showClock) }
+                    TextButton { visible: !Theme.web; Layout.fillWidth: true; implicitHeight: 40; strong: true; text: Lang.t("Ana sayfayı tasarla: widget, yazı, CSS…", "Design the home page: widgets, words, CSS…"); onClicked: page.designRequested() }
+                    Toggle { label: Lang.t("Büyük saat", "Big clock"); on: page.showClock; onClicked: page.startChanged("showClock", !page.showClock) }
                     Toggle { label: Lang.t("Kalkan sayacı", "Shield counter"); on: page.showShield; onClicked: page.startChanged("showShield", !page.showShield) }
                     Toggle { label: Lang.t("Not defteri", "Note"); on: page.showNote; onClicked: page.startChanged("showNote", !page.showNote) }
                     Toggle { label: Lang.t("Sık gidilenler", "Most visited"); note: Lang.t("Geçmişinden, bu bilgisayarda", "From your history, on this computer"); on: page.showFrequent; onClicked: page.startChanged("showFrequent", !page.showFrequent) }

@@ -6,6 +6,9 @@ Item {
     property date now: new Date()
     property var names: Qt.locale("tr_TR")
     property bool mondayFirst: true
+    property color ink: Theme.text
+    // the quieter shade of the same colour
+    readonly property color faded: Qt.alpha(ink, ink.a * 0.6)
     // only the day matters; the grid is not rebuilt every second
     readonly property int year: now.getFullYear()
     readonly property int number: now.getMonth()
@@ -22,7 +25,7 @@ Item {
         Text {
             leftPadding: 6
             text: month.names.standaloneMonthName(month.number) + " " + month.year
-            color: Theme.text
+            color: month.ink
             font.family: Theme.ui
             font.pixelSize: 15
             font.variableAxes: Theme.axes(700)
@@ -37,7 +40,7 @@ Item {
                     height: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: month.names.standaloneDayName((index + (month.mondayFirst ? 1 : 0)) % 7, Locale.ShortFormat).slice(0, 2)
-                    color: Theme.dim
+                    color: month.faded
                     font.family: Theme.ui
                     font.pixelSize: 11
                 }
@@ -62,7 +65,7 @@ Item {
                         anchors.centerIn: parent
                         visible: box.day > 0
                         text: box.day
-                        color: box.day === month.today ? Theme.accentInk : box.day < month.today ? Theme.dim : Theme.text
+                        color: box.day === month.today ? Theme.accentInk : box.day < month.today ? month.faded : month.ink
                         font.family: Theme.ui
                         font.pixelSize: 12
                         font.variableAxes: Theme.axes(box.day === month.today ? 800 : 450)

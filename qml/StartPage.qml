@@ -18,6 +18,72 @@ Rectangle {
     property bool showNote: false
     property bool showFrequent: false
     property var iconFor: url => ""     // the saved icon of a site
+    // your own design of the everyday home page
+    property var widgets: ["clock", "date", "calendar", "shield"]
+    property string headline: ""
+    property var words: []
+    property var tasks: []
+    property string cssText: ""
+    property alias cssReader: reader
+    readonly property var parsed: reader.parse(cssText)
+    readonly property var cssErrors: parsed.errors
+    property int timerMinutes: 25
+    property int timerLeft: 25 * 60
+    property bool timerRunning: false
+    readonly property string timerText: ("0" + Math.floor(timerLeft / 60)).slice(-2) + ":" + ("0" + timerLeft % 60).slice(-2)
+    signal widgetsEdited(var list)
+    signal wordsEdited(string headline, string words)
+    signal cssEdited(string text)
+    signal tasksEdited(var list)
+    signal timerEdited(int minutes)
+    signal timerFinished()
+    readonly property Item editor: face.item?.editor ?? null
+
+    // the value your style sheet gives to the first of `names` that has it
+    function css(names, property, fallback) {
+        for (const name of names) {
+            const found = parsed.sheet[name]?.[property]
+            if (found !== undefined)
+                return found
+        }
+        return fallback
+    }
+    function setWidget(id, on) {
+        const list = widgets.filter(w => w !== id)
+        widgetsEdited(on ? list.concat([id]) : list)
+    }
+    function moveWidget(id, by) {
+        const list = widgets.slice(), at = list.indexOf(id), to = at + by
+        if (at < 0 || to < 0 || to >= list.length)
+            return
+        list.splice(at, 1)
+        list.splice(to, 0, id)
+        widgetsEdited(list)
+    }
+    function setTimer(minutes) {
+        timerRunning = false
+        const m = Math.max(5, Math.min(120, minutes))
+        timerLeft = m * 60
+        timerEdited(m)
+    }
+    function toggleTimer() {
+        if (timerLeft === 0)
+            timerLeft = timerMinutes * 60
+        timerRunning = !timerRunning
+    }
+    onTimerMinutesChanged: if (!timerRunning) timerLeft = timerMinutes * 60
+
+    HomeCss { id: reader }
+    Timer {
+        interval: 1000; repeat: true; running: sheet.timerRunning
+        onTriggered: {
+            sheet.timerLeft = Math.max(0, sheet.timerLeft - 1)
+            if (sheet.timerLeft === 0) {
+                sheet.timerRunning = false
+                sheet.timerFinished()
+            }
+        }
+    }
     property date now: new Date()
     readonly property var locale_: Qt.locale(Lang.turkish ? "tr_TR" : "en_US")
     signal go(url target)

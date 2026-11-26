@@ -19,9 +19,63 @@ ApplicationWindow {
     // the start page, as you set it up
     property string startBackground: "plain"
     property string startPicture: ""
-    property bool showClock: true
-    property bool showShield: true
-    property bool showNote: false
+    // the widgets of the home page, in order
+    property var homeWidgets: ["clock", "date", "calendar", "shield"]
+    readonly property bool showClock: homeWidgets.includes("clock")
+    readonly property bool showShield: homeWidgets.includes("shield")
+    readonly property bool showNote: homeWidgets.includes("note")
+    property string homeHeadline: ""
+    property var homeWords: []
+    property var homeTasks: []
+    property string homeCss: ""
+    property int homeTimer: 25
+    readonly property var widgetNames: ["clock", "date", "calendar", "shield", "tasks", "timer", "note"]
+    function keepWidgets(list) {
+        homeWidgets = Array.from(list).filter((w, i, a) => widgetNames.includes(w) && a.indexOf(w) === i)
+        saved.homeWidgets = JSON.stringify(homeWidgets)
+    }
+    function keepTasks(list) {
+        homeTasks = list.slice(0, 12)
+        saved.homeTasks = JSON.stringify(homeTasks)
+    }
+    function keepWords(headline, words) {
+        homeHeadline = String(headline).trim().slice(0, 40)
+        homeWords = String(words).split("\n").map(w => w.trim().slice(0, 40)).filter(w => w !== "").slice(0, 12)
+        saved.homeWords = JSON.stringify(homeWords)
+    }
+    function readHome() {
+        try {
+            if (saved.homeWidgets !== "") {
+                keepWidgets(JSON.parse(saved.homeWidgets))
+            } else {
+                // the three switches of earlier versions
+                const was = (key, usual) => String(saved.value(key, usual)) === "true"
+                const list = was("showClock", true) ? ["clock", "date", "calendar"] : []
+                if (was("startNotice", true))
+                    list.push("shield")
+                if (was("startNote", false))
+                    list.push("note")
+                keepWidgets(list)
+            }
+        } catch (e) {
+        }
+        homeWords = readStrings(saved.homeWords)
+        try {
+            const list = JSON.parse(saved.homeTasks)
+            homeTasks = Array.isArray(list) ? list.filter(t => t && typeof t.text === "string").slice(0, 12) : []
+        } catch (e) {
+        }
+    }
+    // a switch in the settings
+    function setStart(name, value) {
+        const widget = { showClock: "clock", showShield: "shield", showNote: "note" }[name]
+        if (!widget) {
+            window[name] = value
+            return
+        }
+        const list = homeWidgets.filter(w => w !== widget)
+        keepWidgets(value ? list.concat([widget]) : list)
+    }
     property bool showFrequent: false
     property string note: ""
     property var frequentPages: []
@@ -31,6 +85,7 @@ ApplicationWindow {
     property var iconNames: []          // sites that have an icon on disk
     property bool showBookmarkBar: true
     property alias mainMenu: mainMenu
+    property alias startPage: start
     // tiling desktops draw no title bar; Windows does, with its own buttons
     readonly property bool ownButtons: Qt.platform.os !== "windows"
     readonly property bool bookmarked: view !== null && shortcuts.some(s => s.url === String(view.url))
@@ -111,6 +166,7 @@ ApplicationWindow {
         // Present Velum as the Chrome engine it is. Some sites refuse names they do not know.
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
         shortcuts = readList(saved.shortcuts)
+        readHome()
         neverSave = readStrings(saved.neverSave)
         iconNames = readStrings(saved.iconNames)
         watchLogins()
@@ -237,11 +293,14 @@ ApplicationWindow {
         property alias tabsOnTop: window.horizontalTabs
         property alias startBack: window.startBackground
         property alias startPicture: window.startPicture
-        property alias showClock: window.showClock
-        property alias startNotice: window.showShield
-        property alias startNote: window.showNote
         property alias startVisited: window.showFrequent
         property alias note: window.note
+        property string homeWidgets: ""
+        property alias homeHeadline: window.homeHeadline
+        property string homeWords: "[]"
+        property string homeTasks: "[]"
+        property alias homeCss: window.homeCss
+        property alias homeTimer: window.homeTimer
         property alias bookmarkBar: window.showBookmarkBar
         property alias welcomed: window.welcomed
         property alias readerSize: window.readerSize
@@ -1177,6 +1236,8 @@ ApplicationWindow {
             themeWash.duration = 12000          // slow enough to be photographed
             Theme.change(() => Theme.palette = action.slice(5))
         }
+        else if (action.startsWith("design"))
+            start.editor?.open(Number(action.split(":")[1] ?? 0))
         else if (action === "menu")
             mainMenu.popup(width - mainMenu.width - 12, 90)
         else if (action === "passwords")
@@ -1735,7 +1796,8 @@ ApplicationWindow {
                     showNote: window.showNote
                     showFrequent: window.showFrequent
                     showBookmarkBar: window.showBookmarkBar
-                    onStartChanged: (name, value) => window[name] = value
+                    onStartChanged: (name, value) => window.setStart(name, value)
+                    onDesignRequested: { window.openTab(""); Qt.callLater(() => start.editor?.open(0)) }
                     extensions: window.extensions
                     fetchingExtension: window.fetchingExtension
                     onAddFromStore: typed => window.askExtension(typed, false)
@@ -1765,6 +1827,18 @@ ApplicationWindow {
                     showShield: window.showShield
                     showNote: window.showNote
                     showFrequent: window.showFrequent
+                    widgets: window.homeWidgets
+                    headline: window.homeHeadline
+                    words: window.homeWords
+                    tasks: window.homeTasks
+                    cssText: window.homeCss
+                    timerMinutes: window.homeTimer
+                    onWidgetsEdited: list => window.keepWidgets(list)
+                    onWordsEdited: (headline, words) => window.keepWords(headline, words)
+                    onTasksEdited: list => window.keepTasks(list)
+                    onCssEdited: text => window.homeCss = text.slice(0, 20000)
+                    onTimerEdited: minutes => window.homeTimer = minutes
+                    onTimerFinished: window.say(Lang.t("Süre doldu.", "Time is up."))
                     iconFor: window.iconNames.length >= 0 && window.iconRevision >= 0 ? url => window.iconFor(url) : url => ""
                     onNoteEdited: text => window.note = text
                     onCustomize: window.openSettings("look")

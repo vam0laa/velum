@@ -422,6 +422,12 @@ scripts/release.sh    derlemeyi indirir, burada imzalar, yayınlar
 ```
 İmzalama anahtarının gizli yarısı yalnızca `~/.config/velum-release/signing.pem` dosyasında. **Yedekle:** kaybolursa kurulu Velum'lar güncelleme alamaz. Başkasının eline geçerse sahte güncelleme imzalayabilir.
 
+## Ana sayfa tasarımı
+
+- `qml/HomeCss.qml`: yazdığın CSS'i okur; yalnızca bilinen seçici ve özellikleri, geçerli değerleri alır, gerisini hata listesine yazar. `url()` gibi dışarı uzanan hiçbir şey yok.
+- `qml/HomeBox.qml`, `HomeText.qml`: görünümünü o stile soran kutu ve yazı.
+- `qml/HomeWidget.qml`: widget'lar; `HomeEditor.qml`: düzenleme paneli.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.
