@@ -25,6 +25,7 @@ Item {
     property alias readerOn: bar.readerOn
     signal reader()
 
+    Shadow { visible: panel.chrome && !Theme.glass }
     Rectangle { anchors.fill: parent; visible: panel.chrome; color: panel.fill; radius: Theme.corner; border.width: 1; border.color: Theme.line }
     TitleBar {
         id: bar

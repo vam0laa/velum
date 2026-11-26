@@ -19,6 +19,8 @@ Popup {
     modal: true
     width: Math.min(560, Overlay.overlay.width - 32)
     padding: 16
+    enter: PopIn {}
+    exit: PopOut {}
     background: WindowBackground { title: Lang.t("kaynaklar", "resources"); stripe: Theme.mauve }
     topPadding: 42
 

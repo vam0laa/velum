@@ -364,6 +364,12 @@ Eklentinin 32 harflik kimliği, onu imzalayan anahtarın özetidir. `verifiedZip
 - Site simgeleri: yalnızca yer imine eklediğin bir siteyi açtığında, motorun elindeki simge bir kez ekran dışında çizilip `icons/` klasörüne yazılır. Başlangıç sayfası ağdan bir şey istemez.
 - "Sık gidilenler" geçmişten, site başına bir tane. Kalkan sayacı yalnızca bir sayıdır, nereyle ilgili olduğu tutulmaz.
 
+## 7w. Animasyonlar ve gölgeler
+
+- `qml/PopIn.qml` / `PopOut.qml`: panellerin gelişi ve gidişi, hepsi aynı iki dosyayı kullanır.
+- `qml/Shadow.qml`: bulanıklaştırma yerine üç soluk katman; ucuzdur, cam görünümde kapanır.
+- Süreler `Theme.quick` ve `Theme.smooth`'tan gelir. "Animasyonlar" kapatılınca ikisi de 0 olur.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

@@ -1458,6 +1458,25 @@ ApplicationWindow {
                 }
             }
 
+            // how far the page has loaded, a thin line along its top
+            Rectangle {
+                id: progress
+                readonly property bool busy: window.view !== null && window.view.loading && !window.onStartPage
+                x: window.view?.x ?? 0
+                z: 3
+                height: 3
+                radius: 2
+                width: (window.view?.width ?? 0) * (busy ? Math.max(0.08, window.view.loadProgress / 100) : 1)
+                opacity: busy ? 1 : 0
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: Theme.accent }
+                    GradientStop { position: 1; color: Theme.pink }
+                }
+                Behavior on width { enabled: progress.busy; NumberAnimation { duration: Theme.smooth } }
+                Behavior on opacity { NumberAnimation { duration: Theme.smooth * 2 } }
+            }
+
             // the line between the two halves: drag to resize, double click to even out
             Item {
                 id: splitter
@@ -1577,12 +1596,16 @@ ApplicationWindow {
 
             // a short message at the bottom of the page
             Rectangle {
-                anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 18 }
+                anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: window.notice !== "" ? 18 : -10 }
                 width: Math.min(parent.width - 24, noticeText.implicitWidth + 32)
                 height: 38
                 radius: 19
                 z: 3
-                visible: window.notice !== ""
+                opacity: window.notice !== "" ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: Theme.smooth } }
+                Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
+                Shadow { radius: 19 }
                 color: Theme.raised
                 border.color: Theme.line
                 Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.pixelSize: 13; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }

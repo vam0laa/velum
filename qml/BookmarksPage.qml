@@ -74,6 +74,8 @@ Popup {
     height: Math.min(600, Overlay.overlay.height - 32)
     padding: 4
     topPadding: 34
+    enter: PopIn {}
+    exit: PopOut {}
     background: WindowBackground { title: Lang.t("yer imleri", "bookmarks"); stripe: Theme.peach }
 
     component Field: TextField {

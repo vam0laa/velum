@@ -82,6 +82,9 @@ qt_add_qml_module(velum
         qml/ExtensionList.qml
         qml/Backdrop.qml
         qml/SiteIcon.qml
+        qml/PopIn.qml
+        qml/PopOut.qml
+        qml/Shadow.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml

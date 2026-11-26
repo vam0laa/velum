@@ -10,6 +10,7 @@ QtObject {
     property string accentChoice: ""       // "" keeps the palette's own accent
     property bool glass: false             // see-through windows; the desktop blurs behind them
     property real solidity: 0.72           // how opaque the glass is: 0.55, 0.72 or 0.88
+    property bool motion: true             // false: nothing slides or grows
 
     property Settings saved: Settings {
         category: "look"
@@ -17,6 +18,7 @@ QtObject {
         property alias accent: theme.accentChoice
         property alias glass: theme.glass
         property alias solidity: theme.solidity
+        property alias motion: theme.motion
     }
 
     // frame, window, card, raised, title, line, text, dim, accent, onAccent, mauve, pink, green, peach, danger
@@ -86,6 +88,6 @@ QtObject {
     readonly property int gap: 8
     readonly property int sidebar: 280
     readonly property int strip: 60
-    readonly property int quick: 120
-    readonly property int smooth: 220
+    readonly property int quick: motion ? 120 : 0
+    readonly property int smooth: motion ? 220 : 0
 }

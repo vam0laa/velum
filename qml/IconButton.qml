@@ -13,6 +13,8 @@ AbstractButton {
     implicitHeight: 32
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
+    scale: down ? 0.9 : 1
+    Behavior on scale { NumberAnimation { duration: Theme.quick; easing.type: Easing.OutCubic } }
 
     contentItem: Item {
         Icon {

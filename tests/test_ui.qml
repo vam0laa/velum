@@ -187,6 +187,8 @@ Item {
             Theme.glass = true
             t.check("glass makes the backgrounds see-through, popups stay solid", Theme.frameBack.a < 0.6 && Theme.paneBack.a < 0.6 && Theme.window.a === 1)
             Theme.glass = false; t.check("without glass they are solid", Theme.frameBack.a === 1 && Theme.sheetBack.a === 1)
+            Theme.motion = false; t.check("animations can be switched off", Theme.quick === 0 && Theme.smooth === 0)
+            Theme.motion = true
             // the welcome pages
             w.welcomed = false; w.welcome.open()
             t.check("the welcome starts at the first page", w.welcome.step === 0)

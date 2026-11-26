@@ -65,7 +65,7 @@ Rectangle {
         if (visible && section === "passwords")
             passwordList.refresh()
     }
-    onSectionChanged: { scroll.contentY = 0; refresh() }
+    onSectionChanged: { scroll.contentY = 0; arrive.restart(); refresh() }
     onVisibleChanged: refresh()
 
     FolderDialog {
@@ -161,6 +161,12 @@ Rectangle {
 
             ColumnLayout {
                 id: content
+                transform: Translate { id: slide }
+                ParallelAnimation {
+                    id: arrive
+                    NumberAnimation { target: content; property: "opacity"; from: 0; to: 1; duration: Theme.smooth }
+                    NumberAnimation { target: slide; property: "y"; from: 18; to: 0; duration: Theme.smooth; easing.type: Easing.OutCubic }
+                }
                 width: Math.min(parent.width - 40, 760)
                 x: (parent.width - width) / 2
                 y: 28
@@ -196,6 +202,7 @@ Rectangle {
                     heading: Lang.t("düzen", "layout")
                     tone: Theme.mauve
                     LayoutPicker { horizontal: page.horizontalTabs; onChosen: h => page.layoutChosen(h) }
+                    Toggle { label: Lang.t("Animasyonlar", "Animations"); note: Lang.t("Kapalıyken hiçbir şey kaymaz ya da büyümez", "When off, nothing slides or grows"); on: Theme.motion; onClicked: Theme.motion = !Theme.motion }
                     Toggle {
                         visible: !page.horizontalTabs
                         label: Lang.t("Yan paneli daralt", "Narrow side bar")

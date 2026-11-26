@@ -14,6 +14,8 @@ Popup {
     modal: true
     width: 380
     padding: 18
+    enter: PopIn {}
+    exit: PopOut {}
     background: WindowBackground { title: Lang.t("onay", "confirm"); stripe: Theme.danger }
     topPadding: 42
 

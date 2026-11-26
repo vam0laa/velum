@@ -117,6 +117,8 @@ Item {
     Rectangle {
         id: panel
         width: Math.min(parent.width - 48, 620)
+        scale: bar.open ? 1 : 0.94
+        Behavior on scale { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutBack } }
         height: column.implicitHeight + 48
         anchors.horizontalCenter: parent.horizontalCenter
         y: Math.max(24, parent.height * 0.18) - (bar.open ? 0 : 10)

@@ -19,6 +19,8 @@ Popup {
     width: Math.min(440, Overlay.overlay.width - 32)
     padding: 18
     topPadding: 42
+    enter: PopIn {}
+    exit: PopOut {}
     background: WindowBackground { title: Lang.t("içe aktar", "import"); stripe: Theme.green }
 
     ColumnLayout {

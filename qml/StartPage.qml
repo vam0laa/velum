@@ -39,6 +39,17 @@ Rectangle {
 
     color: Theme.sheetBack
 
+    // 0 → 1 each time the page is shown; part i rises when its turn comes
+    property real arrived: 1
+    function rise(i) { return Math.max(0, Math.min(1, arrived * 2.6 - i * 0.28)) }
+    NumberAnimation on arrived { id: entrance; running: false; from: 0; to: 1; duration: Theme.smooth * 3 }
+    onVisibleChanged: if (visible) entrance.restart()
+
+    component Rise: Translate {
+        property int order
+        y: (1 - page.rise(order)) * 26
+    }
+
     Timer { interval: 1000; repeat: true; running: page.visible; triggeredOnStart: true; onTriggered: page.now = new Date() }
 
     Backdrop { anchors.fill: parent; mode: page.background; picture: page.picture }
@@ -65,6 +76,8 @@ Rectangle {
 
             ColumnLayout {
                 spacing: 0
+                opacity: page.rise(0)
+                transform: Rise { order: 0 }
                 Text {
                     Layout.fillWidth: true
                     text: page.greeting(page.now.getHours()) + ","
@@ -93,6 +106,8 @@ Rectangle {
 
             AddressField {
                 id: search
+                opacity: page.rise(1)
+                transform: Rise { order: 1 }
                 Layout.fillWidth: true
                 implicitHeight: 52
                 font.pixelSize: 15
@@ -106,6 +121,8 @@ Rectangle {
                 columnSpacing: 14
                 rowSpacing: 14
                 visible: page.showClock || page.showShield
+                opacity: page.rise(2)
+                transform: Rise { order: 2 }
 
                 Widget {
                     visible: page.showClock
@@ -144,6 +161,8 @@ Rectangle {
             // bookmarks
             Flow {
                 id: tiles
+                opacity: page.rise(3)
+                transform: Rise { order: 3 }
                 Layout.fillWidth: true
                 spacing: 12
 
@@ -157,6 +176,9 @@ Rectangle {
                         implicitWidth: 104
                         implicitHeight: 100
                         hoverEnabled: true
+                        scale: down ? 0.96 : hovered ? 1.05 : 1
+                        z: hovered ? 1 : 0
+                        Behavior on scale { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutBack } }
                         onClicked: page.go(modelData.url)
                         background: Rectangle {
                             radius: Theme.corner
@@ -223,6 +245,8 @@ Rectangle {
             }
 
             GridLayout {
+                opacity: page.rise(4)
+                transform: Rise { order: 4 }
                 Layout.fillWidth: true
                 columns: page.wide ? 2 : 1
                 columnSpacing: 14

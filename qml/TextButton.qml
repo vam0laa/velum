@@ -10,6 +10,8 @@ AbstractButton {
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
     opacity: enabled ? 1 : 0.45
+    scale: down ? 0.95 : 1
+    Behavior on scale { NumberAnimation { duration: Theme.quick; easing.type: Easing.OutCubic } }
     contentItem: Text {
         id: label
         text: button.text

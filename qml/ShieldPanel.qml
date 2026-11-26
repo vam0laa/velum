@@ -12,10 +12,10 @@ Popup {
     width: 290
     padding: 14
     margins: 8                 // never leaves the window
+    enter: PopIn {}
+    exit: PopOut {}
     background: WindowBackground { title: Lang.t("koruma", "shield"); stripe: Theme.green }
     topPadding: 42
-    enter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.quick } }
-
     readonly property bool siteAllowed: Shield.allowed(host, Shield.revision)
 
     ColumnLayout {

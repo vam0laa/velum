@@ -31,6 +31,8 @@ Popup {
     width: 360
     padding: 18
     topPadding: 42
+    enter: PopIn {}
+    exit: PopOut {}
     background: WindowBackground { title: Lang.t("çalışma alanı", "workspace"); stripe: Theme.mauve }
 
     ColumnLayout {

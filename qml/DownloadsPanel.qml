@@ -14,6 +14,8 @@ Popup {
     width: 340
     padding: 12
     margins: 8                 // never leaves the window
+    enter: PopIn {}
+    exit: PopOut {}
     background: WindowBackground { title: Lang.t("indirmeler", "downloads"); stripe: Theme.peach }
     topPadding: 42
 
