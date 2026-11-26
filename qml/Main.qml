@@ -20,9 +20,9 @@ ApplicationWindow {
     property string startBackground: "glow"
     property string startPicture: ""
     property bool showClock: true
-    property bool showShield: true
-    property bool showNote: true
-    property bool showFrequent: true
+    property bool showShield: false
+    property bool showNote: false
+    property bool showFrequent: false
     property string note: ""
     property var frequentPages: []
     property string iconFolder: ""          // "" keeps no site icons
@@ -229,9 +229,9 @@ ApplicationWindow {
         property alias startBackground: window.startBackground
         property alias startPicture: window.startPicture
         property alias showClock: window.showClock
-        property alias showShield: window.showShield
-        property alias showNote: window.showNote
-        property alias showFrequent: window.showFrequent
+        property alias startShield: window.showShield
+        property alias startNote: window.showNote
+        property alias startFrequent: window.showFrequent
         property alias note: window.note
         property alias welcomed: window.welcomed
         property alias readerSize: window.readerSize

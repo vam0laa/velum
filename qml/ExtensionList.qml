@@ -33,8 +33,7 @@ ColumnLayout {
     }
 
     Card {
-        heading: "chrome web store"
-        tone: Theme.accent
+        heading: "Chrome Web Store"
         note: Lang.t("Mağazada eklentinin sayfasını aç ve başlık çubuğundaki \"Velum'a ekle\"ye bas, ya da adresini buraya yapıştır. Paket Google'dan indirilir ve imzası doğrulanır. Mağazanın kendi \"Chrome'a ekle\" düğmesi burada çalışmaz.",
                      "Open an extension's page in the store and press \"Add to Velum\" in the title bar, or paste its address here. The package comes from Google and its signature is checked. The store's own \"Add to Chrome\" button does not work here.")
         RowLayout {
@@ -67,8 +66,7 @@ ColumnLayout {
     }
 
     Card {
-        heading: Lang.t("kurulu", "installed")
-        tone: Theme.green
+        heading: Lang.t("Kurulu", "Installed")
         Text {
             Layout.fillWidth: true
             visible: panel.extensions.length === 0
@@ -123,8 +121,7 @@ ColumnLayout {
     }
 
     Card {
-        heading: Lang.t("kendi dosyandan", "from your own files")
-        tone: Theme.mauve
+        heading: Lang.t("Kendi dosyandan", "From your own files")
         note: Lang.t("Yalnızca Manifest V3 eklentiler. Chrome'un her özelliği bu motorda yok; bazı eklentiler eksik çalışabilir ya da hiç çalışmayabilir.",
                      "Manifest V3 extensions only. The engine does not offer everything Chrome does; some extensions work partly or not at all.")
         RowLayout {

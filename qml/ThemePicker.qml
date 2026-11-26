@@ -10,31 +10,7 @@ ColumnLayout {
     RowLayout {
         spacing: 10
         Text { text: Lang.t("Vurgu rengi", "Accent colour"); color: Theme.dim; font.pixelSize: 12 }
-        Repeater {
-            model: ["blue", "mauve", "pink", "green", "peach", "red"]
-            AbstractButton {
-                id: dot
-                required property string modelData
-                readonly property bool current: (Theme.accentChoice || "blue") === modelData
-                implicitWidth: 26
-                implicitHeight: 26
-                onClicked: Theme.accentChoice = modelData === "blue" ? "" : modelData
-                Accessible.name: modelData
-                contentItem: Item {
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: dot.current ? 26 : 18
-                        height: width
-                        radius: width / 2
-                        color: "transparent"
-                        border.width: dot.current ? 2 : 0
-                        border.color: Theme.pick(Theme.accents[dot.modelData])
-                        Behavior on width { NumberAnimation { duration: Theme.quick } }
-                    }
-                    Rectangle { anchors.centerIn: parent; width: 16; height: 16; radius: 8; color: Theme.pick(Theme.accents[dot.modelData]) }
-                }
-            }
-        }
+        AccentDots {}
     }
 
     Flow {

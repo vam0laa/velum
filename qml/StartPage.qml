@@ -2,8 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// What an empty tab shows: a greeting, widgets, search, bookmarks and the places you go
-// most. Everything on it comes from this computer; it asks the network for nothing.
+// What an empty tab shows: the time, search and your sites, in the middle. Anything
+// more is switched on in the settings. It asks the network for nothing.
 Rectangle {
     id: page
     property alias field: search
@@ -16,13 +16,12 @@ Rectangle {
     property string background: "glow"
     property string picture: ""
     property bool showClock: true
-    property bool showShield: true
-    property bool showNote: true
-    property bool showFrequent: true
+    property bool showShield: false
+    property bool showNote: false
+    property bool showFrequent: false
     property var iconFor: url => ""     // the saved icon of a site
     property date now: new Date()
     readonly property var locale_: Qt.locale(Lang.turkish ? "tr_TR" : "en_US")
-    readonly property bool wide: column.width >= 600
     signal go(url target)
     signal removeShortcut(int index)
     signal addShortcut(string typed)
@@ -30,141 +29,63 @@ Rectangle {
     signal noteEdited(string text)
     signal customize()
 
-    function greeting(hour) {
-        if (hour < 5) return Lang.t("İyi geceler", "Good night")
-        if (hour < 12) return Lang.t("Günaydın", "Good morning")
-        if (hour < 18) return Lang.t("İyi günler", "Good afternoon")
-        return Lang.t("İyi akşamlar", "Good evening")
-    }
-
     color: Theme.sheetBack
 
-    // 0 → 1 each time the page is shown; part i rises when its turn comes
+    // 0 → 1 each time the page is shown
     property real arrived: 1
-    function rise(i) { return Math.max(0, Math.min(1, arrived * 2.6 - i * 0.28)) }
-    NumberAnimation on arrived { id: entrance; running: false; from: 0; to: 1; duration: Theme.smooth * 3 }
+    NumberAnimation on arrived { id: entrance; running: false; from: 0; to: 1; duration: Theme.smooth * 2; easing.type: Easing.OutCubic }
     onVisibleChanged: if (visible) entrance.restart()
-
-    component Rise: Translate {
-        property int order
-        y: (1 - page.rise(order)) * 26
-    }
 
     Timer { interval: 1000; repeat: true; running: page.visible; triggeredOnStart: true; onTriggered: page.now = new Date() }
 
     Backdrop { anchors.fill: parent; mode: page.background; picture: page.picture }
 
-    component Widget: Panel {
+    component Box: Rectangle {
         Layout.fillWidth: true
-        implicitHeight: 118
-        Layout.preferredWidth: 1
-        fill: Qt.alpha(Theme.window, 0.86)
+        radius: Theme.corner
+        color: Qt.alpha(Theme.window, 0.82)
     }
 
     Flickable {
         anchors.fill: parent
-        contentHeight: Math.max(height, column.implicitHeight + 72)
+        contentHeight: Math.max(height, column.implicitHeight + 96)
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
         ColumnLayout {
             id: column
-            width: Math.min(parent.width - 48, 780)
+            width: Math.min(parent.width - 40, 580)
             x: (parent.width - width) / 2
-            y: Math.max(30, (parent.height - implicitHeight) / 2)
-            spacing: 20
+            // a little above the middle, where the eye rests
+            y: Math.max(32, (parent.height - implicitHeight) * 0.42)
+            spacing: 24
+            opacity: page.arrived
+            transform: Translate { y: (1 - page.arrived) * 16 }
 
-            ColumnLayout {
-                spacing: 0
-                opacity: page.rise(0)
-                transform: Rise { order: 0 }
-                Text {
-                    Layout.fillWidth: true
-                    text: page.greeting(page.now.getHours()) + ","
-                    color: Theme.text
-                    font.pixelSize: page.wide ? 56 : 40
-                    font.weight: Font.ExtraBold
-                    font.letterSpacing: -1.5
-                    wrapMode: Text.WordWrap
-                }
-                Text {
-                    id: headline
-                    property int word: 0
-                    readonly property var words: [Lang.t("sakin gez.", "browse calmly."), Lang.t("iz bırakma.", "leave no trace."), Lang.t("reklamsız oku.", "read without ads.")]
-                    Layout.fillWidth: true
-                    Layout.topMargin: -8
-                    text: words[word % words.length]
-                    color: Theme.rainbow[word % Theme.rainbow.length]
-                    font.pixelSize: page.wide ? 56 : 40
-                    font.weight: Font.ExtraBold
-                    font.letterSpacing: -1.5
-                    wrapMode: Text.WordWrap
-                    Behavior on color { ColorAnimation { duration: 400 } }
-                    Timer { interval: 3600; repeat: true; running: page.visible; onTriggered: headline.word++ }
-                }
+            Column {
+                Layout.alignment: Qt.AlignHCenter
+                visible: page.showClock
+                spacing: -4
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: Qt.formatTime(page.now, "HH:mm"); color: Theme.text; font.pixelSize: 64; font.weight: Font.ExtraBold; font.letterSpacing: -2 }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: page.locale_.dayName(page.now.getDay()) + ", " + page.now.getDate() + " " + page.locale_.monthName(page.now.getMonth()); color: Theme.dim; font.pixelSize: 15 }
             }
 
             AddressField {
                 id: search
-                opacity: page.rise(1)
-                transform: Rise { order: 1 }
                 Layout.fillWidth: true
-                implicitHeight: 52
+                implicitHeight: 50
                 font.pixelSize: 15
                 onGo: target => page.go(target)
             }
 
-            // widgets, each a small window
-            GridLayout {
-                Layout.fillWidth: true
-                columns: page.wide ? 3 : 2
-                columnSpacing: 14
-                rowSpacing: 14
-                visible: page.showClock || page.showShield
-                opacity: page.rise(2)
-                transform: Rise { order: 2 }
-
-                Widget {
-                    visible: page.showClock
-                    title: Lang.t("saat", "clock")
-                    stripe: Theme.green
-                    Text { anchors.centerIn: parent; text: Qt.formatTime(page.now, "HH:mm"); color: Theme.text; font.pixelSize: 46; font.weight: Font.ExtraBold; font.letterSpacing: -1 }
-                }
-                Widget {
-                    visible: page.showClock
-                    title: Lang.t("tarih", "date")
-                    stripe: Theme.mauve
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 12
-                        Text { text: page.now.getDate(); color: Theme.mauve; font.pixelSize: 46; font.weight: Font.ExtraBold; anchors.verticalCenter: parent.verticalCenter }
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            Text { text: page.locale_.monthName(page.now.getMonth()); color: Theme.text; font.pixelSize: 16; font.weight: Font.Bold }
-                            Text { text: page.locale_.dayName(page.now.getDay()); color: Theme.dim; font.pixelSize: 13 }
-                        }
-                    }
-                }
-                Widget {
-                    Layout.columnSpan: page.wide ? 1 : 2
-                    visible: page.showShield
-                    title: Lang.t("kalkan", "shield")
-                    stripe: Theme.peach
-                    Column {
-                        anchors.centerIn: parent
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: Number(page.blocked).toLocaleString(page.locale_, "f", 0); color: Theme.peach; font.pixelSize: 40; font.weight: Font.ExtraBold; font.letterSpacing: -1 }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("reklam ve izleyici engellendi", "ads and trackers blocked"); color: Theme.dim; font.pixelSize: 12 }
-                    }
-                }
-            }
-
-            // bookmarks
+            // your sites: icons with their names, in the middle
             Flow {
                 id: tiles
-                opacity: page.rise(3)
-                transform: Rise { order: 3 }
-                Layout.fillWidth: true
-                spacing: 12
+                readonly property int cell: 76
+                readonly property int count: page.shortcuts.length + (page.shortcuts.length < 10 ? 1 : 0)
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: Math.max(1, Math.min(count, Math.floor((column.width + spacing) / (cell + spacing)))) * (cell + spacing) - spacing
+                spacing: 8
 
                 Repeater {
                     model: page.shortcuts
@@ -172,31 +93,22 @@ Rectangle {
                         id: tile
                         required property int index
                         required property var modelData
-                        readonly property color tone: Theme.rainbow[index % Theme.rainbow.length]
-                        implicitWidth: 104
-                        implicitHeight: 100
+                        implicitWidth: tiles.cell
+                        implicitHeight: 82
                         hoverEnabled: true
-                        scale: down ? 0.96 : hovered ? 1.05 : 1
-                        z: hovered ? 1 : 0
-                        Behavior on scale { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutBack } }
+                        scale: down ? 0.95 : 1
                         onClicked: page.go(modelData.url)
-                        background: Rectangle {
-                            radius: Theme.corner
-                            color: tile.hovered ? Theme.raised : Qt.alpha(Theme.window, 0.86)
-                            border.color: tile.hovered ? tile.tone : Theme.line
-                            Behavior on color { ColorAnimation { duration: Theme.quick } }
-                        }
+                        background: Rectangle { radius: Theme.corner; color: tile.hovered ? Qt.alpha(Theme.raised, 0.85) : "transparent"; Behavior on color { ColorAnimation { duration: Theme.quick } } }
                         contentItem: Item {
                             SiteIcon {
                                 id: letter
-                                anchors { top: parent.top; topMargin: tile.hovered ? 10 : 13; horizontalCenter: parent.horizontalCenter }
+                                anchors { top: parent.top; topMargin: 8; horizontalCenter: parent.horizontalCenter }
                                 title: String(tile.modelData.title)
                                 file: page.iconFor(tile.modelData.url)
-                                tone: tile.tone
-                                Behavior on anchors.topMargin { NumberAnimation { duration: Theme.quick; easing.type: Easing.OutCubic } }
+                                tone: Theme.rainbow[tile.index % Theme.rainbow.length]
                             }
                             Text {
-                                anchors { bottom: parent.bottom; bottomMargin: 12; left: parent.left; right: parent.right; margins: 6 }
+                                anchors { top: letter.bottom; topMargin: 6; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
                                 text: tile.modelData.title
                                 textFormat: Text.PlainText
                                 horizontalAlignment: Text.AlignHCenter
@@ -205,8 +117,8 @@ Rectangle {
                                 font.pixelSize: 12
                             }
                             IconButton {
-                                anchors { top: parent.top; right: parent.right; margins: 3 }
-                                implicitWidth: 22; implicitHeight: 22; iconSize: 12
+                                anchors { top: parent.top; right: parent.right; margins: 1 }
+                                implicitWidth: 20; implicitHeight: 20; iconSize: 11
                                 symbol: "close"
                                 hint: Lang.t("Yer imini kaldır", "Remove the bookmark")
                                 visible: tile.hovered || hovered
@@ -217,18 +129,23 @@ Rectangle {
                 }
                 AbstractButton {
                     id: plus
-                    implicitWidth: 104
-                    implicitHeight: 100
+                    implicitWidth: tiles.cell
+                    implicitHeight: 82
                     hoverEnabled: true
                     visible: page.shortcuts.length < 10
                     onClicked: { adding.visible = true; adding.forceActiveFocus() }
                     Accessible.name: Lang.t("Yer imi ekle", "Add a bookmark")
-                    background: Rectangle { radius: Theme.corner; color: plus.hovered ? Theme.raised : "transparent"; border.color: Theme.line }
-                    contentItem: Column {
-                        topPadding: 26
-                        spacing: 10
-                        Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "plus"; size: 22; color: Theme.dim }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("Ekle", "Add"); color: Theme.dim; font.pixelSize: 12 }
+                    background: Rectangle { radius: Theme.corner; color: plus.hovered ? Qt.alpha(Theme.raised, 0.85) : "transparent" }
+                    contentItem: Item {
+                        Rectangle {
+                            id: ring
+                            anchors { top: parent.top; topMargin: 8; horizontalCenter: parent.horizontalCenter }
+                            width: 44; height: 44; radius: 14
+                            color: "transparent"
+                            border.color: Theme.line
+                            Icon { anchors.centerIn: parent; name: "plus"; size: 20; color: Theme.dim }
+                        }
+                        Text { anchors { top: ring.bottom; topMargin: 6; horizontalCenter: parent.horizontalCenter } text: Lang.t("Ekle", "Add"); color: Theme.dim; font.pixelSize: 12 }
                     }
                 }
             }
@@ -244,79 +161,59 @@ Rectangle {
                 onGo: {}
             }
 
-            GridLayout {
-                opacity: page.rise(4)
-                transform: Rise { order: 4 }
-                Layout.fillWidth: true
-                columns: page.wide ? 2 : 1
-                columnSpacing: 14
-                rowSpacing: 14
-
-                Panel {
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 1
-                    Layout.alignment: Qt.AlignTop
-                    visible: page.showFrequent && page.frequent.length > 0
-                    implicitHeight: places.implicitHeight + 52
-                    fill: Qt.alpha(Theme.window, 0.86)
-                    title: Lang.t("sık gidilenler", "most visited")
-                    stripe: Theme.pink
-                    Column {
-                        id: places
-                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
-                        Repeater {
-                            model: page.frequent
-                            AbstractButton {
-                                id: place
-                                required property var modelData
-                                required property int index
-                                width: places.width
-                                height: 30
-                                hoverEnabled: true
-                                onClicked: page.go(modelData.url)
-                                background: Rectangle { radius: 8; color: place.hovered ? Theme.raised : "transparent" }
-                                contentItem: Item {
-                                    Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; width: 8; height: 8; radius: 4; color: Theme.rainbow[place.index % Theme.rainbow.length] }
-                                    Text { anchors { left: parent.left; leftMargin: 26; right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter } text: place.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.pixelSize: 12 }
-                                }
-                            }
-                        }
-                    }
+            // the extras, each only if switched on
+            Box {
+                visible: page.showShield
+                implicitHeight: 52
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 10
+                    Icon { name: "shield"; size: 18; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: Number(page.blocked).toLocaleString(page.locale_, "f", 0); color: Theme.text; font.pixelSize: 17; font.weight: Font.ExtraBold; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: Lang.t("reklam ve izleyici engellendi", "ads and trackers blocked"); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                 }
-                Panel {
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 1
-                    Layout.alignment: Qt.AlignTop
-                    visible: page.showNote
-                    implicitHeight: Math.max(150, Math.min(260, memo.implicitHeight + 52))
-                    fill: Qt.alpha(Theme.window, 0.86)
-                    title: Lang.t("not", "note")
-                    stripe: Theme.accent
-                    ScrollView {
-                        anchors { fill: parent; margins: 4 }
-                        TextArea {
-                            id: memo
-                            text: page.note
-                            textFormat: TextEdit.PlainText
-                            wrapMode: TextEdit.Wrap
-                            color: Theme.text
-                            selectionColor: Theme.accent
-                            selectedTextColor: Theme.onAccent
-                            placeholderText: Lang.t("Aklındakini yaz; bu bilgisayarda kalır.", "Jot something down; it stays on this computer.")
-                            placeholderTextColor: Theme.dim
-                            font.pixelSize: 13
-                            background: null
-                            onTextChanged: if (activeFocus) page.noteEdited(text.slice(0, 4000))
+            }
+            Box {
+                visible: page.showFrequent && page.frequent.length > 0
+                implicitHeight: places.implicitHeight + 16
+                Column {
+                    id: places
+                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
+                    Repeater {
+                        model: page.frequent
+                        AbstractButton {
+                            id: place
+                            required property var modelData
+                            width: places.width
+                            height: 30
+                            hoverEnabled: true
+                            onClicked: page.go(modelData.url)
+                            background: Rectangle { radius: 8; color: place.hovered ? Theme.raised : "transparent" }
+                            contentItem: Text { leftPadding: 10; rightPadding: 10; text: place.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; color: Theme.text; font.pixelSize: 12 }
                         }
                     }
                 }
             }
-
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 8
-                TextButton { visible: page.total > 0; text: Lang.t("Bütün yer imleri (", "All bookmarks (") + page.total + ")"; onClicked: page.manage() }
-                TextButton { text: Lang.t("Bu sayfayı özelleştir", "Customise this page"); onClicked: page.customize() }
+            Box {
+                visible: page.showNote
+                implicitHeight: Math.max(88, Math.min(220, memo.implicitHeight + 8))
+                ScrollView {
+                    anchors { fill: parent; margins: 4 }
+                    TextArea {
+                        id: memo
+                        text: page.note
+                        textFormat: TextEdit.PlainText
+                        wrapMode: TextEdit.Wrap
+                        color: Theme.text
+                        selectionColor: Theme.accent
+                        selectedTextColor: Theme.onAccent
+                        placeholderText: Lang.t("Not: aklındakini yaz, bu bilgisayarda kalır.", "Note: jot something down, it stays on this computer.")
+                        placeholderTextColor: Theme.dim
+                        font.pixelSize: 13
+                        background: null
+                        onTextChanged: if (activeFocus) page.noteEdited(text.slice(0, 4000))
+                    }
+                }
             }
             Text {
                 Layout.alignment: Qt.AlignHCenter
@@ -326,5 +223,13 @@ Rectangle {
                 font.pixelSize: 12
             }
         }
+    }
+
+    // quiet corner buttons
+    Row {
+        anchors { right: parent.right; bottom: parent.bottom; margins: 10 }
+        spacing: 4
+        IconButton { visible: page.total > 0; symbol: "star"; hint: Lang.t("Bütün yer imleri (", "All bookmarks (") + page.total + ")"; tone: Theme.dim; onClicked: page.manage() }
+        IconButton { symbol: "settings"; hint: Lang.t("Bu sayfayı özelleştir", "Customise this page"); tone: Theme.dim; onClicked: page.customize() }
     }
 }

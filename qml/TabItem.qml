@@ -17,7 +17,7 @@ ItemDelegate {
     required property string kind      // "" a web page, "settings" Velum's settings
     property bool horizontal: false    // in the bar along the top
     property real wide: 200            // how wide a horizontal tab may be
-    readonly property string label: kind === "settings" ? Lang.t("Ayarlar", "Settings") : title === "" ? Lang.t("Yeni sekme", "New tab") : title
+    readonly property string label: kind === "settings" ? Lang.t("Ayarlar", "Settings") : title === "" ? Lang.t("Ana sayfa", "Home") : title
     readonly property color tone: Theme.rainbow[Math.max(0, index) % Theme.rainbow.length]
     signal picked(int index)
     signal closed(int index)

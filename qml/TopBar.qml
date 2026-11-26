@@ -59,6 +59,7 @@ Rectangle {
             ListView {
                 id: list
                 Layout.fillWidth: true
+                Layout.maximumWidth: Math.max(48, contentWidth)
                 implicitHeight: 36
                 orientation: ListView.Horizontal
                 clip: true
@@ -103,6 +104,7 @@ Rectangle {
             }
 
             IconButton { symbol: "plus"; hint: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); tone: Theme.accent; onClicked: bar.newTab() }
+            Item { Layout.fillWidth: true }
         }
 
         RowLayout {

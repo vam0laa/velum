@@ -108,13 +108,22 @@ Panel {
             }
         }
 
-        Kicker {
-            readonly property int at: Math.max(0, side.spaces.findIndex(s => s.id === side.space))
+        // where you look for it: on top of the tabs
+        AbstractButton {
+            id: add
             Layout.fillWidth: true
-            elide: Text.ElideRight
-            visible: !side.compact
-            text: side.spaces[at]?.name || Lang.t("Genel", "General")
-            color: Theme.rainbow[at % Theme.rainbow.length]
+            implicitHeight: 38
+            hoverEnabled: true
+            focusPolicy: Qt.NoFocus
+            onClicked: side.newTab()
+            Accessible.name: Lang.t("Yeni sekme", "New tab")
+            background: Rectangle { radius: Theme.radius; color: add.hovered ? Qt.alpha(Theme.accent, 0.24) : Qt.alpha(Theme.accent, 0.13); opacity: add.down ? 0.8 : 1 }
+            contentItem: Item {
+                Icon { x: side.compact ? (parent.width - width) / 2 : 14; anchors.verticalCenter: parent.verticalCenter; name: "plus"; color: Theme.accent; size: 17 }
+                Text { x: 42; visible: !side.compact; anchors.verticalCenter: parent.verticalCenter; text: Lang.t("Yeni sekme", "New tab"); color: Theme.text; font.pixelSize: 13; font.weight: Font.DemiBold }
+                Text { visible: !side.compact; anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter } text: "Ctrl+T"; color: Theme.dim; font.pixelSize: 11 }
+            }
+            Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
         }
 
         ListView {
@@ -155,54 +164,36 @@ Panel {
             }
         }
 
-        SpaceBar {
-            Layout.fillWidth: true
-            spaces: side.spaces
-            space: side.space
-            compact: side.compact
-            onChosen: id => side.spaceChosen(id)
-            onEdit: id => side.spaceEdit(id)
-            onAdd: side.spaceAdd()
-        }
-
         GridLayout {
             Layout.fillWidth: true
             columns: side.compact ? 1 : 3
-        AbstractButton {
-            id: add
-            Layout.fillWidth: true
-            implicitHeight: 34
-            hoverEnabled: true
-            focusPolicy: Qt.NoFocus
-            onClicked: side.newTab()
-            Accessible.name: Lang.t("Yeni sekme", "New tab")
-            contentItem: Item {
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 6
-                    Icon { name: "plus"; color: Theme.onAccent; size: 15; anchors.verticalCenter: parent.verticalCenter }
-                    Text { visible: !side.compact; text: Lang.t("Yeni sekme", "New tab"); color: Theme.onAccent; font.pixelSize: 13; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
-                }
+            columnSpacing: 2
+            rowSpacing: 4
+            SpaceBar {
+                Layout.fillWidth: true
+                spaces: side.spaces
+                space: side.space
+                compact: side.compact
+                onChosen: id => side.spaceChosen(id)
+                onEdit: id => side.spaceEdit(id)
+                onAdd: side.spaceAdd()
             }
-            background: Rectangle { radius: height / 2; color: add.hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent; opacity: add.down ? 0.85 : 1 }
-            Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
-        }
-        IconButton {
-            Layout.alignment: Qt.AlignHCenter
-            symbol: "settings"
-            hint: Lang.t("Ayarlar (Ctrl+,)", "Settings (Ctrl+,)")
-            hintBeside: side.compact
-            onClicked: side.settings()
-        }
-        DownloadButton {
-            id: downloadButton
-            Layout.alignment: Qt.AlignHCenter
-            downloads: side.downloads
-            beside: side.compact
-            above: true
-            onShowFolder: folder => side.showFolder(folder)
-            onClearFinished: side.clearDownloads()
-        }
+            IconButton {
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                symbol: "settings"
+                hint: Lang.t("Ayarlar (Ctrl+,)", "Settings (Ctrl+,)")
+                hintBeside: side.compact
+                onClicked: side.settings()
+            }
+            DownloadButton {
+                id: downloadButton
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                downloads: side.downloads
+                beside: side.compact
+                above: true
+                onShowFolder: folder => side.showFolder(folder)
+                onClearFinished: side.clearDownloads()
+            }
         }
     }
 }

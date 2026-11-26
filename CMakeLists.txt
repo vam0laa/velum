@@ -62,7 +62,6 @@ qt_add_qml_module(velum
         qml/TitleBar.qml
         qml/Panel.qml
         qml/WindowBackground.qml
-        qml/Kicker.qml
         qml/SpaceBar.qml
         qml/SpaceDialog.qml
         qml/MiniPlayer.qml
@@ -85,6 +84,8 @@ qt_add_qml_module(velum
         qml/PopIn.qml
         qml/PopOut.qml
         qml/Shadow.qml
+        qml/Dropdown.qml
+        qml/AccentDots.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
