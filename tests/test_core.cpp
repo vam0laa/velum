@@ -505,6 +505,12 @@ private slots:
         QCOMPARE(lists::forThisEngine(list), QByteArray("a\nrest\nscripts\nb\nc\nd"));
     }
 
+    void signInIdentity()
+    {
+        QVERIFY(lists::signInAgent().contains("Firefox/") && !lists::signInAgent().contains("Chrome"));
+        QVERIFY(lists::signInScript().contains(lists::signInAgent()) && lists::signInScript().contains("userAgentData"));
+    }
+
     void captchaServices()
     {
         for (const char *yes : {"challenges.cloudflare.com", "www.google.com", "www.recaptcha.net", "hcaptcha.com", "newassets.hcaptcha.com"})

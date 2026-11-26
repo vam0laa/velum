@@ -318,6 +318,15 @@ void Shield::interceptRequest(QWebEngineUrlRequestInfo &info)
     const QUrl url = info.requestUrl();
     const auto type = info.resourceType();
 
+    if (url.host() == QLatin1String(lists::signInHost)) {
+        info.setHttpHeader("User-Agent", lists::signInAgent().toLatin1());
+        // what a Chromium engine adds about itself, and a Firefox never sends
+        for (const char *hint : {"sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform", "sec-ch-ua-arch", "sec-ch-ua-bitness",
+                                 "sec-ch-ua-form-factors", "sec-ch-ua-full-version", "sec-ch-ua-full-version-list",
+                                 "sec-ch-ua-model", "sec-ch-ua-platform-version", "sec-ch-ua-wow64"})
+            info.setHttpHeader(hint, QByteArray());
+    }
+
     // "Global Privacy Control": asks sites not to sell or share what they learn
     info.setHttpHeader("Sec-GPC", "1");
 
@@ -545,12 +554,14 @@ void Shield::setAllowed(const QString &host, bool allow)
 QStringList Shield::earlySites() const
 {
     return {QStringLiteral("www.youtube.com"), QStringLiteral("m.youtube.com"), QStringLiteral("music.youtube.com"),
-            QStringLiteral("youtube.com"), QStringLiteral("www.youtube-nocookie.com")};
+            QStringLiteral("youtube.com"), QStringLiteral("www.youtube-nocookie.com"), QLatin1String(lists::signInHost)};
 }
 
 QString Shield::earlyScript(const QString &host) const
 {
-    const QString script = scriptFor(QUrl(QStringLiteral("https://") + host + QLatin1Char('/')));
+    // the sign-in page hears who Velum says it is there, with or without protection
+    const QString script = host == QLatin1String(lists::signInHost) ? lists::signInScript()
+        : scriptFor(QUrl(QStringLiteral("https://") + host + QLatin1Char('/')));
     if (script.isEmpty())
         return {};
     // the engine reads these lines and runs the script on that site only

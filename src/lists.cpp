@@ -86,6 +86,24 @@ QByteArray forThisEngine(const QByteArray &list)
     return out;
 }
 
+QString signInAgent()
+{
+#ifdef Q_OS_WIN
+    const QString system = QStringLiteral("Windows NT 10.0; Win64; x64");
+#else
+    const QString system = QStringLiteral("X11; Linux x86_64");
+#endif
+    return QStringLiteral("Mozilla/5.0 (%1; rv:161.0) Gecko/20100101 Firefox/161.0").arg(system);
+}
+
+QString signInScript()
+{
+    const QString agent = signInAgent();
+    return QStringLiteral("(()=>{const say=(name,value)=>Object.defineProperty(Navigator.prototype,name,{get:()=>value,configurable:true});"
+                          "say('userAgent','%1');say('appVersion','%2');say('vendor','');say('userAgentData',undefined)})();")
+        .arg(agent, agent.mid(8));
+}
+
 bool shouldUpgrade(const QUrl &url)
 {
     if (url.scheme() != QLatin1String("http"))

@@ -29,6 +29,12 @@ bool isCaptchaService(const QString &host);
 // Returns the list as it is meant for a Chromium engine that cannot filter raw HTML.
 QByteArray forThisEngine(const QByteArray &list);
 
+// Google refuses to sign people in with this engine ("this browser may not be secure"),
+// so on its sign-in page, and nowhere else, Velum says it is a Firefox.
+inline constexpr char signInHost[] = "accounts.google.com";
+QString signInAgent();
+QString signInScript();     // makes the page's scripts hear the same
+
 // Whether a request to `url` over plain http should be sent over https instead.
 bool shouldUpgrade(const QUrl &url);
 
