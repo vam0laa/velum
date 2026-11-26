@@ -271,6 +271,14 @@ qml/Theme.qml     paletler, köşe yarıçapları, fontlar
 ```
 Bütün görünüm `Theme.qml`'deki birkaç değerden yönetilir: `corner` pencere köşelerini, `radius` düğme ve satırları yuvarlar. Pixel yazı tipi yalnızca başlıklarda.
 
+## 7o. Bölünmüş ekran
+
+```qml
+property WebEngineView splitLeft
+property WebEngineView splitRight
+```
+Çift, sekme numarasıyla değil **sayfanın kendisiyle** hatırlanır; sekmeleri taşısan da bozulmaz. Seçili sekme çiftten biriyse ikisi de görünür (`visible`, `x`, `width` buna göre hesaplanır), başka sekme seçersen tek görünür. Hiçbir sayfa yeniden yüklenmez, yalnızca boyutu değişir.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

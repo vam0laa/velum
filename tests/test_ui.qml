@@ -125,8 +125,25 @@ Item {
             t.check("the tab being looked at cannot be put to sleep", w.view.lifecycleState === WebEngineView.LifecycleState.Active)
             w.sleepTab(other)
             t.check("a hidden tab is discarded", w.sleepState(other) === 2)
+            const here = w.pageViewAt(w.current), there = w.pageViewAt(other)
+            w.toggleSplit()
+            t.check("splitting shows the neighbour beside the current tab", w.splitShown && here.visible && there.visible && here.x === 0 && there.x > 0 && w.sleepState(other) === 0)
+            w.sleepTab(other); t.check("a tab on screen is not put to sleep", w.sleepState(other) === 0)
             w.current = other
-            t.check("choosing it wakes it", w.view.lifecycleState === WebEngineView.LifecycleState.Active && w.sleepState(other) === 0 && String(w.view.url) === t.page("s1"))
+            t.check("choosing the other half keeps both", w.splitShown && here.visible && there.visible && here.x === 0)
+            w.openTab(t.page("z"))
+            t.check("another tab is shown alone", !w.splitShown && !here.visible && !there.visible && w.view.width > here.width - 1)
+            w.current = other
+            t.check("going back shows the pair again", w.splitShown && here.visible)
+            w.moveTab(w.current, w.pinnedCount); t.check("moving a tab keeps the pair", w.splitShown && w.splitLeft === here && w.splitRight === there)
+            w.toggleSplit(); t.check("joining shows one", !w.splitShown && w.view === there && !here.visible)
+            w.toggleSplit(); w.closeTab(w.current)
+            t.check("closing a half ends the split", w.splitLeft === null && w.splitRight === null && !w.splitShown)
+            w.openTab(t.page("s3")); w.current = w.current - 1
+            w.sleepTab(w.current + 1)
+            const other2 = w.current
+            w.current = other2 + 1
+            t.check("choosing a sleeping tab wakes it", w.view.lifecycleState === WebEngineView.LifecycleState.Active && w.sleepState(other2 + 1) === 0)
             console.log(t.failed ? "RESULT failed " + t.failed : "RESULT all passed")
             Qt.exit(t.failed)
         }

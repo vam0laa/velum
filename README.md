@@ -33,6 +33,7 @@ Install for your user: `cmake --install build --prefix ~/.local`
 | Shift+Esc | resources: memory and processor use per tab |
 | Ctrl+F | find in page (Enter, Shift+Enter, Esc) |
 | Ctrl+, | settings |
+| Ctrl+\ | split view: two tabs side by side (also in the tab menu) |
 | Ctrl+Tab, Ctrl+Shift+Tab | next / previous tab |
 | Ctrl+L | edit the address |
 | Ctrl+R, F5 | reload |

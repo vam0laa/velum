@@ -25,6 +25,12 @@ ApplicationWindow {
     readonly property int discardAfter: (sleepMode === 2 ? 20 : 10) * 60 * 1000
     property bool restoreSession: true
     property string downloadFolder: ""   // "" = the system downloads folder
+    // split view: two pages side by side. The pair is remembered as the pages themselves,
+    // so moving tabs around does not disturb it.
+    property WebEngineView splitLeft: null
+    property WebEngineView splitRight: null
+    property real splitRatio: 0.5
+    readonly property bool splitShown: !pageFullScreen && splitLeft !== null && splitRight !== null && view !== null && (view === splitLeft || view === splitRight)
     property var downloads: []        // download requests of this run, newest first
     property var asks: []             // unanswered permission requests: [{ page, permission, site, wish }]
     // the question for the page being looked at, if it has one
@@ -196,6 +202,9 @@ ApplicationWindow {
     function closeTab(index) {
         if (index < 0 || index >= tabs.count)
             return
+        const closing = views.itemAt(index) as WebEngineView
+        if (closing && (closing === splitLeft || closing === splitRight))
+            unsplit()
         const tab = tabs.get(index)
         const wasPinned = tab.pinned
         if (tab.pageUrl !== "" && tab.pageUrl !== "about:blank")
@@ -339,12 +348,43 @@ ApplicationWindow {
 
     function pageViewAt(index) { return views.itemAt(index) as WebEngineView }
 
+    // ---- split view ----
+    // Puts the tab at `index` beside the current one.
+    function splitWith(index) {
+        const other = views.itemAt(index) as WebEngineView
+        if (!other || !view || other === view)
+            return false
+        const here = view
+        splitLeft = here
+        splitRight = other
+        return true
+    }
+
+    function unsplit() {
+        splitLeft = null
+        splitRight = null
+    }
+
+    // Ctrl+\: splits with the neighbouring tab (or a new one), or ends the split.
+    function toggleSplit() {
+        if (splitShown) {
+            unsplit()
+            return
+        }
+        const here = current
+        if (tabs.count === 1) {
+            openTab("")
+            current = here
+        }
+        splitWith(here > 0 ? here - 1 : here + 1)
+    }
+
     function sleepState(index) { return index >= 0 && index < tabs.count ? tabs.get(index).asleep : -1 }
 
     // asked for by hand: as deep as the engine allows
     function sleepTab(index) {
         const page = views.itemAt(index) as WebEngineView
-        if (page && page !== view && page.url.toString() !== "" && !page.loading)
+        if (page && page !== view && !page.visible && page.url.toString() !== "" && !page.loading)
             page.lifecycleState = WebEngineView.LifecycleState.Discarded
     }
 
@@ -454,6 +494,8 @@ ApplicationWindow {
         }
         else if (action === "allow" && ask)
             answer(ask, true)
+        else if (action === "split")
+            toggleSplit()
         else if (action === "sleep")
             sleepOthers()
         else if (action.startsWith("find:")) {
@@ -554,8 +596,14 @@ ApplicationWindow {
                             }
                         }
                         onLifecycleStateChanged: tabs.setProperty(index, "asleep", lifecycleState)
-                        anchors.fill: parent
-                        visible: web === window.view
+                        readonly property bool beside: window.splitShown && (web === window.splitLeft || web === window.splitRight)
+                        readonly property real divide: Math.round(parent.width * window.splitRatio)
+                        visible: web === window.view || beside
+                        x: beside && web === window.splitRight ? divide + 4 : 0
+                        width: !beside ? parent.width : web === window.splitLeft ? divide - 4 : parent.width - divide - 4
+                        height: parent.height
+                        // clicking into the other half makes that tab the current one
+                        onActiveFocusChanged: if (activeFocus && beside && web !== window.view) window.current = index
 
                         profile: window.profile
                         backgroundColor: Theme.surface
@@ -677,8 +725,42 @@ ApplicationWindow {
                 }
             }
 
+            // the line between the two halves: drag to resize, double click to even out
+            Item {
+                id: splitter
+                visible: window.splitShown
+                x: Math.round(parent.width * window.splitRatio) - 4
+                width: 8
+                height: parent.height
+                z: 2
+                Rectangle { anchors.centerIn: parent; width: handle.containsMouse || handle.pressed ? 4 : 2; height: parent.height; color: handle.containsMouse || handle.pressed ? Theme.accent : Theme.line }
+                MouseArea {
+                    id: handle
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.SplitHCursor
+                    preventStealing: true
+                    onPositionChanged: mouse => {
+                        if (pressed)
+                            window.splitRatio = Math.max(0.2, Math.min(0.8, mapToItem(splitter.parent, mouse.x, 0).x / splitter.parent.width))
+                    }
+                    onDoubleClicked: window.splitRatio = 0.5
+                }
+            }
+            // marks which half the address bar and the keys act on
+            Rectangle {
+                visible: window.splitShown
+                x: window.view?.x ?? 0
+                width: window.view?.width ?? 0
+                height: 2
+                color: Theme.accent
+                z: 2
+            }
+
             ProblemPage {
-                anchors.fill: parent
+                x: window.splitShown ? window.view.x : 0
+                width: window.splitShown ? window.view.width : parent.width
+                height: parent.height
                 visible: !window.onStartPage && window.view !== null && (window.view.crashed || window.view.failure !== null)
                 heading: window.view?.crashed ? Lang.t("Bu sekme çöktü", "This tab crashed") : window.view?.failure?.certificate ? Lang.t("Bu bağlantı güvenli değil", "This connection is not safe") : Lang.t("Sayfa açılamadı", "The page could not be opened")
                 address: window.view ? (window.view.failure?.url ?? String(window.view.url)) : ""
@@ -718,7 +800,9 @@ ApplicationWindow {
 
             StartPage {
                 id: start
-                anchors.fill: parent
+                x: window.splitShown ? window.view.x : 0
+                width: window.splitShown ? window.view.width : parent.width
+                height: parent.height
                 visible: window.onStartPage
                 hasWidevine: window.hasWidevine
                 field.pageUrl: ""
@@ -780,6 +864,7 @@ ApplicationWindow {
             { name: Lang.t("Yan paneli daralt ya da genişlet", "Narrow or widen the side bar"), keys: "Ctrl+B", run: () => window.compactSidebar = !window.compactSidebar },
             { name: Lang.t("Sekmeyi kapat", "Close the tab"), keys: "Ctrl+W", run: () => window.closeTab(window.current) },
             { name: Lang.t("Diğer sekmeleri kapat", "Close other tabs"), keys: "", run: () => window.closeOthers(window.current) },
+            { name: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"), keys: "Ctrl+\\", run: () => window.toggleSplit() },
             { name: Lang.t("Sayfada ara", "Find in page"), keys: "Ctrl+F", run: () => Qt.callLater(window.findInPage) },
             { name: window.restoreSession ? Lang.t("Açılışta sekmeleri geri getirme", "Do not reopen tabs at start") : Lang.t("Açılışta sekmeleri geri getir", "Reopen tabs at start"), keys: "", run: () => window.restoreSession = !window.restoreSession },
             { name: Lang.t("Gezinme verilerini sil", "Delete browsing data"), keys: "Ctrl+Shift+Delete", run: () => clearDialog.open() },
@@ -812,6 +897,8 @@ ApplicationWindow {
         AppMenuItem { text: Lang.t("Yenile", "Reload"); onTriggered: (views.itemAt(tabMenu.index) as WebEngineView).reload() }
         AppMenuItem { text: Lang.t("Uyut", "Sleep"); enabled: tabMenu.index !== window.current; onTriggered: window.sleepTab(tabMenu.index) }
         AppMenuItem { text: Lang.t("Yer imlerine ekle", "Bookmark"); onTriggered: window.addShortcut(tabs.get(tabMenu.index).pageUrl, tabs.get(tabMenu.index).title) }
+        AppMenuItem { text: Lang.t("Yan yana aç", "Open side by side"); shown: tabMenu.index !== window.current; onTriggered: window.splitWith(tabMenu.index) }
+        AppMenuItem { text: Lang.t("Bölünmeyi kapat", "End split view"); shown: window.splitShown; onTriggered: window.unsplit() }
         AppMenuLine {}
         AppMenuItem { text: Lang.t("Kapat", "Close"); onTriggered: window.closeTab(tabMenu.index) }
         AppMenuItem { text: Lang.t("Diğerlerini kapat", "Close others"); onTriggered: window.closeOthers(tabMenu.index) }
@@ -824,6 +911,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+P"; onActivated: window.togglePin(window.current) }
     Shortcut { sequence: "Ctrl+D"; onActivated: window.toggleBookmark() }
     Shortcut { sequences: [StandardKey.Find]; onActivated: window.findInPage() }
+    Shortcut { sequence: "Ctrl+\\"; onActivated: window.toggleSplit() }
     Shortcut { sequence: "Ctrl+,"; onActivated: window.openSettings() }
     Shortcut { sequence: "Shift+Escape"; onActivated: resources.open() }
     Shortcut { sequence: "Ctrl+H"; onActivated: window.showCommandHistory() }
