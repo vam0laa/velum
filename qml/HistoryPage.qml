@@ -21,7 +21,8 @@ Popup {
         History.removeSince(seconds === 0 ? 0 : Math.floor(Date.now() / 1000) - seconds)
         reload()
     }
-    onOpened: { shown = 200; search.text = ""; reload(); search.forceActiveFocus() }
+    onAboutToShow: { shown = 200; search.text = ""; reload() }
+    onOpened: search.forceActiveFocus()
 
     anchors.centerIn: Overlay.overlay
     modal: true
