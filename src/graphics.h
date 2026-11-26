@@ -1,6 +1,7 @@
 #pragma once
 #include <QByteArray>
 #include <QString>
+#include <QStringList>
 
 // On laptops with an NVIDIA card next to an AMD or Intel one, the engine may draw the page
 // on NVIDIA while the window lives on the other card. The picture cannot cross over and the
@@ -26,6 +27,14 @@ QByteArray engineFlags(const QString &mode, bool linux_);
 // A forced start that never reported success is not tried again: `pending` says the last
 // start in `mode` did not finish. Returns the mode to use now.
 QString safeMode(const QString &mode, bool pending);
+
+// Through XWayland a program does not learn the desktop's mouse pointer and would show
+// another one. `answer` is what "gsettings get org.gnome.desktop.interface cursor-theme"
+// said; returns that theme's name if it is installed in one of `folders`, else nothing.
+QByteArray cursorTheme(const QByteArray &answer, const QStringList &folders);
+
+// The pointer's size in real pixels, from the answer about "cursor-size"; 0 if unusable.
+int cursorPixels(const QByteArray &answer, double scale);
 
 // Chooses how to draw. Must run before the application is made.
 // VELUM_WAYLAND=1 keeps Wayland; VELUM_USE_NVIDIA=1 leaves the graphics cards alone.

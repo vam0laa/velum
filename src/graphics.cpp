@@ -93,6 +93,26 @@ QString safeMode(const QString &mode, bool pending)
     return mode == QLatin1String("boost") && pending ? QStringLiteral("auto") : cleanMode(mode);
 }
 
+QByteArray cursorTheme(const QByteArray &answer, const QStringList &folders)
+{
+    QByteArray name = answer.trimmed();
+    if (name.size() < 3 || !name.startsWith('\'') || !name.endsWith('\''))
+        return {};
+    name = name.mid(1, name.size() - 2);
+    if (name.contains('/') || name.startsWith('.'))
+        return {};
+    for (const QString &folder : folders)
+        if (QDir(folder + QLatin1Char('/') + QString::fromUtf8(name) + QStringLiteral("/cursors")).exists())
+            return name;
+    return {};
+}
+
+int cursorPixels(const QByteArray &answer, double scale)
+{
+    const int size = answer.trimmed().toInt();
+    return size >= 8 && size <= 128 && scale > 0 ? qRound(size * scale) : 0;
+}
+
 void restoreEnvironment()
 {
     for (const auto &[name, value] : std::as_const(borrowed))
@@ -110,6 +130,18 @@ void prepare()
         if (scale > 0) {
             borrow("QT_QPA_PLATFORM", "xcb");
             borrow("QT_SCALE_FACTOR", QByteArray::number(scale, 'f', 6));
+            // the same mouse pointer as the rest of the desktop
+            if (!qEnvironmentVariableIsSet("XCURSOR_THEME")) {
+                const QByteArray theme = cursorTheme(ask("gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null"),
+                    {QDir::homePath() + QStringLiteral("/.local/share/icons"), QDir::homePath() + QStringLiteral("/.icons"),
+                     QStringLiteral("/usr/share/icons")});
+                if (!theme.isEmpty()) {
+                    borrow("XCURSOR_THEME", theme);
+                    const int pixels = cursorPixels(ask("gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null"), scale);
+                    if (pixels > 0 && !qEnvironmentVariableIsSet("XCURSOR_SIZE"))
+                        borrow("XCURSOR_SIZE", QByteArray::number(pixels));
+                }
+            }
         }
     }
     if (qEnvironmentVariableIntValue("VELUM_USE_NVIDIA") != 0)

@@ -368,6 +368,18 @@ private slots:
         QCOMPARE(graphics::xwaylandScale(R"([{"scale":40}])", on), 0.0);
     }
 
+    void desktopCursor()
+    {
+        QTemporaryDir icons;
+        QVERIFY(QDir(icons.path()).mkpath("Bibata/cursors"));
+        QCOMPARE(graphics::cursorTheme("'Bibata'\n", {"/nowhere", icons.path()}), QByteArray("Bibata"));
+        QCOMPARE(graphics::cursorTheme("'Missing'\n", {icons.path()}), QByteArray());
+        QCOMPARE(graphics::cursorTheme("'../Bibata'", {icons.path()}), QByteArray());
+        QCOMPARE(graphics::cursorTheme("", {icons.path()}), QByteArray());
+        QCOMPARE(graphics::cursorPixels("24\n", 5.0 / 3), 40);
+        QCOMPARE(graphics::cursorPixels("uint32 x", 2), 0);
+    }
+
     void accelerationSetting()
     {
         QCOMPARE(graphics::cleanMode("rubbish"), "auto");
