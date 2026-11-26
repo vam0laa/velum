@@ -76,7 +76,7 @@ Ctrl+, opens the settings: language (system, Turkish, English), search engine (D
 
 ## Look
 
-The colours follow the desktop theme written by Quickshell (`~/.local/state/quickshell/user/generated/colors.json`) and change with it. Without that file Velum uses Catppuccin Mocha.
+Bevelled windows with title bars, pixel lettering, a task bar and a start page full of widgets, in the manner of [vamola.dev](https://vamola.dev). Palettes (in the settings): Catppuccin Mocha (default), Gruvbox, Nord, Tokyo Night, or the desktop theme written by Quickshell. The bundled fonts Google Sans Flex, VT323 and Silkscreen are under the SIL Open Font License (see `data/fonts`).
 
 ## Laptops with two graphics cards
 

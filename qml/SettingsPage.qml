@@ -23,8 +23,9 @@ Popup {
     modal: true
     width: Math.min(720, Overlay.overlay.width - 32)
     height: Math.min(520, Overlay.overlay.height - 32)
-    padding: 0
-    background: Rectangle { radius: 18; color: Theme.frame; border.color: Theme.line }
+    padding: 4
+    topPadding: 36
+    background: WindowBackground { title: "settings.exe"; stripe: Theme.peach }
 
     FolderDialog {
         id: folders
@@ -33,7 +34,7 @@ Popup {
     }
 
     // not set in capitals: that would turn the Turkish "i" into the wrong letter
-    component Heading: Text { color: Theme.dim; font.pixelSize: 12; font.weight: Font.Bold; Layout.topMargin: 6 }
+    component Heading: Text { color: Theme.accent; font.family: Theme.pixel; font.pixelSize: 20; Layout.topMargin: 4 }
     component Row_: RowLayout {
         property alias label: name.text
         Layout.fillWidth: true
@@ -65,7 +66,7 @@ Popup {
                     hoverEnabled: true
                     onClicked: page.section = index
                     contentItem: Text { text: entry.modelData; color: page.section === entry.index ? Theme.text : Theme.dim; font.pixelSize: 13; leftPadding: 10; verticalAlignment: Text.AlignVCenter }
-                    background: Rectangle { radius: 9; color: page.section === entry.index ? Theme.raised : entry.hovered ? Theme.surface : "transparent" }
+                    background: Bevel { sunken: page.section === entry.index; visible: page.section === entry.index || entry.hovered; color: page.section === entry.index ? Theme.surface : Theme.raised }
                 }
             }
             Item { Layout.fillHeight: true }
@@ -75,8 +76,9 @@ Popup {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.margins: 8
-            radius: 12
             color: Theme.surface
+            border.color: Theme.bevelLo
+            border.width: 2
 
             StackLayout {
                 anchors { fill: parent; margins: 18 }
@@ -90,6 +92,12 @@ Popup {
                         options: [{ key: "auto", label: Lang.t("Sistem", "System") }, { key: "tr", label: "Türkçe" }, { key: "en", label: "English" }]
                         current: Lang.choice
                         onChosen: key => Lang.choice = key
+                    }
+                    Heading { text: Lang.t("Görünüm", "Look") }
+                    Segments {
+                        options: [{ key: "mocha", label: "Mocha" }, { key: "gruvbox", label: "Gruvbox" }, { key: "nord", label: "Nord" }, { key: "tokyo", label: "Tokyo" }, { key: "desktop", label: Lang.t("Masaüstü", "Desktop") }]
+                        current: Theme.palette
+                        onChosen: key => Theme.palette = key
                     }
                     Heading { text: Lang.t("Arama motoru", "Search engine") }
                     Segments {

@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 // Ctrl+F: find text in the page.
-Rectangle {
+Bevel {
     id: bar
     property int matches: 0
     property int current: 0
@@ -31,9 +31,7 @@ Rectangle {
     visible: false
     implicitWidth: 340
     implicitHeight: 44
-    radius: 12
-    color: Theme.frame
-    border.color: Theme.line
+    color: Theme.window
 
     RowLayout {
         anchors { fill: parent; leftMargin: 12; rightMargin: 5 }

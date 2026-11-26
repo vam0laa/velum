@@ -14,7 +14,8 @@ Popup {
     modal: true
     width: 380
     padding: 18
-    background: Rectangle { radius: 16; color: Theme.frame; border.color: Theme.line }
+    background: WindowBackground { title: "confirm.exe"; stripe: Theme.danger }
+    topPadding: 42
 
     ColumnLayout {
         anchors { left: parent.left; right: parent.right }

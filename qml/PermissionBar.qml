@@ -3,7 +3,7 @@ import QtQuick.Layouts
 
 // Asks before a site may use the camera, microphone, location and the like.
 // It is drawn by the browser, with the site's real address, never with words the page chose.
-Rectangle {
+Bevel {
     id: bar
     property string site
     property string wish          // what is asked for, in words
@@ -18,9 +18,8 @@ Rectangle {
 
     implicitWidth: 360
     implicitHeight: column.implicitHeight + 28
-    radius: 14
-    color: Theme.frame
-    border.color: Theme.accent
+    color: Theme.window
+    light: Theme.peach
 
     ColumnLayout {
         id: column

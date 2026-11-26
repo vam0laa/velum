@@ -12,7 +12,8 @@ Popup {
     width: 290
     padding: 14
     margins: 8                 // never leaves the window
-    background: Rectangle { radius: 14; color: Theme.surface; border.color: Theme.line }
+    background: WindowBackground { title: "shield.exe"; stripe: Theme.green }
+    topPadding: 42
     enter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.quick } }
 
     readonly property bool siteAllowed: Shield.allowed(host, Shield.revision)

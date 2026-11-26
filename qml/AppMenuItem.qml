@@ -17,5 +17,5 @@ MenuItem {
         elide: Text.ElideRight
         verticalAlignment: Text.AlignVCenter
     }
-    background: Rectangle { radius: 8; color: item.highlighted ? Theme.raised : "transparent" }
+    background: Bevel { visible: item.highlighted; color: Theme.title }
 }

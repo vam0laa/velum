@@ -5,7 +5,7 @@ import QtWebEngine
 
 // Everything that is not the page: navigation, the address and the tabs.
 // "compact" turns it into a narrow strip of icons.
-Rectangle {
+Panel {
     id: side
     property WebEngineView view
     property alias tabModel: list.model
@@ -31,10 +31,10 @@ Rectangle {
     signal clearDownloads()
     function openDownloads() { downloadsPanel.open() }
 
-    color: Theme.frame
+    title: compact ? "" : "velum.exe"
+    stripe: Theme.mauve
     implicitWidth: compact ? Theme.strip : Theme.sidebar
     Behavior on implicitWidth { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
-    clip: true
 
     ColumnLayout {
         anchors.fill: parent
@@ -70,9 +70,8 @@ Rectangle {
                     anchors { right: parent.right; top: parent.top; rightMargin: -2; topMargin: -2 }
                     height: 14
                     width: Math.max(14, badge.implicitWidth + 6)
-                    radius: 7
-                    color: Theme.accent
-                    Text { id: badge; anchors.centerIn: parent; text: shieldButton.blocked > 99 ? "99+" : shieldButton.blocked; color: Theme.onAccent; font.pixelSize: 9; font.weight: Font.Bold }
+                    color: Theme.green
+                    Text { id: badge; anchors.centerIn: parent; text: shieldButton.blocked > 99 ? "99+" : shieldButton.blocked; color: Theme.onAccent; font.family: Theme.pixel; font.pixelSize: 14 }
                 }
                 ShieldPanel {
                     id: shieldPanel
@@ -124,12 +123,19 @@ Rectangle {
             }
         }
 
+        Kicker {
+            visible: !side.compact
+            text: Lang.t("sekmeler", "tabs")
+            color: Theme.pink
+            size: 18
+        }
+
         ListView {
             id: list
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            spacing: 2
+            spacing: 4
             boundsBehavior: Flickable.StopAtBounds
             interactive: contentHeight > height   // otherwise dragging belongs to the tabs
             currentIndex: side.current
@@ -167,16 +173,20 @@ Rectangle {
         AbstractButton {
             id: add
             Layout.fillWidth: true
-            implicitHeight: 36
+            implicitHeight: 34
             hoverEnabled: true
             focusPolicy: Qt.NoFocus
             onClicked: side.newTab()
             Accessible.name: Lang.t("Yeni sekme", "New tab")
             contentItem: Item {
-                Icon { id: plus; name: "plus"; color: Theme.dim; size: 16; anchors.verticalCenter: parent.verticalCenter; x: side.compact ? (parent.width - width) / 2 : 12 }
-                Text { visible: !side.compact; text: Lang.t("Yeni sekme", "New tab"); color: Theme.dim; font.pixelSize: 13; anchors { left: plus.right; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 6
+                    Icon { name: "plus"; color: Theme.onAccent; size: 15; anchors.verticalCenter: parent.verticalCenter }
+                    Text { visible: !side.compact; text: Lang.t("Yeni sekme", "New tab"); color: Theme.onAccent; font.pixelSize: 13; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
+                }
             }
-            background: Rectangle { radius: Theme.radius; color: add.hovered ? Theme.surface : "transparent" }
+            background: Bevel { sunken: add.down; color: add.hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent }
             Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
         }
         IconButton {
@@ -196,7 +206,7 @@ Rectangle {
             Rectangle {
                 visible: side.running > 0
                 anchors { right: parent.right; top: parent.top }
-                width: 9; height: 9; radius: 5; color: Theme.accent
+                width: 9; height: 9; color: Theme.green
             }
             DownloadsPanel {
                 id: downloadsPanel

@@ -14,7 +14,8 @@ Popup {
     width: 340
     padding: 12
     margins: 8                 // never leaves the window
-    background: Rectangle { radius: 14; color: Theme.surface; border.color: Theme.line }
+    background: WindowBackground { title: "downloads.exe"; stripe: Theme.peach }
+    topPadding: 42
 
     function size(bytes) {
         if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1).replace(".", Lang.t(",", ".")) + " GB"
@@ -51,8 +52,8 @@ Popup {
                 readonly property bool running: modelData.state === WebEngineDownloadRequest.DownloadInProgress
                 width: ListView.view.width
                 height: 54
-                radius: 10
                 color: Theme.frame
+                border.color: Theme.line
                 ColumnLayout {
                     anchors { fill: parent; leftMargin: 10; rightMargin: 6 }
                     spacing: 2

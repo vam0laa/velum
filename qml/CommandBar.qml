@@ -116,18 +116,17 @@ Item {
     Rectangle {
         id: panel
         width: Math.min(parent.width - 48, 620)
-        height: column.implicitHeight + 16
+        height: column.implicitHeight + 48
         anchors.horizontalCenter: parent.horizontalCenter
         y: Math.max(24, parent.height * 0.18) - (bar.open ? 0 : 10)
-        radius: 16
-        color: Theme.frame
-        border.color: Theme.line
+        color: "transparent"
+        WindowBackground { anchors.fill: parent; title: bar.historyOnly ? "history.exe" : "run.exe"; stripe: Theme.pink }
         Behavior on y { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
         MouseArea { anchors.fill: parent }   // clicks inside stay inside
 
         ColumnLayout {
             id: column
-            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
+            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8; topMargin: 38 }
             spacing: 4
 
             RowLayout {
@@ -179,12 +178,12 @@ Item {
                     hoverEnabled: true
                     onHoveredChanged: if (hovered) list.currentIndex = index
                     onClicked: bar.choose(index)
-                    background: Rectangle { radius: 10; color: row.ListView.isCurrentItem ? Theme.raised : "transparent" }
+                    background: Bevel { visible: row.ListView.isCurrentItem; color: Theme.title }
                     contentItem: RowLayout {
                         spacing: 10
                         Icon { Layout.leftMargin: 10; name: row.modelData.icon; size: 16; color: row.ListView.isCurrentItem ? Theme.accent : Theme.dim }
                         Text { Layout.fillWidth: true; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.pixelSize: 13 }
-                        Text { Layout.rightMargin: 12; Layout.maximumWidth: row.width * 0.4; text: row.modelData.note; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 11 }
+                        Text { Layout.rightMargin: 12; Layout.maximumWidth: row.width * 0.4; text: row.modelData.note; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.accent; font.family: Theme.pixel; font.pixelSize: 17 }
                     }
                 }
             }

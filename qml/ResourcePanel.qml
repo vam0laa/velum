@@ -19,7 +19,8 @@ Popup {
     modal: true
     width: Math.min(560, Overlay.overlay.width - 32)
     padding: 16
-    background: Rectangle { radius: 16; color: Theme.frame; border.color: Theme.line }
+    background: WindowBackground { title: "resources.exe"; stripe: Theme.mauve }
+    topPadding: 42
 
     Timer { interval: 2000; repeat: true; running: panel.visible; triggeredOnStart: true; onTriggered: panel.refresh() }
 
@@ -45,7 +46,7 @@ Popup {
                 focusPolicy: Qt.NoFocus
                 hoverEnabled: true
                 onClicked: { panel.close(); panel.choose(modelData.index) }
-                background: Rectangle { radius: 10; color: row.hovered ? Theme.raised : Theme.surface }
+                background: Bevel { color: row.hovered ? Theme.title : Theme.raised }
                 contentItem: RowLayout {
                     spacing: 10
                     Text { Layout.leftMargin: 12; Layout.fillWidth: true; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: row.modelData.state === 0 ? Theme.text : Theme.dim; font.pixelSize: 13 }

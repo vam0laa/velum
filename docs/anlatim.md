@@ -262,6 +262,18 @@ Arama motoru listesi C++ tarafında (`address::engines`), çünkü "bu yazı ara
 
 **Sağ tık** (`PageMenu.qml`): `request.accepted = true` motorun kendi menüsünü kapatır, biz tıklanan şeye göre (bağlantı, resim, seçili yazı, yazı kutusu) kendi menümüzü gösteririz.
 
+## 7n. Webcore tasarım
+
+```
+qml/Bevel.qml     iki açık, iki koyu kenar: "kabarık" ya da "basık" görünüm
+qml/TitleBar.qml  pencere başlığı ve üç düğme
+qml/Panel.qml     ikisinin birleşimi: bir pencere
+qml/Taskbar.qml   alttaki görev çubuğu
+```
+Üç boyut hissi tek numaradan gelir: üst ve sol kenar açık, alt ve sağ kenar koyu olursa kutu kabarık; tersi olursa basık görünür. `sunken: button.down` ile düğme basılınca içeri girer.
+
+Silkscreen fontunda ğ, ş, ı, İ yok; Türkçe pixel yazılar bu yüzden VT323 ile.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

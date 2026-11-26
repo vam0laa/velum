@@ -19,17 +19,13 @@ AbstractButton {
             Text { Layout.fillWidth: true; text: choice.label; color: choice.enabled ? Theme.text : Theme.dim; font.pixelSize: 13; elide: Text.ElideRight }
             Text { Layout.fillWidth: true; text: choice.note; visible: text !== ""; color: Theme.dim; font.pixelSize: 11; elide: Text.ElideRight }
         }
-        Rectangle {
-            implicitWidth: 34
-            implicitHeight: 20
-            radius: 10
-            color: choice.on ? Theme.accent : Theme.raised
-            Rectangle {
-                width: 14; height: 14; radius: 7; y: 3
-                x: choice.on ? 17 : 3
-                color: choice.on ? Theme.onAccent : Theme.dim
-                Behavior on x { NumberAnimation { duration: Theme.quick } }
-            }
+        // a check box that says what it is
+        Bevel {
+            implicitWidth: 52
+            implicitHeight: 26
+            sunken: true
+            color: choice.on ? Theme.green : Theme.frame
+            Text { anchors.centerIn: parent; text: choice.on ? Lang.t("açık", "on") : Lang.t("kapalı", "off"); color: choice.on ? Theme.onAccent : Theme.dim; font.family: Theme.pixel; font.pixelSize: 18 }
         }
     }
     Accessible.name: label

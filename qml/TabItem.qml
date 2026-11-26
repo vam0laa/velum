@@ -13,6 +13,7 @@ ItemDelegate {
     property bool current: false
     property bool compact: false
     readonly property string label: title === "" ? Lang.t("Yeni sekme", "New tab") : title
+    readonly property color tone: Theme.rainbow[Math.max(0, index) % Theme.rainbow.length]
     signal picked(int index)
     signal closed(int index)
     signal menuRequested(int index)
@@ -20,96 +21,97 @@ ItemDelegate {
     // set by the list: the last pinned tab draws a divider under itself
     property bool lastPinned: false
 
-    height: 36
+    height: 38
     padding: 0
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
     onClicked: picked(index)
     Accessible.name: label
 
-    background: Rectangle {
-        radius: Theme.radius
-        color: row.current ? Theme.raised : row.hovered ? Theme.surface : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.quick } }
-        // a small mark on the edge of the current tab
+    background: Item {
+        Bevel {
+            anchors.fill: parent
+            visible: row.current || row.hovered
+            sunken: row.current
+            color: row.current ? Qt.tint(Theme.surface, Qt.alpha(row.tone, 0.22)) : Theme.raised
+        }
+        // a coloured edge, one colour per tab
         Rectangle {
-            width: 3
-            height: row.current ? 16 : 0
-            radius: 2
-            color: Theme.accent
-            anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-            Behavior on height { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
+            x: 2; y: 5
+            width: 4
+            height: parent.height - 10
+            color: row.tone
+            opacity: row.current ? 1 : 0.45
         }
     }
 
     contentItem: Item {
-        // the site icon; a globe when there is none; a pulsing dot while loading
         Item {
             id: mark
-            width: 16
-            height: 16
-            x: row.compact ? (parent.width - width) / 2 : 12
+            width: 18
+            height: 18
+            x: row.compact ? (parent.width - width) / 2 : 14
             anchors.verticalCenter: parent.verticalCenter
             Image {
                 id: favicon
                 anchors.fill: parent
                 source: row.siteIcon
-                sourceSize: Qt.size(32, 32)
+                sourceSize: Qt.size(36, 36)
                 visible: !row.loading && status === Image.Ready
             }
             Icon {
                 anchors.centerIn: parent
                 name: "globe"
-                size: 16
-                color: row.current ? Theme.text : Theme.dim
+                size: 17
+                color: row.tone
                 visible: !row.loading && !favicon.visible
             }
-            Rectangle {
+            // loading: four squares lighting up in turn
+            Grid {
+                id: blocks
                 anchors.centerIn: parent
-                width: 8
-                height: 8
-                radius: 4
-                color: Theme.accent
+                columns: 2
+                spacing: 2
                 visible: row.loading
-                SequentialAnimation on scale {
-                    running: row.loading
-                    loops: Animation.Infinite
-                    alwaysRunToEnd: true
-                    NumberAnimation { to: 0.45; duration: 450; easing.type: Easing.InOutSine }
-                    NumberAnimation { to: 1; duration: 450; easing.type: Easing.InOutSine }
+                property int step: 0
+                Timer { interval: 140; repeat: true; running: blocks.visible; onTriggered: blocks.step = (blocks.step + 1) % 4 }
+                Repeater {
+                    model: [0, 1, 3, 2]
+                    Rectangle { required property int modelData; width: 6; height: 6; color: row.tone; opacity: blocks.step === modelData ? 1 : 0.25 }
                 }
             }
         }
         Text {
-            anchors { left: mark.right; leftMargin: 10; right: close.visible ? close.left : parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+            anchors { left: mark.right; leftMargin: 10; right: close.visible ? close.left : parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
             text: row.label
             textFormat: Text.PlainText     // a page title is never treated as markup
             color: row.current ? Theme.text : Theme.dim
-            opacity: row.asleep > 0 ? 0.6 : 1
+            opacity: row.asleep > 0 ? 0.55 : 1
             font.pixelSize: 13
+            font.weight: row.current ? Font.DemiBold : Font.Normal
             elide: Text.ElideRight
             visible: !row.compact
         }
         Icon {
-            anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+            anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
             name: "pin"
-            size: 13
-            color: Theme.dim
+            size: 14
+            color: Theme.peach
             visible: !row.compact && row.pinned && row.asleep < 2
         }
         Icon {
-            anchors { right: parent.right; rightMargin: row.compact ? 2 : 10; top: row.compact ? parent.top : undefined; verticalCenter: row.compact ? undefined : parent.verticalCenter }
+            anchors { right: parent.right; rightMargin: row.compact ? 3 : 12; top: row.compact ? parent.top : undefined; verticalCenter: row.compact ? undefined : parent.verticalCenter }
             name: "moon"
-            size: row.compact ? 10 : 13
-            color: Theme.dim
+            size: row.compact ? 11 : 14
+            color: Theme.mauve
             visible: row.asleep === 2 && !(row.hovered && !row.compact && !row.pinned)
         }
         IconButton {
             id: close
-            anchors { right: parent.right; rightMargin: 5; verticalCenter: parent.verticalCenter }
-            implicitWidth: 24
-            implicitHeight: 24
-            iconSize: 14
+            anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
+            implicitWidth: 22
+            implicitHeight: 22
+            iconSize: 13
             symbol: "close"
             hint: Lang.t("Sekmeyi kapat (Ctrl+W)", "Close the tab (Ctrl+W)")
             visible: !row.compact && !row.pinned && (row.hovered || row.current)
@@ -145,8 +147,9 @@ ItemDelegate {
 
     Rectangle {
         visible: row.lastPinned
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: -2; leftMargin: 10; rightMargin: 10 }
-        height: 1
-        color: Theme.line
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: -3; leftMargin: 6; rightMargin: 6 }
+        height: 2
+        color: Theme.peach
+        opacity: 0.6
     }
 }

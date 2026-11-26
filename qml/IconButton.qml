@@ -1,32 +1,32 @@
 import QtQuick
 import QtQuick.Controls
 
-// A square button with one icon and a tooltip.
+// A square bevelled button with one icon and a tooltip.
 AbstractButton {
     id: button
     property string symbol        // a name from Icon.qml
     property string hint
     property real iconSize: 18
     property bool hintBeside: false
-    implicitWidth: 34
-    implicitHeight: 34
+    property color tone: Theme.text
+    implicitWidth: 36
+    implicitHeight: 32
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
-    scale: down ? 0.92 : 1
-    Behavior on scale { NumberAnimation { duration: 80 } }
 
     contentItem: Item {
         Icon {
             anchors.centerIn: parent
+            anchors.verticalCenterOffset: button.down ? 1 : 0
+            anchors.horizontalCenterOffset: button.down ? 1 : 0
             name: button.symbol
             size: button.iconSize
-            color: button.enabled ? Theme.text : Theme.line
+            color: button.enabled ? (button.hovered ? Theme.accent : button.tone) : Theme.line
         }
     }
-    background: Rectangle {
-        radius: Theme.radius - 2
-        color: button.down ? Theme.raised : button.hovered && button.enabled ? Theme.surface : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.quick } }
+    background: Bevel {
+        sunken: button.down
+        color: button.hovered && button.enabled ? Theme.title : Theme.raised
     }
     Accessible.name: hint
 
@@ -35,6 +35,6 @@ AbstractButton {
         text: button.hint
         shown: button.hovered
         x: button.hintBeside ? button.width + 8 : 0
-        y: button.hintBeside ? (button.height - height) / 2 : button.height + 4
+        y: button.hintBeside ? (button.height - height) / 2 : button.height + 6
     }
 }

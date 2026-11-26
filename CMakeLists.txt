@@ -55,10 +55,17 @@ qt_add_qml_module(velum
         qml/AppMenuItem.qml
         qml/AppMenuLine.qml
         qml/PageMenu.qml
+        qml/Bevel.qml
+        qml/TitleBar.qml
+        qml/Panel.qml
+        qml/WindowBackground.qml
+        qml/Badge88.qml
+        qml/Kicker.qml
+        qml/Taskbar.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
-    RESOURCES data/velum.svg
+    RESOURCES data/velum.svg data/fonts/GoogleSansFlex.woff data/fonts/VT323-Regular.ttf data/fonts/Silkscreen-Regular.ttf data/fonts/Silkscreen-Bold.ttf
     SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h
     IMPORTS QtQuick
 )

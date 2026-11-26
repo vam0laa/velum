@@ -17,6 +17,8 @@ ApplicationWindow {
     property bool pageFullScreen: false
     property int moves: 0             // counts reorderings, so that "view" is looked up again
     property int pinnedCount: 0
+    property int openTabs: 0
+    property int sleepChanges: 0
     property var closedTabs: []       // for "reopen closed tab", newest last
     property var shortcuts: []        // shown on the start page: [{ title, url }]
     property int sleepMode: 1                    // 0 never, 1 early, 2 relaxed
@@ -37,6 +39,7 @@ ApplicationWindow {
     height: 800
     visible: true
     color: Theme.frame
+    font.family: Theme.ui
     title: view && view.title !== "" && !onStartPage ? view.title + " - Velum" : "Velum"
 
     // Cookies and logins are kept on this computer, in Velum's own folder.
@@ -180,6 +183,7 @@ ApplicationWindow {
 
     // Adds a tab after the others, switches to it and returns its page.
     function appendTab(url, title, lazy) {
+        openTabs++
         tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0 })
         touchSession()
     }
@@ -205,6 +209,7 @@ ApplicationWindow {
         if (wasPinned)
             pinnedCount--
         tabs.remove(index)
+        openTabs--
         current = next
         moves++
         touchSession()
@@ -473,9 +478,20 @@ ApplicationWindow {
         commandBar.show(true, "")
     }
 
+    // how many tabs are discarded, for the task bar
+    readonly property int sleepingCount: {
+        sleepChanges
+        moves
+        let n = 0
+        for (let i = 0; i < tabs.count; i++)
+            if (tabs.get(i).asleep === 2)
+                n++
+        return n
+    }
+
     RowLayout {
-        anchors.fill: parent
-        spacing: 0
+        anchors { fill: parent; margins: window.pageFullScreen ? 0 : 8; bottomMargin: window.pageFullScreen ? 0 : taskbar.height + 12 }
+        spacing: window.pageFullScreen ? 0 : 14
 
         Sidebar {
             id: side
@@ -502,15 +518,22 @@ ApplicationWindow {
             onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
         }
 
-        // the page, as a rounded card inside the frame
-        Rectangle {
+        // the page, in a window of its own
+        Panel {
             id: card
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.margins: window.pageFullScreen ? 0 : Theme.gap
-            Layout.leftMargin: 0
-            radius: window.pageFullScreen ? 0 : Theme.radius
-            color: Theme.surface
+            Layout.rightMargin: window.pageFullScreen ? 0 : 5
+            chrome: !window.pageFullScreen
+            fill: Theme.window
+            title: window.onStartPage ? "start.exe" : window.view && window.view.title !== "" ? window.view.title : window.currentHost
+            stripe: Theme.rainbow[Math.max(0, window.current) % Theme.rainbow.length]
+            minimizable: true
+            maximizable: true
+            closable: true
+            onMinimize: window.compactSidebar = !window.compactSidebar
+            onMaximize: window.toggleWindowFullScreen()
+            onCloseRequested: window.closeTab(window.current)
 
             Item {
                 anchors.fill: parent
@@ -546,7 +569,10 @@ ApplicationWindow {
                                 hiddenSince = Date.now()
                             }
                         }
-                        onLifecycleStateChanged: tabs.setProperty(index, "asleep", lifecycleState)
+                        onLifecycleStateChanged: {
+                            tabs.setProperty(index, "asleep", lifecycleState)
+                            window.sleepChanges++   // counted again by the task bar
+                        }
                         anchors.fill: parent
                         visible: web === window.view
 
@@ -672,7 +698,6 @@ ApplicationWindow {
 
             ProblemPage {
                 anchors.fill: parent
-                radius: card.radius
                 visible: !window.onStartPage && window.view !== null && (window.view.crashed || window.view.failure !== null)
                 heading: window.view?.crashed ? Lang.t("Bu sekme çöktü", "This tab crashed") : window.view?.failure?.certificate ? Lang.t("Bu bağlantı güvenli değil", "This connection is not safe") : Lang.t("Sayfa açılamadı", "The page could not be opened")
                 address: window.view ? (window.view.failure?.url ?? String(window.view.url)) : ""
@@ -713,7 +738,6 @@ ApplicationWindow {
             StartPage {
                 id: start
                 anchors.fill: parent
-                radius: card.radius
                 visible: window.onStartPage
                 hasWidevine: window.hasWidevine
                 field.pageUrl: ""
@@ -789,6 +813,18 @@ ApplicationWindow {
 
     function toggleWindowFullScreen() {
         visibility === Window.FullScreen ? showNormal() : showFullScreen()
+    }
+
+    Taskbar {
+        id: taskbar
+        visible: !window.pageFullScreen
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 4 }
+        host: window.currentHost
+        tabCount: window.openTabs
+        sleeping: window.sleepingCount
+        blocked: Shield.blockedCount(window.currentHost, Shield.revision)
+        onStart: commandBar.show(false, "")
+        onResources: resources.open()
     }
 
     PageMenu {

@@ -1,10 +1,11 @@
 import QtQuick
 import QtQuick.Controls
 
-// The address and search field. It shows a short address until you click it.
+// The address and search field, sunk into its window, with a prompt in front.
 TextField {
     id: field
     property url pageUrl
+    property color accent: Theme.green
     signal go(url target)
 
     function showAddress() { text = activeFocus ? (pageUrl.toString() === "about:blank" ? "" : pageUrl.toString()) : Address.display(pageUrl) }
@@ -13,18 +14,19 @@ TextField {
     placeholderTextColor: Theme.dim
     color: Theme.text
     selectionColor: Theme.accent
-    selectedTextColor: Theme.frame
+    selectedTextColor: Theme.onAccent
     font.pixelSize: 13
-    leftPadding: 12
-    rightPadding: 12
-    implicitHeight: 36
+    leftPadding: 26
+    rightPadding: 10
+    implicitHeight: 38
     selectByMouse: true
 
-    background: Rectangle {
-        radius: Theme.radius
-        color: Theme.surface
-        border.width: 1
-        border.color: field.activeFocus ? Theme.accent : "transparent"
+    background: Bevel {
+        sunken: true
+        color: Theme.frame
+        shade: field.activeFocus ? field.accent : Theme.bevelLo
+        light: field.activeFocus ? field.accent : Theme.bevelHi
+        Text { x: 9; anchors.verticalCenter: parent.verticalCenter; text: ">"; color: field.accent; font.family: Theme.pixel; font.pixelSize: 22 }
     }
 
     onPageUrlChanged: if (!activeFocus) showAddress()
