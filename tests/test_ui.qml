@@ -436,6 +436,22 @@ Item {
                 w.explain("secili metin"); t.check("explaining sends just the selection", Assistant.asked[1].material === "secili metin")
                 w.aiOpen = false; Assistant.enabled = false
             }
+            // ---- synchronisation, between two pretend computers ----
+            {
+                const keep = w.shortcuts, gone = w.removedBookmarks, s = w.sync, file = "file:///sync/velum-sync.velumbackup"
+                Passwords.store = []; Library.files = ({})
+                w.keepRemoved([]); w.keepBookmarks([{ url: "https://one.example/", title: "bir", added: 1 }])
+                s.start("/sync", "kisa"); t.check("a short password does not start it", w.syncFolder === "" && Object.keys(Library.files).length === 0)
+                s.start("/sync", "uzun parola"); t.check("starting writes the file and keeps the password in the keyring", w.syncFolder === "/sync" && Library.files[file] !== undefined && Passwords.store.length === 1)
+                // the other computer added one and removed ours
+                Library.writeLocked(file, JSON.stringify({ velumBackup: 1, bookmarks: [{ url: "https://two.example/", title: "iki", added: 5 }], removed: [{ url: "https://one.example/", when: 10 }] }), "uzun parola")
+                s.run(); t.check("changes from the other side arrive, removals too", w.shortcuts.map(b => b.title).join() === "iki" && w.removedBookmarks.length === 1)
+                const before = Library.files[file]; s.run(); t.check("nothing new: the file is left alone", Library.files[file] === before)
+                Library.writeLocked(file, "{}", "baska parola"); const foreign = Library.files[file]; s.run()
+                t.check("a file that does not open is never written over", Library.files[file] === foreign && s.status !== "")
+                s.stop(); t.check("stopping forgets the password", w.syncFolder === "" && Passwords.store.length === 0)
+                w.keepBookmarks(keep); w.keepRemoved(gone)
+            }
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")

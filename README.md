@@ -59,6 +59,10 @@ Ctrl+N opens another window, Ctrl+Shift+N a private one; a tab can be moved to e
 
 Off until you switch it on in Settings → Assistant. It talks only to an [Ollama](https://ollama.com) server on this computer: summarising the page, explaining a selection, answering a question (with the page's text only if you leave that ticked). The text is marked as untrusted material, answers are shown as plain words, and it cannot do anything on pages. Models can be wrong.
 
+## Synchronisation
+
+There is no server. Settings → General writes your bookmarks, locked with a password, into a file in a folder you choose; let Syncthing or a cloud program carry that folder, and choose it on the other computer with the same password. Bookmarks of both are merged and removed ones stay removed. Passwords, history and tabs are not synchronised.
+
 ## Speed
 
 Three modes in the menu and in Settings → Performance: balanced, game (background tabs freeze within seconds, no animations) and saver. A memory limit puts the longest unseen tabs to sleep. Graphics acceleration is one switch (on unless you switch it off), also asked on the welcome pages. Shortcuts can be changed in Settings → Shortcuts.

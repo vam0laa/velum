@@ -19,7 +19,7 @@ ColumnLayout {
         removing = ""
         Passwords.accounts("", found => {
             panel.broken = found === null
-            panel.accounts = found ?? []
+            panel.accounts = (found ?? []).filter(a => a.origin.indexOf("velum://") !== 0)
         })
     }
 

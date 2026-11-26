@@ -117,7 +117,9 @@ public:
                 return QVariant(-1);
             QList<library::Login> logins;
             for (const auto &a : *found)
-                if (const auto p = passwords::password(a.origin, a.user))
+                if (a.origin.startsWith(QLatin1String("velum://")))      // Velum's own notes
+                    continue;
+                else if (const auto p = passwords::password(a.origin, a.user))
                     logins.append({a.origin, a.user, *p});
             QSaveFile f(path);
             const QByteArray data = library::toCsv(logins).toUtf8();

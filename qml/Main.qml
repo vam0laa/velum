@@ -278,6 +278,8 @@ ApplicationWindow {
         current = chosen
         restored = true
         refreshGroups()
+        if (!secondary)
+            syncLogic.changed()
         followCurrent()
         refreshFrequent()
         // the chosen tab was already visible or hidden before "current" settled
@@ -408,6 +410,7 @@ ApplicationWindow {
         property string removedBookmarks: "[]"
         property string groups: "[]"
         property alias splitStacked: window.splitStacked
+        property alias syncFolder: window.syncFolder
         property alias homeHeadline: window.homeHeadline
         property string homeWords: "[]"
         property string homeTasks: "[]"
@@ -438,6 +441,7 @@ ApplicationWindow {
     SiteLogic { id: siteLogic; app: window }
     AskLogic { id: askLogic; app: window }
     DemoLogic { id: demoLogic; app: window }
+    SyncLogic { id: syncLogic; app: window }
     AiLogic { id: aiLogic; app: window }
     WindowLogic { id: windowLogic; app: window }
     Component { id: privateProfile; WebEngineProfile { offTheRecord: true; persistentCookiesPolicy: WebEngineProfile.NoPersistentCookies; persistentPermissionsPolicy: WebEngineProfile.StoreInMemory } }
@@ -823,6 +827,9 @@ ApplicationWindow {
     function toggleAssistant() { aiLogic.toggle() }
     function askAssistant(question, withPage) { aiLogic.ask(question, withPage) }
     function explain(selection) { aiLogic.explain(selection) }
+    property string syncFolder: ""        // "" = not synchronised
+    property alias sync: syncLogic
+    onShortcutsChanged: if (restored) syncLogic.changed()
     property var popupSites: []
     property var permissions: []
     function listPermissions() { askLogic.listPermissions() }
@@ -1250,6 +1257,11 @@ ApplicationWindow {
                     onPermissionsWanted: window.listPermissions()
                     onResetPermission: item => window.resetPermission(item)
                     onForgetPopup: site => window.popupSites = window.popupSites.filter(s => s !== site)
+                    syncFolder: window.syncFolder
+                    syncStatus: window.sync.status
+                    onSyncStart: (folder, password) => window.sync.start(folder, password)
+                    onSyncStop: window.sync.stop()
+                    onSyncNow: window.sync.run()
                     canUndoImport: window.beforeImport !== ""
                     onUndoImport: window.undoImport()
                             powerMode: window.powerMode

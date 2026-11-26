@@ -51,6 +51,11 @@ Rectangle {
     property bool showBookmarkBar
     signal startChanged(string name, var value)      // a property of the window and its new value
     signal designRequested()
+    property string syncFolder
+    property string syncStatus
+    signal syncStart(string folder, string password)
+    signal syncStop()
+    signal syncNow()
     property var permissions: []
     property var popupSites: []
     signal resetPermission(var item)
@@ -95,7 +100,7 @@ Rectangle {
         const q = query.trim().toLocaleLowerCase()
         return q === "" ? section === key : String(words).toLocaleLowerCase().indexOf(q) >= 0
     }
-    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, ai1, backup1, privacy3, privacy4, privacy5, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
+    readonly property bool nothingFound: query.trim() !== "" && ![general1, general2, general3, general4, home1, search1, look1, look2, privacy1, privacy2, passwords1, tabs1, speed1, speed2, ai1, backup1, sync1, privacy3, privacy4, privacy5, look3, look4, look5, look6, look7, downloads1, extensions1, marks1, marks2, keys1, about1].some(c => c.wanted)
 
     color: Theme.styled("settings", "background", Theme.sheetBack)
 
@@ -366,6 +371,14 @@ Rectangle {
                     heading: Lang.t("Yedekleme", "Backup")
                     symbol: "download"
                     BackupCard { Layout.fillWidth: true; result: page.backupResult; onBackup: (file, password) => page.backupRequested(file, password); onRestore: (file, password) => page.restoreRequested(file, password) }
+                }
+
+                Group {
+                    id: sync1
+                    wanted: page.shows("general", "eşitleme senkron klasör sync synchronise")
+                    heading: Lang.t("Eşitleme", "Synchronisation")
+                    symbol: "reload"
+                    SyncCard { Layout.fillWidth: true; folder: page.syncFolder; status: page.syncStatus; onStart: (folder, password) => page.syncStart(folder, password); onStop: page.syncStop(); onNow: page.syncNow() }
                 }
 
                 // ---- appearance ----

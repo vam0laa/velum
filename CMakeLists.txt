@@ -97,6 +97,8 @@ qt_add_qml_module(velum
         qml/StudioPicker.qml
         qml/StudioCard.qml
         qml/SafeButton.qml
+        qml/SyncLogic.qml
+        qml/SyncCard.qml
         qml/AiLogic.qml
         qml/AiPanel.qml
         qml/Access.qml
