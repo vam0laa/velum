@@ -21,6 +21,7 @@ Popup {
     signal moved(int from, int to)
     signal folderRenamed(string from, string to)
     signal chosen(url target)
+    signal importRequested()
 
     readonly property var folders: [...new Set(items.map(b => b.folder ?? "").filter(f => f !== ""))].sort((a, b) => a.localeCompare(b))
     readonly property var rows: filtered(items, folder, query)
@@ -149,6 +150,7 @@ Popup {
                         placeholderText: Lang.t("Yer imlerinde ara", "Search bookmarks")
                         onTextEdited: page.query = text
                     }
+                    TextButton { text: Lang.t("İçe aktar", "Import"); onClicked: page.importRequested() }
                     TextButton { text: Lang.t("Yeni ekle", "Add new"); strong: true; onClicked: page.edit(-1) }
                 }
 

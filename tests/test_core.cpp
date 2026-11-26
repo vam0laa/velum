@@ -1,6 +1,8 @@
 #include <QDir>
 #include <QSignalSpy>
 #include <QFile>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -11,6 +13,7 @@
 #include "procinfo.h"
 #include "graphics.h"
 #include "historystore.h"
+#include "importer.h"
 #include "instance.h"
 #include "palette.h"
 #include "widevine.h"
@@ -18,6 +21,22 @@
 class CoreTest : public QObject
 {
     Q_OBJECT
+
+    // makes a small SQLite file for the import tests
+    static bool database(const QString &path, const QStringList &statements)
+    {
+        bool ok = true;
+        {
+            QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", path);
+            db.setDatabaseName(path);
+            ok = db.open();
+            for (const QString &s : statements)
+                ok = ok && QSqlQuery(db).exec(s);
+            db.close();
+        }
+        QSqlDatabase::removeDatabase(path);
+        return ok;
+    }
 
 private slots:
     void resolve_data()
@@ -161,6 +180,68 @@ private slots:
         QCOMPARE(h.search("", 10).size(), 1);
         h.clear();
         QCOMPARE(h.search("", 10).size(), 0);
+    }
+
+    void importsFromFirefox()
+    {
+        QTemporaryDir home;
+        const QString profile = home.path() + "/.mozilla/firefox/ab12.default-release";
+        QVERIFY(QDir().mkpath(profile));
+        QVERIFY(database(profile + "/places.sqlite", {
+            "CREATE TABLE moz_places(id INTEGER PRIMARY KEY, url TEXT, title TEXT, hidden INTEGER, visit_count INTEGER, last_visit_date INTEGER)",
+            "CREATE TABLE moz_bookmarks(id INTEGER PRIMARY KEY, type INTEGER, fk INTEGER, parent INTEGER, position INTEGER, title TEXT, guid TEXT)",
+            "INSERT INTO moz_places VALUES(1,'https://a.example/','A',0,5,2000000000),(2,'https://b.example/','B',0,1,50000000),"
+            "(3,'place:sort=8','smart',0,0,NULL),(4,'https://hidden.example/','H',1,1,3000000000)",
+            "INSERT INTO moz_bookmarks VALUES(1,2,NULL,0,0,'','root________'),(2,2,NULL,1,0,'toolbar','toolbar_____'),(3,2,NULL,2,0,'Linux','x'),"
+            "(4,2,NULL,1,1,'tags','tags________'),(5,2,NULL,4,0,'etiket','y'),"
+            "(6,1,1,2,0,'Alpha','a'),(7,1,2,3,0,'Beta','b'),(8,1,3,2,1,'smart','c'),(9,1,2,5,0,'tagged copy','d')"}));
+        const auto sources = importer::find(home.path());
+        QCOMPARE(sources.size(), 1);
+        QCOMPARE(sources.first().name, "Firefox (default-release)");
+        const auto data = importer::read(sources.first(), 100);
+        QVERIFY(data.ok);
+        QCOMPARE(data.bookmarks.size(), 2);
+        QCOMPARE(data.bookmarks[0].folder, "");
+        QCOMPARE(data.bookmarks[1].folder, "Linux");
+        QCOMPARE(data.visits.size(), 1);           // the old and the hidden one are left out
+        QCOMPARE(data.visits.first().last, 2000);
+        QVERIFY(importer::read(sources.first(), -1).visits.isEmpty());
+        HistoryStore h(":memory:");
+        h.add("https://a.example/", "Mine", 9000);
+        QCOMPARE(h.merge(data.visits), 1);
+        QCOMPARE(h.merge(data.visits), 1);
+        QCOMPARE(h.search("", 10).size(), 1);
+        QCOMPARE(h.search("", 10).first().toMap().value("title").toString(), "Mine");
+    }
+
+    void importsFromChromium()
+    {
+        QTemporaryDir home;
+        const QString profile = home.path() + "/.config/chromium/Default";
+        QVERIFY(QDir().mkpath(profile));
+        QVERIFY(QDir().mkpath(home.path() + "/.config/chromium/System Profile"));
+        QFile marks(profile + "/Bookmarks");
+        QVERIFY(marks.open(QIODevice::WriteOnly));
+        marks.write(R"j({"roots":{"bookmark_bar":{"children":[{"type":"url","name":"A","url":"https://a.example/"},)j"
+                    R"j({"type":"folder","name":"Kod","children":[{"type":"url","name":"B","url":"https://b.example/"},)j"
+                    R"j({"type":"url","name":"js","url":"javascript:alert(1)"}]}]},"other":{"children":[]}}})j");
+        marks.close();
+        // 13000000000000000 microseconds since 1601 is a moment in 2012
+        QVERIFY(database(profile + "/History", {
+            "CREATE TABLE urls(url TEXT, title TEXT, visit_count INTEGER, last_visit_time INTEGER, hidden INTEGER)",
+            "INSERT INTO urls VALUES('https://a.example/','A',2,13000000000000000,0),('chrome://settings/','s',1,13000000000000000,0)"}));
+        const auto sources = importer::find(home.path());
+        QCOMPARE(sources.size(), 1);
+        const auto data = importer::read(sources.first(), 0);
+        QVERIFY(data.ok);
+        QCOMPARE(data.bookmarks.size(), 2);
+        QCOMPARE(data.bookmarks[1].folder, "Kod");
+        QCOMPARE(data.visits.size(), 1);
+        QCOMPARE(data.visits.first().last, 13000000000LL - 11644473600LL);
+        QVERIFY(marks.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        marks.write("{broken");
+        marks.close();
+        QVERIFY(!importer::read(sources.first(), -1).ok);
     }
 
     void processes()

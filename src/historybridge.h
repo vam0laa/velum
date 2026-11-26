@@ -27,6 +27,16 @@ public:
     Q_INVOKABLE void add(const QString &url, const QString &title) { m_store.add(url, title, QDateTime::currentSecsSinceEpoch()); }
     Q_INVOKABLE void setTitle(const QString &url, const QString &title) { m_store.setTitle(url, title); }
     Q_INVOKABLE QVariantList search(const QString &text, int limit) const { return m_store.search(text, limit); }
+    Q_INVOKABLE int merge(const QVariantList &list)
+    {
+        QList<HistoryStore::Visit> visits;
+        for (const QVariant &item : list) {
+            const QVariantMap v = item.toMap();
+            visits.append({v.value(QStringLiteral("url")).toString(), v.value(QStringLiteral("title")).toString(),
+                           v.value(QStringLiteral("visits")).toInt(), v.value(QStringLiteral("last")).toLongLong()});
+        }
+        return m_store.merge(visits);
+    }
     Q_INVOKABLE void remove(const QString &url) { m_store.remove(url); }
     Q_INVOKABLE void clear() { m_store.clear(); }
 

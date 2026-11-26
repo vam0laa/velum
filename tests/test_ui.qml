@@ -112,6 +112,12 @@ Item {
             marks.edit(-1); marks.commit(); t.check("an empty form reports the problem", marks.editing === -1 && marks.error !== "")
             marks.close()
             while (w.shortcuts.length) w.removeShortcut(0)
+            History.merged = 0
+            const said = w.importFrom("/fake", true)
+            t.check("importing brings bookmarks with folders and history", w.shortcuts.length === 2 && w.shortcuts[0].folder === "İş" && w.shortcuts[1].title === "two.example" && History.merged === 1 && said.startsWith("2 yer imi"))
+            t.check("importing again adds nothing", w.importFrom("/fake", false).startsWith("0 yer imi") && w.shortcuts.length === 2 && History.merged === 1)
+            t.check("an unreadable source is reported", w.importFrom("/other", false).indexOf("okunamadı") > 0)
+            while (w.shortcuts.length) w.removeShortcut(0)
 
             // workspaces
             const kept = w.pageAt(w.current), first = w.space, home = w.current

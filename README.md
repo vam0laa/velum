@@ -46,6 +46,8 @@ Install for your user: `cmake --install build --prefix ~/.local`
 | F11 | full screen |
 | Ctrl+Q | quit |
 
+Import in the bookmark manager takes bookmarks (with folders) and the last 90 days of history from Firefox, Zen, LibreWolf, Chromium, Chrome, Brave, Helium, Vivaldi or Edge. Only when you ask, from copies of their files; passwords and cookies are not touched.
+
 ## What it does not do yet
 
 - **Video ads on YouTube are not blocked yet** (see below).

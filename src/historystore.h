@@ -1,4 +1,5 @@
 #pragma once
+#include <QList>
 #include <QSqlDatabase>
 #include <QString>
 #include <QVariantList>
@@ -7,6 +8,12 @@
 class HistoryStore
 {
 public:
+    struct Visit {
+        QString url;
+        QString title;
+        int visits;
+        qint64 last;      // seconds
+    };
     // `path` is the database file; ":memory:" keeps nothing.
     explicit HistoryStore(const QString &path);
     ~HistoryStore();
@@ -15,6 +22,8 @@ public:
     // Remembers a visit at `when` (seconds). Only web pages are recorded.
     void add(const QString &url, const QString &title, qint64 when);
     void setTitle(const QString &url, const QString &title);
+    // Takes in visits from elsewhere; importing twice changes nothing. Returns how many were taken.
+    int merge(const QList<Visit> &visits);
     // Newest first; with text, pages whose address or title contains it, most visited first.
     QVariantList search(const QString &text, int limit) const;
     void remove(const QString &url);

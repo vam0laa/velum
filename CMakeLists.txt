@@ -20,7 +20,7 @@ add_custom_command(
 add_custom_target(blocker_build DEPENDS ${BLOCKER_LIB})
 
 # The parts that have no window live in a small library, so tests can use them alone.
-add_library(velumcore STATIC src/blocker.cpp src/historystore.cpp src/instance.cpp src/lists.cpp src/notice.cpp src/procinfo.cpp src/address.cpp src/graphics.cpp src/palette.cpp src/widevine.cpp)
+add_library(velumcore STATIC src/blocker.cpp src/historystore.cpp src/importer.cpp src/instance.cpp src/lists.cpp src/notice.cpp src/procinfo.cpp src/address.cpp src/graphics.cpp src/palette.cpp src/widevine.cpp)
 target_include_directories(velumcore PUBLIC src)
 add_dependencies(velumcore blocker_build)
 target_link_libraries(velumcore PUBLIC Qt6::Core Qt6::Network Qt6::Sql ${BLOCKER_LIB} ${CMAKE_DL_LIBS} pthread m)
@@ -64,11 +64,12 @@ qt_add_qml_module(velum
         qml/SpaceDialog.qml
         qml/MiniPlayer.qml
         qml/BookmarksPage.qml
+        qml/ImportPanel.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
     RESOURCES data/velum.svg data/fonts/GoogleSansFlex.woff data/fonts/VT323-Regular.ttf
-    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h
+    SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h src/importbridge.h
     IMPORTS QtQuick
 )
 set_target_properties(velum PROPERTIES QT_QML_MODULE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Velum)

@@ -373,6 +373,34 @@ ApplicationWindow {
     }
 
     function openBookmarks() { bookmarksPage.open() }
+    function openImport() { importPanel.open() }
+
+    // Takes bookmarks (and history) of another browser. Returns the sentence to show.
+    function importFrom(path, withHistory) {
+        const data = Importer.read(path, withHistory)
+        const known = new Set(shortcuts.map(s => s.url))
+        const list = shortcuts.slice()
+        for (const b of data.bookmarks) {
+            const url = String(b.url)
+            if (list.length >= maxBookmarks || known.has(url))
+                continue
+            known.add(url)
+            const item = { title: b.title || hostOf(url) || url, url: url }
+            if (b.folder)
+                item.folder = b.folder
+            list.push(item)
+        }
+        const added = list.length - shortcuts.length
+        if (added > 0)
+            keepBookmarks(list)
+        const pages = data.visits.length > 0 ? History.merge(data.visits) : 0
+        let text = Lang.t(added + " yer imi eklendi", added + " bookmarks added")
+        if (withHistory)
+            text += Lang.t(", " + pages + " sayfa geçmişe alındı", ", " + pages + " pages taken into the history")
+        if (!data.ok)
+            text += Lang.t(". Bazı dosyalar okunamadı; o tarayıcı açıksa kapatıp yeniden dene.", ". Some files could not be read; if that browser is open, close it and try again.")
+        return text + (data.ok ? "." : "")
+    }
 
     // Ctrl+D: bookmark the page, or remove the bookmark it already has
     function toggleBookmark() {
@@ -753,6 +781,8 @@ ApplicationWindow {
         }
         else if (action === "allow" && ask)
             answer(ask, true)
+        else if (action === "import")
+            openImport()
         else if (action === "bookmarks")
             openBookmarks()
         else if (action === "mini")
@@ -1169,6 +1199,12 @@ ApplicationWindow {
         onMoved: (from, to) => window.moveBookmark(from, to)
         onFolderRenamed: (from, to) => window.renameFolder(from, to)
         onChosen: target => window.navigate(target, true)
+        onImportRequested: importPanel.open()
+    }
+
+    ImportPanel {
+        id: importPanel
+        run: (path, withHistory) => window.importFrom(path, withHistory)
     }
 
     MiniPlayer {
@@ -1193,6 +1229,7 @@ ApplicationWindow {
             { name: Lang.t("Kapatılan sekmeyi geri aç", "Reopen the closed tab"), keys: "Ctrl+Shift+T", run: () => window.reopenClosed() },
             { name: Lang.t("Yer imi ekle ya da kaldır", "Add or remove a bookmark"), keys: "Ctrl+D", run: () => window.toggleBookmark() },
             { name: Lang.t("Yer imleri: düzenle, klasörle", "Bookmarks: edit and sort"), keys: "Ctrl+Shift+O", run: () => Qt.callLater(window.openBookmarks) },
+            { name: Lang.t("Başka tarayıcıdan aktar", "Import from another browser"), keys: "", run: () => Qt.callLater(window.openImport) },
             { name: Lang.t("Geçmiş", "History"), keys: "Ctrl+H", run: () => Qt.callLater(window.showCommandHistory) },
             { name: Lang.t("İndirmeler", "Downloads"), keys: "Ctrl+J", run: () => side.openDownloads() },
             { name: Lang.t("Kaynaklar: hangi sekme ne kadar yiyor", "Resources: what each tab uses"), keys: "Shift+Esc", run: () => resources.open() },

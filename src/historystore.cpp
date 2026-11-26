@@ -54,6 +54,29 @@ void HistoryStore::setTitle(const QString &url, const QString &title)
     q.exec();
 }
 
+int HistoryStore::merge(const QList<Visit> &visits)
+{
+    int taken = 0;
+    m_db.transaction();
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("INSERT INTO pages(url, title, visits, last) VALUES(?, ?, ?, ?) ON CONFLICT(url) DO UPDATE SET "
+                             "visits = MAX(visits, excluded.visits), last = MAX(last, excluded.last), "
+                             "title = CASE WHEN title = '' THEN excluded.title ELSE title END"));
+    for (const Visit &v : visits) {
+        QUrl parsed(v.url);
+        if (parsed.scheme() != QLatin1String("https") && parsed.scheme() != QLatin1String("http"))
+            continue;
+        parsed.setUserInfo(QString());
+        q.addBindValue(parsed.toString());
+        q.addBindValue(v.title.isNull() ? QStringLiteral("") : v.title);
+        q.addBindValue(qMax(1, v.visits));
+        q.addBindValue(v.last);
+        if (q.exec())
+            ++taken;
+    }
+    return m_db.commit() ? taken : 0;
+}
+
 QVariantList HistoryStore::search(const QString &text, int limit) const
 {
     QSqlQuery q(m_db);

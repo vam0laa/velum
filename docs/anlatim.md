@@ -303,6 +303,14 @@ Pencerenin başlığı `Picture-in-Picture`: Hyprland kuralları bu başlığı 
 
 `qml/BookmarksPage.qml` yalnızca gösterir ve ister; listeyi `Main.qml` tutar ve değiştirir (`saveBookmark`, `moveBookmark`, `renameFolder`). Klasörler ayrıca saklanmaz: yer imlerinin `folder` alanlarından çıkarılır, bu yüzden boş klasör kalmaz.
 
+## 7t. Başka tarayıcıdan aktarma
+
+`src/importer.cpp` öbür tarayıcının dosyasını geçici bir klasöre **kopyalar** ve kopyayı okur; asıl dosyaya dokunmaz (Firefox açıkken dosya kilitli olduğu için de gerekli).
+- Firefox ailesi: `places.sqlite` (SQL sorgusu)
+- Chromium ailesi: `Bookmarks` (JSON) ve `History` (SQL). Chromium zamanı 1601'den sayar, 1970'e çevrilir.
+
+`importbridge.h` yalnızca kendi bulduğu profilleri okur. Parola ve çerez alınmaz. Aynı aktarmayı iki kez yapmak bir şeyi çoğaltmaz.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.
