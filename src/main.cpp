@@ -4,11 +4,13 @@
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QStandardPaths>
 #include <QTimer>
 #include <QtWebEngineQuick>
 
 #include "address.h"
 #include "graphics.h"
+#include "instance.h"
 #include "widevine.h"
 
 int main(int argc, char *argv[])
@@ -52,12 +54,28 @@ int main(int argc, char *argv[])
     for (const QString &typed : args.positionalArguments())
         start << address::resolve(typed).toString();
 
+    // A second start (a link clicked in another program) opens in the window that is already there.
+    // Development runs stay on their own.
+    Instance instance;
+    if (!args.isSet(shot) && !args.isSet(demo) && !args.isSet(box)) {
+        const QString socket = Instance::socketName(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+        if (Instance::handOver(socket, start))
+            return 0;
+        instance.listen(socket);
+    }
+
     QQmlApplicationEngine engine;
     engine.setInitialProperties({{QStringLiteral("startUrls"), start},
                                  {QStringLiteral("hasWidevine"), !cdm.isEmpty()}});
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.loadFromModule("Velum", "Main");
+
+    if (!engine.rootObjects().isEmpty()) {
+        QObject *window = engine.rootObjects().constFirst();
+        QObject::connect(&instance, &Instance::received, window,
+                         [window](const QStringList &urls) { QMetaObject::invokeMethod(window, "openExternal", Q_ARG(QVariant, urls)); });
+    }
 
     if (args.isSet(demo) && !engine.rootObjects().isEmpty()) {
         QObject *window = engine.rootObjects().constFirst();

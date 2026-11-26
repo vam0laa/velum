@@ -20,7 +20,7 @@ add_custom_command(
 add_custom_target(blocker_build DEPENDS ${BLOCKER_LIB})
 
 # The parts that have no window live in a small library, so tests can use them alone.
-add_library(velumcore STATIC src/blocker.cpp src/historystore.cpp src/lists.cpp src/procinfo.cpp src/address.cpp src/graphics.cpp src/palette.cpp src/widevine.cpp)
+add_library(velumcore STATIC src/blocker.cpp src/historystore.cpp src/instance.cpp src/lists.cpp src/procinfo.cpp src/address.cpp src/graphics.cpp src/palette.cpp src/widevine.cpp)
 target_include_directories(velumcore PUBLIC src)
 add_dependencies(velumcore blocker_build)
 target_link_libraries(velumcore PUBLIC Qt6::Core Qt6::Network Qt6::Sql ${BLOCKER_LIB} ${CMAKE_DL_LIBS} pthread m)
@@ -46,6 +46,8 @@ qt_add_qml_module(velum
         qml/ShieldPanel.qml
         qml/DownloadsPanel.qml
         qml/ResourcePanel.qml
+        qml/FindBar.qml
+        qml/ProblemPage.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
@@ -66,5 +68,11 @@ add_test(NAME ui COMMAND ${CMAKE_SOURCE_DIR}/tests/run-ui.sh)
 
 include(GNUInstallDirs)
 install(TARGETS velum RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES data/velum.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+# The launcher names the program with its full path: desktop sessions often do not have
+# ~/.local/bin on their PATH. The prefix is only known while installing.
+install(CODE "
+    file(READ \"${CMAKE_SOURCE_DIR}/data/velum.desktop\" entry)
+    string(REPLACE \"Exec=velum\" \"Exec=\${CMAKE_INSTALL_PREFIX}/bin/velum\" entry \"\${entry}\")
+    file(WRITE \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/applications/velum.desktop\" \"\${entry}\")
+")
 install(FILES data/velum.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)

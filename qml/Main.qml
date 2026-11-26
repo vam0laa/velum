@@ -22,6 +22,7 @@ ApplicationWindow {
     readonly property bool autoSleep: sleepMode > 0
     readonly property int freezeAfter: (sleepMode === 2 ? 5 : 2) * 60 * 1000      // milliseconds unseen
     readonly property int discardAfter: (sleepMode === 2 ? 20 : 10) * 60 * 1000
+    property bool restoreSession: true
     property var downloads: []        // download requests of this run, newest first
     property var asks: []             // unanswered permission requests: [{ page, permission, site, wish }]
     // the question for the page being looked at, if it has one
@@ -54,18 +55,78 @@ ApplicationWindow {
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
         shortcuts = readList(saved.shortcuts)
         // pinned tabs come back first, then what was asked for on the command line
+        // Restored tabs are "lazy": they load when first looked at.
+        current = -1            // nothing is shown, and so nothing loads, until the tab is chosen
         const pins = readList(saved.pinned)
         for (const p of pins) {
-            openTab(p.url)
-            tabs.setProperty(current, "pinned", true)
+            appendTab(p.url, p.title ?? "", true)
+            tabs.setProperty(tabs.count - 1, "pinned", true)
             pinnedCount++
         }
-        for (const u of startUrls)
-            openTab(u)
-        if (startUrls.length === 0)
-            openTab("")
-        current = pinnedCount < tabs.count ? pinnedCount : 0
+        let chosen = -1
+        if (restoreSession && !Shield.forgettingThisRun) {
+            const session = readSession(saved.session)
+            for (const p of session.tabs)
+                appendTab(p.url, p.title ?? "", true)
+            if (session.tabs.length > 0)
+                chosen = Math.max(0, Math.min(session.current, tabs.count - 1))
+        }
+        if (startUrls.length > 0) {
+            chosen = tabs.count
+            for (const u of startUrls)
+                appendTab(u, "", false)
+        }
+        if (chosen < 0) {
+            chosen = tabs.count
+            appendTab("", "", false)
+        }
+        current = chosen
         restored = true
+        // the chosen tab was already visible or hidden before "current" settled
+        Qt.callLater(() => view?.load_())
+    }
+
+    function readSession(text) {
+        try {
+            const s = JSON.parse(text)
+            const list = readList(JSON.stringify(s.tabs ?? []))
+            return { tabs: list.slice(0, 200), current: Number.isInteger(s.current) ? s.current : 0 }
+        } catch (e) {
+            return { tabs: [], current: 0 }
+        }
+    }
+
+    // Writes down the open tabs, a moment after they last changed.
+    function saveSession() {
+        if (!restored)
+            return
+        const list = []
+        let at = 0
+        for (let i = 0; i < tabs.count; i++) {
+            const tab = tabs.get(i)
+            if (i === current)
+                at = pinnedCount + list.length
+            if (!tab.pinned && tab.pageUrl !== "" && tab.pageUrl !== "about:blank")
+                list.push({ url: tab.pageUrl, title: tab.title })
+            if (i === current && tab.pinned)
+                at = i
+        }
+        saved.session = JSON.stringify({ tabs: list, current: at })
+    }
+
+    Timer { id: sessionTimer; interval: 800; onTriggered: window.saveSession() }
+    function touchSession() { sessionTimer.restart() }
+    onCurrentChanged: touchSession()
+    onMovesChanged: touchSession()
+    onClosing: saveSession()
+
+    // addresses handed over by a second start of Velum
+    function openExternal(urls) {
+        for (const u of urls)
+            openTab(u)
+        show()
+        raise()
+        requestActivate()
     }
 
     property bool restored: false
@@ -87,7 +148,7 @@ ApplicationWindow {
             return
         const list = []
         for (let i = 0; i < pinnedCount; i++)
-            list.push({ url: tabs.get(i).pageUrl })
+            list.push({ url: tabs.get(i).pageUrl, title: tabs.get(i).title })
         saved.pinned = JSON.stringify(list)
     }
 
@@ -96,6 +157,8 @@ ApplicationWindow {
         id: saved
         property string pinned: "[]"
         property string shortcuts: "[]"
+        property string session: "{}"
+        property alias restoreSession: window.restoreSession
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
         property alias width: window.width
@@ -111,8 +174,13 @@ ApplicationWindow {
     }
 
     // Adds a tab after the others, switches to it and returns its page.
+    function appendTab(url, title, lazy) {
+        tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0 })
+        touchSession()
+    }
+
     function openTab(url) {
-        tabs.append({ startUrl: String(url), pageUrl: String(url), title: "", siteIcon: "", loading: false, pinned: false, asleep: 0 })
+        appendTab(url, "", false)
         current = tabs.count - 1
         if (String(url) === "")
             Qt.callLater(() => start.field.forceActiveFocus())
@@ -134,6 +202,7 @@ ApplicationWindow {
         tabs.remove(index)
         current = next
         moves++
+        touchSession()
         if (wasPinned)
             savePinned()
     }
@@ -260,6 +329,8 @@ ApplicationWindow {
         }
     }
 
+    function pageViewAt(index) { return views.itemAt(index) as WebEngineView }
+
     function sleepState(index) { return index >= 0 && index < tabs.count ? tabs.get(index).asleep : -1 }
 
     // asked for by hand: as deep as the engine allows
@@ -301,6 +372,13 @@ ApplicationWindow {
         }).sort((a, b) => b.memory - a.memory)
         resources.total = found.total
     }
+
+    function findInPage() {
+        if (!onStartPage)
+            findBar.open()
+    }
+    // the box belongs to the page it was opened on
+    onViewChanged: findBar.close()
 
     function showCommandHistory() {
         commandBar.show(false, "", true)
@@ -355,6 +433,10 @@ ApplicationWindow {
             resources.open()
         else if (action === "sleep")
             sleepOthers()
+        else if (action.startsWith("find:")) {
+            findBar.text = action.slice(5)
+            findInPage()
+        }
     }
 
     function showCommandBox(text) {
@@ -418,10 +500,23 @@ ApplicationWindow {
                         id: web
                         required property int index
                         required property string startUrl
+                        required property bool lazy
+                        property bool started: false
+                        property bool crashed: false
+                        property var failure: null          // { url, text, certificate }
+                        // loads the address a restored tab was waiting with
+                        function load_() {
+                            if (!started && startUrl !== "") {
+                                started = true
+                                url = startUrl
+                            }
+                        }
                         property double hiddenSince: 0     // when it was last looked at; 0 while shown
                         // a tab being looked at is always awake
                         onVisibleChanged: {
                             if (visible) {
+                                if (lazy)
+                                    load_()
                                 lifecycleState = WebEngineView.LifecycleState.Active
                                 hiddenSince = 0
                             } else {
@@ -435,14 +530,32 @@ ApplicationWindow {
                         profile: window.profile
                         backgroundColor: Theme.surface
                         settings.fullScreenSupportEnabled: true      // video full screen
+                        settings.errorPageEnabled: false             // Velum explains problems itself
+                        // a bad certificate is never accepted, only explained
+                        onCertificateError: error => {
+                            if (error.isMainFrame)
+                                failure = { url: String(error.url), text: error.description, certificate: true }
+                            error.rejectCertificate()
+                        }
+                        onRenderProcessTerminated: (status, code) => {
+                            // putting a tab to sleep ends its process too; that is not a crash
+                            if (status !== WebEngineView.NormalTerminationStatus && lifecycleState === WebEngineView.LifecycleState.Active)
+                                crashed = true
+                        }
+                        onFindTextFinished: result => {
+                            if (web === window.view) {
+                                findBar.matches = result.numberOfMatches
+                                findBar.current = result.activeMatch
+                            }
+                        }
                         settings.dnsPrefetchEnabled: false           // no lookups for links you did not click
                         settings.hyperlinkAuditingEnabled: false     // no "ping" tracking on links
                         settings.pluginsEnabled: true
                         settings.pdfViewerEnabled: true
 
                         Component.onCompleted: {
-                            if (startUrl !== "")
-                                url = startUrl
+                            if (!lazy)
+                                load_()
                             if (web !== window.view)
                                 hiddenSince = Date.now()
                         }
@@ -469,17 +582,30 @@ ApplicationWindow {
 
                         // keep the tab list in step with the page
                         onTitleChanged: {
+                            if (lazy && !started)
+                                return
                             tabs.setProperty(index, "title", url.toString() === "about:blank" ? "" : title)
+                            window.touchSession()
                             History.setTitle(String(url), title)
                         }
                         onIconChanged: tabs.setProperty(index, "siteIcon", String(icon))
                         onLoadingChanged: info => {
                             tabs.setProperty(index, "loading", loading)
+                            if (info.status === WebEngineView.LoadStartedStatus) {
+                                crashed = false
+                                failure = null
+                            }
                             if (info.status === WebEngineView.LoadSucceededStatus)
                                 History.add(String(url), title)
+                            // -3 means "stopped": by you, or because another page was asked for
+                            if (info.status === WebEngineView.LoadFailedStatus && info.errorCode !== -3 && !failure)
+                                failure = { url: String(info.url), text: info.errorString, certificate: false }
                         }
                         onUrlChanged: {
+                            if (lazy && !started)
+                                return
                             tabs.setProperty(index, "pageUrl", String(url))
+                            window.touchSession()
                             if (tabs.get(index).pinned)
                                 window.savePinned()
                         }
@@ -512,6 +638,37 @@ ApplicationWindow {
                         settings.webRTCPublicInterfacesOnly: true
                     }
                 }
+            }
+
+            ProblemPage {
+                anchors.fill: parent
+                radius: card.radius
+                visible: !window.onStartPage && window.view !== null && (window.view.crashed || window.view.failure !== null)
+                heading: window.view?.crashed ? "Bu sekme çöktü" : window.view?.failure?.certificate ? "Bu bağlantı güvenli değil" : "Sayfa açılamadı"
+                address: window.view ? (window.view.failure?.url ?? String(window.view.url)) : ""
+                detail: window.view?.crashed ? "Sayfayı çizen süreç beklenmedik şekilde kapandı." : window.view?.failure?.text ?? ""
+                advice: window.view?.crashed ? "Yeniden denemek çoğu zaman yeter."
+                      : window.view?.failure?.certificate ? "Sitenin sertifikası doğrulanamadı. Biri araya girmiş olabilir; Velum bu uyarıyı atlamana izin vermez."
+                      : Shield.httpsFirst ? "İnternet bağlantını ve adresi kontrol et. Site yalnızca http destekliyorsa kalkan panelinden \"Önce HTTPS\"i kapatabilirsin."
+                      : "İnternet bağlantını ve adresi kontrol et."
+                onRetry: {
+                    const page = window.view
+                    const target = page.failure?.url ?? String(page.url)
+                    page.failure = null
+                    page.crashed = false
+                    if (String(page.url) === target)
+                        page.reload()
+                    else
+                        page.url = target
+                }
+            }
+
+            FindBar {
+                id: findBar
+                anchors { top: parent.top; right: parent.right; margins: 12 }
+                z: 3
+                onSearch: (text, backwards) => window.view.findText(text, backwards ? WebEngineView.FindBackward : 0)
+                onClosed: { window.view?.findText(""); window.view?.forceActiveFocus() }
             }
 
             PermissionBar {
@@ -577,6 +734,8 @@ ApplicationWindow {
             { name: "Yan paneli daralt ya da genişlet", keys: "Ctrl+B", run: () => window.compactSidebar = !window.compactSidebar },
             { name: "Sekmeyi kapat", keys: "Ctrl+W", run: () => window.closeTab(window.current) },
             { name: "Diğer sekmeleri kapat", keys: "", run: () => window.closeOthers(window.current) },
+            { name: "Sayfada ara", keys: "Ctrl+F", run: () => Qt.callLater(window.findInPage) },
+            { name: window.restoreSession ? "Açılışta sekmeleri geri getirme" : "Açılışta sekmeleri geri getir", keys: "", run: () => window.restoreSession = !window.restoreSession },
             { name: "Gezinme verilerini sil", keys: "Ctrl+Shift+Delete", run: () => clearDialog.open() },
             { name: "Tam ekran", keys: "F11", run: () => window.toggleWindowFullScreen() },
             { name: "Velum'dan çık", keys: "Ctrl+Q", run: () => Qt.quit() }
@@ -610,6 +769,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+T"; onActivated: window.reopenClosed() }
     Shortcut { sequence: "Ctrl+Shift+P"; onActivated: window.togglePin(window.current) }
     Shortcut { sequence: "Ctrl+D"; onActivated: window.toggleBookmark() }
+    Shortcut { sequences: [StandardKey.Find]; onActivated: window.findInPage() }
     Shortcut { sequence: "Shift+Escape"; onActivated: resources.open() }
     Shortcut { sequence: "Ctrl+H"; onActivated: window.showCommandHistory() }
     Shortcut { sequence: "Ctrl+J"; onActivated: side.openDownloads() }

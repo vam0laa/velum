@@ -238,6 +238,14 @@ Varsayılan "Erken" kipte süreler 2 ve 10 dakika. Karar tek, küçük bir fonks
 
 **Bellek** `/proc/<pid>/smaps_rollup` içindeki **Pss** değerinden okunur: ortak kullanılan bellek süreçlere paylaştırılır, böylece toplam şişmez (kerna'daki yaklaşımın benzeri).
 
+## 7k. Oturum, tek pencere, sorun sayfaları
+
+**Tembel yükleme:** geri gelen sekmeler hemen yüklenmez. Listede adresi ve başlığı durur, ilk baktığında `load_()` çalışır. Elli sekmeyle açılış bu yüzden hızlı kalır.
+
+**Tek pencere** (`instance.cpp`): ikinci açılan Velum, yerel bir sokete adresleri yazıp kapanır; açık olan yeni sekme açar. Sokete yalnızca senin kullanıcın yazabilir ve yalnızca `http`, `https`, `file` adresleri kabul edilir.
+
+**Sertifika hatası** her zaman reddedilir. "Yine de devam et" düğmesi bilerek yok.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

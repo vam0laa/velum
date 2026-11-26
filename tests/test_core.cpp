@@ -1,4 +1,5 @@
 #include <QDir>
+#include <QSignalSpy>
 #include <QFile>
 #include <QTemporaryDir>
 #include <QTest>
@@ -9,6 +10,7 @@
 #include "procinfo.h"
 #include "graphics.h"
 #include "historystore.h"
+#include "instance.h"
 #include "palette.h"
 #include "widevine.h"
 
@@ -166,6 +168,27 @@ private slots:
         QList<qint64> found = procinfo::tree(proc.path(), 10);
         std::sort(found.begin(), found.end());
         QCOMPARE(found, (QList<qint64>{10, 11, 12}));
+    }
+
+    void messagesFromASecondStart()
+    {
+        const QStringList got = Instance::accepted("https://a.example/x y\nhttps://b.example/\njavascript:alert(1)\ndata:text/html,x\nfile:///tmp/a.html\n\nnot a url\n");
+        QCOMPARE(got, (QStringList{"https://b.example/", "file:///tmp/a.html"}));
+        QVERIFY(Instance::accepted(QByteArray(100000, 'a')).isEmpty());
+        QVERIFY(Instance::socketName("/a") != Instance::socketName("/b"));
+    }
+
+    void secondStartHandsOver()
+    {
+        QTemporaryDir dir;
+        const QString socket = dir.path() + "/s";
+        QVERIFY(!Instance::handOver(socket, {"https://a.example/"}));      // nobody listening yet
+        Instance first;
+        QVERIFY(first.listen(socket));
+        QSignalSpy spy(&first, &Instance::received);
+        QVERIFY(Instance::handOver(socket, {"https://a.example/"}));
+        QVERIFY(spy.wait(4000));
+        QCOMPARE(spy.first().first().toStringList(), QStringList{"https://a.example/"});
     }
 
     void newestWidevineWins()

@@ -90,6 +90,7 @@ Item {
             // pin a tab now; it is checked after the settings have reached the disk
             w.view.url = t.page("p")
             w.togglePin(0)
+            w.openTab(t.page("q")); w.openTab(t.page("r")); w.current = 1
             bar.show(true, "tam")
             shot.start()
         }
@@ -121,7 +122,16 @@ Item {
         id: later; interval: 1500
         onTriggered: {
             t.second = main.createObject(null, { startUrls: [], hasWidevine: true, profileName: "velum-second" })
-            t.check("pinned tabs return in a new window", t.second.pinnedCount === 1 && t.second.pageAt(0).endsWith("p") && t.second.current === 1)
+            t.check("pinned tabs return in a new window", t.second.pinnedCount === 1 && t.second.pageAt(0).endsWith("p"))
+            t.check("two ordinary tabs were saved", t.second.pageAt(2) !== null && t.second.pageAt(3) === null && t.second.current === 1)
+            t.check("the other tabs return too, with the same one chosen", t.second.pageAt(1) !== null && t.second.pageAt(t.second.current) === t.w.pageAt(t.w.current))
+            const idle = t.second.current === 0 ? 1 : 0
+            t.check("a restored tab waits until it is looked at", String(t.second.pageViewAt(idle).url) === "")
+            t.second.current = idle
+            t.check("looking at it loads it", String(t.second.pageViewAt(idle).url) === t.second.pageAt(idle))
+            t.check("a broken saved session gives no tabs", t.second.readSession("{oops").tabs.length === 0 && t.second.readSession('{"tabs":5}').tabs.length === 0)
+            const before = t.w.pageAt(0)
+            t.w.openExternal(["about:blank#x"]); t.check("an address from outside opens a new tab", t.w.pageAt(t.w.current) === "about:blank#x" && t.w.pageAt(0) === before)
             // with the real engine: a tab that is not shown can be put to sleep and wakes when chosen
             const w = t.w
             w.openTab(t.page("s1")); w.openTab(t.page("s2"))

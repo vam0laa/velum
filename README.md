@@ -31,6 +31,7 @@ Install for your user: `cmake --install build --prefix ~/.local`
 | Ctrl+H | history; type to search, Shift+Delete removes an entry |
 | Ctrl+J | downloads |
 | Shift+Esc | resources: memory and processor use per tab |
+| Ctrl+F | find in page (Enter, Shift+Enter, Esc) |
 | Ctrl+Tab, Ctrl+Shift+Tab | next / previous tab |
 | Ctrl+L | edit the address |
 | Ctrl+R, F5 | reload |
@@ -57,6 +58,10 @@ History stays in an SQLite file on this computer (readable only by you), is kept
 Velum downloads the lists from easylist.to and GitHub on the first start and again when they are older than four days. This is the one connection it makes by itself.
 
 Limit: filters that need uBlock Origin's page scripts (among them the ones for YouTube video ads) have no effect yet, because only Brave's own script collection is loaded.
+
+## Tabs, links and problems
+
+Open tabs come back at the next start and load when first looked at (a command turns this off; "forget on exit" turns it off too). There is one Velum at a time: starting it again with an address opens a tab in the running window. To make it the default browser: `xdg-settings set default-web-browser velum.desktop`. A site that cannot be opened, a bad certificate (which cannot be skipped) and a crashed tab each show an explanation with a retry button.
 
 ## Sleeping tabs
 
