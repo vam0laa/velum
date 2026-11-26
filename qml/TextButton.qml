@@ -19,8 +19,9 @@ AbstractButton {
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }
-    background: Bevel {
-        sunken: button.down || button.strong
+    background: Rectangle {
+        radius: Theme.radius
         color: button.strong ? Theme.accent : button.hovered ? Theme.title : Theme.raised
+        opacity: button.down ? 0.8 : 1
     }
 }

@@ -31,7 +31,7 @@ Panel {
     signal clearDownloads()
     function openDownloads() { downloadsPanel.open() }
 
-    title: compact ? "" : "velum.exe"
+    title: compact ? "" : "velum"
     stripe: Theme.mauve
     implicitWidth: compact ? Theme.strip : Theme.sidebar
     Behavior on implicitWidth { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
@@ -70,8 +70,9 @@ Panel {
                     anchors { right: parent.right; top: parent.top; rightMargin: -2; topMargin: -2 }
                     height: 14
                     width: Math.max(14, badge.implicitWidth + 6)
+                    radius: 7
                     color: Theme.green
-                    Text { id: badge; anchors.centerIn: parent; text: shieldButton.blocked > 99 ? "99+" : shieldButton.blocked; color: Theme.onAccent; font.family: Theme.pixel; font.pixelSize: 14 }
+                    Text { id: badge; anchors.centerIn: parent; text: shieldButton.blocked > 99 ? "99+" : shieldButton.blocked; color: Theme.onAccent; font.pixelSize: 9; font.weight: Font.Bold }
                 }
                 ShieldPanel {
                     id: shieldPanel
@@ -127,7 +128,6 @@ Panel {
             visible: !side.compact
             text: Lang.t("sekmeler", "tabs")
             color: Theme.pink
-            size: 18
         }
 
         ListView {
@@ -186,7 +186,7 @@ Panel {
                     Text { visible: !side.compact; text: Lang.t("Yeni sekme", "New tab"); color: Theme.onAccent; font.pixelSize: 13; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
-            background: Bevel { sunken: add.down; color: add.hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent }
+            background: Rectangle { radius: height / 2; color: add.hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent; opacity: add.down ? 0.85 : 1 }
             Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
         }
         IconButton {
@@ -206,7 +206,7 @@ Panel {
             Rectangle {
                 visible: side.running > 0
                 anchors { right: parent.right; top: parent.top }
-                width: 9; height: 9; color: Theme.green
+                width: 9; height: 9; radius: 5; color: Theme.green
             }
             DownloadsPanel {
                 id: downloadsPanel

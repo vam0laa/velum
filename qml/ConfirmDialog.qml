@@ -14,7 +14,7 @@ Popup {
     modal: true
     width: 380
     padding: 18
-    background: WindowBackground { title: "confirm.exe"; stripe: Theme.danger }
+    background: WindowBackground { title: Lang.t("onay", "confirm"); stripe: Theme.danger }
     topPadding: 42
 
     ColumnLayout {

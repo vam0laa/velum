@@ -120,7 +120,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         y: Math.max(24, parent.height * 0.18) - (bar.open ? 0 : 10)
         color: "transparent"
-        WindowBackground { anchors.fill: parent; title: bar.historyOnly ? "history.exe" : "run.exe"; stripe: Theme.pink }
+        WindowBackground { anchors.fill: parent; title: bar.historyOnly ? Lang.t("geçmiş", "history") : Lang.t("ara ve çalıştır", "search and run"); stripe: Theme.pink }
         Behavior on y { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
         MouseArea { anchors.fill: parent }   // clicks inside stay inside
 
@@ -178,12 +178,12 @@ Item {
                     hoverEnabled: true
                     onHoveredChanged: if (hovered) list.currentIndex = index
                     onClicked: bar.choose(index)
-                    background: Bevel { visible: row.ListView.isCurrentItem; color: Theme.title }
+                    background: Rectangle { radius: Theme.radius; color: row.ListView.isCurrentItem ? Theme.raised : "transparent" }
                     contentItem: RowLayout {
                         spacing: 10
                         Icon { Layout.leftMargin: 10; name: row.modelData.icon; size: 16; color: row.ListView.isCurrentItem ? Theme.accent : Theme.dim }
                         Text { Layout.fillWidth: true; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.pixelSize: 13 }
-                        Text { Layout.rightMargin: 12; Layout.maximumWidth: row.width * 0.4; text: row.modelData.note; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.accent; font.family: Theme.pixel; font.pixelSize: 17 }
+                        Text { Layout.rightMargin: 12; Layout.maximumWidth: row.width * 0.4; text: row.modelData.note; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 11 }
                     }
                 }
             }

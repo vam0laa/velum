@@ -1,6 +1,6 @@
 import QtQuick
 
-// A window in the webcore manner: bevelled frame, title bar and a body for the content.
+// A rounded window: a thin title bar and a body for the content.
 Item {
     id: panel
     property alias title: bar.title
@@ -15,26 +15,27 @@ Item {
     signal maximize()
     signal closeRequested()
 
-    // the hard shadow under the window
-    Rectangle { visible: panel.chrome; x: 5; y: 5; width: parent.width; height: parent.height; color: Theme.bevelLo; opacity: 0.55; radius: Theme.radius }
-    Bevel { anchors.fill: parent; visible: panel.chrome; color: panel.fill }
+    Rectangle { anchors.fill: parent; visible: panel.chrome; color: panel.fill; radius: Theme.corner; border.width: 1; border.color: Theme.line }
     TitleBar {
         id: bar
         visible: panel.chrome
-        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 3 }
+        anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: 1 }
         onMinimize: panel.minimize()
         onMaximize: panel.maximize()
         onCloseRequested: panel.closeRequested()
     }
+    // a hairline under the title
+    Rectangle { visible: panel.chrome; anchors { left: parent.left; right: parent.right; top: bar.bottom; leftMargin: 1; rightMargin: 1 } height: 1; color: Theme.line; opacity: 0.6 }
     Item {
         id: body
         clip: true
+        // The bottom margin keeps square web pages clear of the rounded corners.
         anchors {
             fill: parent
-            topMargin: panel.chrome ? bar.height + 5 : 0
-            leftMargin: panel.chrome ? 3 : 0
-            rightMargin: panel.chrome ? 3 : 0
-            bottomMargin: panel.chrome ? 3 : 0
+            topMargin: panel.chrome ? bar.height + 2 : 0
+            leftMargin: panel.chrome ? 2 : 0
+            rightMargin: panel.chrome ? 2 : 0
+            bottomMargin: panel.chrome ? 6 : 0
         }
     }
 }

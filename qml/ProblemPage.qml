@@ -16,7 +16,7 @@ Rectangle {
         anchors.centerIn: parent
         width: Math.min(parent.width - 56, 540)
         height: column.implicitHeight + 76
-        title: "error.exe"
+        title: Lang.t("hata", "error")
         stripe: Theme.danger
 
         ColumnLayout {
@@ -28,7 +28,7 @@ Rectangle {
                 Icon { name: "alert"; size: 44; color: Theme.danger }
                 Text { Layout.fillWidth: true; text: page.heading; color: Theme.text; font.pixelSize: 24; font.weight: Font.ExtraBold; wrapMode: Text.WordWrap }
             }
-            Text { Layout.fillWidth: true; visible: text !== ""; text: page.address; textFormat: Text.PlainText; color: Theme.accent; font.family: Theme.pixel; font.pixelSize: 19; wrapMode: Text.WrapAnywhere; maximumLineCount: 2; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; visible: text !== ""; text: page.address; textFormat: Text.PlainText; color: Theme.accent; font.pixelSize: 13; wrapMode: Text.WrapAnywhere; maximumLineCount: 2; elide: Text.ElideRight }
             Text { Layout.fillWidth: true; visible: text !== ""; text: page.detail; textFormat: Text.PlainText; color: Theme.text; font.pixelSize: 14; wrapMode: Text.WordWrap }
             Text { Layout.fillWidth: true; visible: text !== ""; text: page.advice; color: Theme.dim; font.pixelSize: 13; wrapMode: Text.WordWrap }
             TextButton { Layout.topMargin: 6; Layout.alignment: Qt.AlignRight; text: Lang.t("Yeniden dene", "Try again"); strong: true; onClicked: page.retry() }

@@ -20,6 +20,7 @@ Bevel {
     implicitHeight: column.implicitHeight + 28
     color: Theme.window
     light: Theme.peach
+    radius: Theme.corner
 
     ColumnLayout {
         id: column

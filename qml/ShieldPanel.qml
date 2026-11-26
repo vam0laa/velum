@@ -12,7 +12,7 @@ Popup {
     width: 290
     padding: 14
     margins: 8                 // never leaves the window
-    background: WindowBackground { title: "shield.exe"; stripe: Theme.green }
+    background: WindowBackground { title: Lang.t("koruma", "shield"); stripe: Theme.green }
     topPadding: 42
     enter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.quick } }
 

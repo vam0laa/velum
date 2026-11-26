@@ -29,19 +29,22 @@ ItemDelegate {
     Accessible.name: label
 
     background: Item {
-        Bevel {
-            anchors.fill: parent
-            visible: row.current || row.hovered
-            sunken: row.current
-            color: row.current ? Qt.tint(Theme.surface, Qt.alpha(row.tone, 0.22)) : Theme.raised
-        }
-        // a coloured edge, one colour per tab
         Rectangle {
-            x: 2; y: 5
-            width: 4
-            height: parent.height - 10
+            anchors.fill: parent
+            radius: Theme.radius
+            color: row.current ? Qt.tint(Theme.surface, Qt.alpha(row.tone, 0.2)) : row.hovered ? Theme.raised : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.quick } }
+        }
+        // a small coloured mark, one colour per tab
+        Rectangle {
+            x: 3
+            anchors.verticalCenter: parent.verticalCenter
+            width: 3
+            radius: 2
+            height: row.current ? 18 : 8
             color: row.tone
-            opacity: row.current ? 1 : 0.45
+            opacity: row.current ? 1 : 0.55
+            Behavior on height { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
         }
     }
 

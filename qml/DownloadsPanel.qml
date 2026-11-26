@@ -14,7 +14,7 @@ Popup {
     width: 340
     padding: 12
     margins: 8                 // never leaves the window
-    background: WindowBackground { title: "downloads.exe"; stripe: Theme.peach }
+    background: WindowBackground { title: Lang.t("indirmeler", "downloads"); stripe: Theme.peach }
     topPadding: 42
 
     function size(bytes) {
@@ -36,7 +36,7 @@ Popup {
         anchors { left: parent.left; right: parent.right }
         spacing: 8
         RowLayout {
-            Text { Layout.fillWidth: true; text: Lang.t("İndirmeler", "Downloads"); color: Theme.text; font.pixelSize: 14; font.weight: Font.Bold }
+            Item { Layout.fillWidth: true }
             TextButton { text: Lang.t("Bitenleri temizle", "Clear finished"); visible: panel.downloads.length > 0; onClicked: panel.clearFinished() }
         }
         Text { visible: panel.downloads.length === 0; text: Lang.t("Henüz bir şey indirmedin.", "Nothing downloaded yet."); color: Theme.dim; font.pixelSize: 12 }
@@ -52,8 +52,8 @@ Popup {
                 readonly property bool running: modelData.state === WebEngineDownloadRequest.DownloadInProgress
                 width: ListView.view.width
                 height: 54
+                radius: Theme.radius
                 color: Theme.frame
-                border.color: Theme.line
                 ColumnLayout {
                     anchors { fill: parent; leftMargin: 10; rightMargin: 6 }
                     spacing: 2

@@ -19,7 +19,7 @@ Popup {
     modal: true
     width: Math.min(560, Overlay.overlay.width - 32)
     padding: 16
-    background: WindowBackground { title: "resources.exe"; stripe: Theme.mauve }
+    background: WindowBackground { title: Lang.t("kaynaklar", "resources"); stripe: Theme.mauve }
     topPadding: 42
 
     Timer { interval: 2000; repeat: true; running: panel.visible; triggeredOnStart: true; onTriggered: panel.refresh() }
@@ -28,7 +28,7 @@ Popup {
         anchors { left: parent.left; right: parent.right }
         spacing: 10
         RowLayout {
-            Text { Layout.fillWidth: true; text: Lang.t("Kaynaklar", "Resources"); color: Theme.text; font.pixelSize: 16; font.weight: Font.Bold }
+            Item { Layout.fillWidth: true }
             Text { text: Math.round(panel.total.memory) + Lang.t(" MB · işlemci %", " MB · CPU %") + Math.round(panel.total.cpu); color: Theme.accent; font.pixelSize: 13 }
         }
         ListView {
@@ -46,7 +46,7 @@ Popup {
                 focusPolicy: Qt.NoFocus
                 hoverEnabled: true
                 onClicked: { panel.close(); panel.choose(modelData.index) }
-                background: Bevel { color: row.hovered ? Theme.title : Theme.raised }
+                background: Rectangle { radius: Theme.radius; color: row.hovered ? Theme.raised : Theme.surface }
                 contentItem: RowLayout {
                     spacing: 10
                     Text { Layout.leftMargin: 12; Layout.fillWidth: true; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: row.modelData.state === 0 ? Theme.text : Theme.dim; font.pixelSize: 13 }

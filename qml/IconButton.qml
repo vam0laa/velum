@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 
-// A square bevelled button with one icon and a tooltip.
+// A square button with one icon and a tooltip.
 AbstractButton {
     id: button
     property string symbol        // a name from Icon.qml
@@ -17,16 +17,15 @@ AbstractButton {
     contentItem: Item {
         Icon {
             anchors.centerIn: parent
-            anchors.verticalCenterOffset: button.down ? 1 : 0
-            anchors.horizontalCenterOffset: button.down ? 1 : 0
             name: button.symbol
             size: button.iconSize
             color: button.enabled ? (button.hovered ? Theme.accent : button.tone) : Theme.line
         }
     }
-    background: Bevel {
-        sunken: button.down
-        color: button.hovered && button.enabled ? Theme.title : Theme.raised
+    background: Rectangle {
+        radius: Theme.radius
+        color: button.down ? Theme.title : button.hovered && button.enabled ? Theme.raised : "transparent"
+        Behavior on color { ColorAnimation { duration: Theme.quick } }
     }
     Accessible.name: hint
 

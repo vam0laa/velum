@@ -24,8 +24,8 @@ Popup {
     width: Math.min(720, Overlay.overlay.width - 32)
     height: Math.min(520, Overlay.overlay.height - 32)
     padding: 4
-    topPadding: 36
-    background: WindowBackground { title: "settings.exe"; stripe: Theme.peach }
+    topPadding: 34
+    background: WindowBackground { title: Lang.t("ayarlar", "settings"); stripe: Theme.peach }
 
     FolderDialog {
         id: folders
@@ -54,7 +54,6 @@ Popup {
             Layout.fillHeight: true
             Layout.margins: 12
             spacing: 4
-            Text { text: Lang.t("Ayarlar", "Settings"); color: Theme.text; font.pixelSize: 18; font.weight: Font.Bold; Layout.bottomMargin: 10; Layout.leftMargin: 8 }
             Repeater {
                 model: [Lang.t("Genel", "General"), Lang.t("Sekmeler", "Tabs"), Lang.t("Gizlilik", "Privacy"), Lang.t("Hakkında", "About")]
                 AbstractButton {
@@ -66,7 +65,7 @@ Popup {
                     hoverEnabled: true
                     onClicked: page.section = index
                     contentItem: Text { text: entry.modelData; color: page.section === entry.index ? Theme.text : Theme.dim; font.pixelSize: 13; leftPadding: 10; verticalAlignment: Text.AlignVCenter }
-                    background: Bevel { sunken: page.section === entry.index; visible: page.section === entry.index || entry.hovered; color: page.section === entry.index ? Theme.surface : Theme.raised }
+                    background: Rectangle { radius: Theme.radius; color: page.section === entry.index ? Theme.raised : entry.hovered ? Theme.surface : "transparent" }
                 }
             }
             Item { Layout.fillHeight: true }
@@ -77,8 +76,7 @@ Popup {
             Layout.fillHeight: true
             Layout.margins: 8
             color: Theme.surface
-            border.color: Theme.bevelLo
-            border.width: 2
+            radius: Theme.radius + 2
 
             StackLayout {
                 anchors { fill: parent; margins: 18 }

@@ -5,5 +5,5 @@ import QtQuick.Controls
 Menu {
     margins: 8
     padding: 6
-    background: Bevel { implicitWidth: 260; color: Theme.window }
+    background: Rectangle { implicitWidth: 260; radius: 14; color: Theme.window; border.color: Theme.line }
 }

@@ -2,8 +2,8 @@ pragma Singleton
 import QtCore
 import QtQuick
 
-// One place for every colour, font and size. The look is vamola.dev's: Catppuccin,
-// bevelled windows and pixel lettering.
+// One place for every colour, font and size: Catppuccin, rounded windows with thin
+// title bars, and a little pixel lettering, after vamola.dev.
 QtObject {
     id: theme
     property string palette: "mocha"     // "mocha", "gruvbox", "nord", "tokyo" or "desktop"
@@ -50,13 +50,12 @@ QtObject {
     readonly property var rainbow: [accent, mauve, pink, green, peach]
 
     property FontLoader pixelFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/VT323-Regular.ttf") }
-    property FontLoader brandFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/Silkscreen-Regular.ttf") }
     property FontLoader uiFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/GoogleSansFlex.woff") }
     readonly property string pixel: pixelFont.name      // has the Turkish letters
-    readonly property string brand: brandFont.name      // for English words only
     readonly property string ui: uiFont.name
 
-    readonly property int radius: 3
+    readonly property int radius: 10       // buttons, fields, rows
+    readonly property int corner: 16       // windows
     readonly property int gap: 8
     readonly property int sidebar: 280
     readonly property int strip: 60

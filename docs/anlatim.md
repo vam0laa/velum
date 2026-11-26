@@ -262,17 +262,14 @@ Arama motoru listesi C++ tarafında (`address::engines`), çünkü "bu yazı ara
 
 **Sağ tık** (`PageMenu.qml`): `request.accepted = true` motorun kendi menüsünü kapatır, biz tıklanan şeye göre (bağlantı, resim, seçili yazı, yazı kutusu) kendi menümüzü gösteririz.
 
-## 7n. Webcore tasarım
+## 7n. Tasarım: hafif webcore
 
 ```
-qml/Bevel.qml     iki açık, iki koyu kenar: "kabarık" ya da "basık" görünüm
-qml/TitleBar.qml  pencere başlığı ve üç düğme
-qml/Panel.qml     ikisinin birleşimi: bir pencere
-qml/Taskbar.qml   alttaki görev çubuğu
+qml/TitleBar.qml  ince pencere başlığı ve üç yuvarlak düğme
+qml/Panel.qml     yuvarlak köşeli pencere
+qml/Theme.qml     paletler, köşe yarıçapları, fontlar
 ```
-Üç boyut hissi tek numaradan gelir: üst ve sol kenar açık, alt ve sağ kenar koyu olursa kutu kabarık; tersi olursa basık görünür. `sunken: button.down` ile düğme basılınca içeri girer.
-
-Silkscreen fontunda ğ, ş, ı, İ yok; Türkçe pixel yazılar bu yüzden VT323 ile.
+Bütün görünüm `Theme.qml`'deki birkaç değerden yönetilir: `corner` pencere köşelerini, `radius` düğme ve satırları yuvarlar. Pixel yazı tipi yalnızca başlıklarda.
 
 ## 8. CMakeLists.txt
 
