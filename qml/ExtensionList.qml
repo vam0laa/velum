@@ -18,7 +18,7 @@ ColumnLayout {
     signal remove(var extension)
     spacing: 14
 
-    function localPath(url) { return decodeURIComponent(String(url).replace("file://", "")) }
+    function localPath(url) { return Files.toPath(url) }
 
     FileDialog {
         id: zip

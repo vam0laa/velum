@@ -1,3 +1,4 @@
+#include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QtEndian>
@@ -23,6 +24,7 @@
 #include "instance.h"
 #include "palette.h"
 #include "passwords.h"
+#include "update.h"
 #include "widevine.h"
 
 class CoreTest : public QObject
@@ -366,8 +368,79 @@ private slots:
         QCOMPARE(graphics::xwaylandScale(R"([{"scale":40}])", on), 0.0);
     }
 
+    void updateVersions()
+    {
+        QCOMPARE(update::compare("0.1.0-beta.2", "0.1.0-beta.1"), 1);
+        QCOMPARE(update::compare("0.1.0-beta.10", "0.1.0-beta.9"), 1);
+        QCOMPARE(update::compare("0.1.0", "0.1.0-beta.99"), 1);
+        QCOMPARE(update::compare("0.2.0-beta.1", "0.1.5"), 1);
+        QCOMPARE(update::compare("1.0.0", "1.0.0"), 0);
+        QCOMPARE(update::compare("nonsense", "0.0.1"), -1);
+        QCOMPARE(update::compare("0.0.1", "v2"), 1);
+    }
+
+    // a description signed here with a throwaway key, then bent in every way
+    void updatesMustBeSigned()
+    {
+        std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> key(EVP_PKEY_Q_keygen(nullptr, nullptr, "ED25519"), EVP_PKEY_free);
+        QVERIFY(key != nullptr);
+        QByteArray pub(32, 0);
+        size_t length = 32;
+        QCOMPARE(EVP_PKEY_get_raw_public_key(key.get(), reinterpret_cast<unsigned char *>(pub.data()), &length), 1);
+        const QByteArray hex = pub.toHex();
+        const auto sign = [&](const QByteArray &data) {
+            std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context(EVP_MD_CTX_new(), EVP_MD_CTX_free);
+            QByteArray out(64, 0);
+            size_t n = 64;
+            if (EVP_DigestSignInit(context.get(), nullptr, nullptr, nullptr, key.get()) != 1
+                || EVP_DigestSign(context.get(), reinterpret_cast<unsigned char *>(out.data()), &n,
+                                  reinterpret_cast<const unsigned char *>(data.constData()), size_t(data.size())) != 1)
+                return QByteArray();
+            return out.toBase64();
+        };
+        QTemporaryDir dir;
+        QFile installer(dir.filePath("setup.exe"));
+        QVERIFY(installer.open(QIODevice::WriteOnly));
+        installer.write("pretend installer");
+        installer.close();
+        const QByteArray digest = QCryptographicHash::hash("pretend installer", QCryptographicHash::Sha256).toHex();
+        const QString from = "https://github.com/o/r/releases/download/";
+        const auto manifest = [&](const QString &url, const QString &version = "0.2.0", const QByteArray &sum = {}, int size = 17) {
+            return QString(R"({"version":"%1","url":"%2","sha256":"%3","size":%4,"notes":"n"})")
+                .arg(version, url, QString::fromLatin1(sum.isEmpty() ? digest : sum)).arg(size).toUtf8();
+        };
+        const QByteArray good = manifest(from + "v0.2.0/setup.exe");
+        const auto release = update::verify(good, sign(good), hex, from);
+        QVERIFY(release.has_value());
+        QCOMPARE(release->version, "0.2.0");
+        QVERIFY(update::matches(installer.fileName(), *release));
+        QVERIFY(!update::verify(good + " ", sign(good), hex, from));                    // changed after signing
+        QVERIFY(!update::verify(good, sign(good + " "), hex, from));
+        QVERIFY(!update::verify(good, sign(good), QByteArray(64, 'a'), from));           // another key
+        QVERIFY(!update::verify(good, "", hex, from));
+        for (const QByteArray &bad : {manifest("https://evil.example/setup.exe"), manifest(from + "../../x/setup.exe"),
+                                      manifest("http://github.com/o/r/releases/download/v/setup.exe"), manifest(from + "v/s.exe", "latest"),
+                                      manifest(from + "v/s.exe", "0.2.0", "abc"), manifest(from + "v/s.exe", "0.2.0", {}, 0)})
+            QVERIFY2(!update::verify(bad, sign(bad), hex, from), bad);
+        QVERIFY(installer.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        installer.write("pretend installeR");
+        installer.close();
+        QVERIFY(!update::matches(installer.fileName(), *release));
+    }
+
+    void ownProcess()
+    {
+        const qint64 self = QCoreApplication::applicationPid();
+        QVERIFY(procinfo::memoryKb(self) > 0);
+        QVERIFY(procinfo::cpuMs(self) >= 0);
+        QVERIFY(procinfo::tree(self).contains(self));
+    }
+
     void processes()
     {
+#ifndef Q_OS_LINUX
+        QSKIP("reads /proc");
+#else
         QCOMPARE(procinfo::pssKb("55d0-7ffd ---p [rollup]\nRss:  900 kB\nPss:  1234 kB\nPss_Anon: 5 kB\n"), 1234);
         QCOMPARE(procinfo::pssKb("nothing"), -1);
         QCOMPARE(procinfo::cpuTicks("42 (odd ) name) S 1 2 3 4 5 6 7 8 9 10 30 12 0 0"), 42);
@@ -383,6 +456,7 @@ private slots:
         QList<qint64> found = procinfo::tree(proc.path(), 10);
         std::sort(found.begin(), found.end());
         QCOMPARE(found, (QList<qint64>{10, 11, 12}));
+#endif
     }
 
     void messagesFromASecondStart()
@@ -417,6 +491,9 @@ private slots:
 
     void newestWidevineWins()
     {
+#ifndef Q_OS_LINUX
+        QSKIP("the paths in this test are those of Linux");
+#endif
         QTemporaryDir home;
         for (const char *v : {"4.10.2000.0", "4.10.3112.0", "4.10.900.0"}) {
             const QString dir = home.path() + "/.config/chromium/WidevineCdm/" + v + "/_platform_specific/linux_x64";

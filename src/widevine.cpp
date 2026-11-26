@@ -1,3 +1,7 @@
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "widevine.h"
 
 #include <QDir>
@@ -9,7 +13,11 @@ namespace widevine {
 
 namespace {
 
+#ifdef Q_OS_WIN
+const QString relative = QStringLiteral("_platform_specific/win_x64/widevinecdm.dll");
+#else
 const QString relative = QStringLiteral("_platform_specific/linux_x64/libwidevinecdm.so");
+#endif
 
 }
 
@@ -28,6 +36,9 @@ QString find(const QString &home, const QStringList &systemDirs)
         QStringLiteral("/.config/google-chrome/WidevineCdm"),
         QStringLiteral("/.config/BraveSoftware/Brave-Browser/WidevineCdm"),
         QStringLiteral("/.config/vivaldi/WidevineCdm"),
+        QStringLiteral("/AppData/Local/Google/Chrome/User Data/WidevineCdm"),
+        QStringLiteral("/AppData/Local/Microsoft/Edge/User Data/WidevineCdm"),
+        QStringLiteral("/AppData/Local/BraveSoftware/Brave-Browser/User Data/WidevineCdm"),
     };
     QString best;
     QVersionNumber bestVersion;
@@ -47,10 +58,39 @@ QString find(const QString &home, const QStringList &systemDirs)
 
 QString find()
 {
+#ifdef Q_OS_WIN
+    // installed browsers keep their copy in <Program Files>/.../Application/<version>/WidevineCdm
+    QStringList installed;
+    for (const char *variable : {"ProgramFiles", "ProgramFiles(x86)"}) {
+        for (const char *browser : {"/Google/Chrome/Application", "/Microsoft/Edge/Application"}) {
+            const QDir application(qEnvironmentVariable(variable) + QLatin1String(browser));
+            for (const QString &version : application.entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name | QDir::Reversed))
+                installed << application.filePath(version) + QStringLiteral("/WidevineCdm");
+        }
+    }
+    return find(QDir::homePath(), installed);
+#endif
     return find(QDir::homePath(),
                 {QDir::homePath() + QStringLiteral("/.local/share/velum/WidevineCdm"),
                  QStringLiteral("/opt/google/chrome/WidevineCdm"),
                  QStringLiteral("/usr/lib/chromium/WidevineCdm")});
+}
+
+QString forCommandLine(const QString &path)
+{
+    if (!path.contains(QLatin1Char(' ')))
+        return path;
+#ifdef Q_OS_WIN
+    wchar_t buffer[1024];
+    const std::wstring longName = QDir::toNativeSeparators(path).toStdWString();
+    const DWORD length = GetShortPathNameW(longName.c_str(), buffer, 1024);
+    if (length > 0 && length < 1024) {
+        const QString shortName = QString::fromWCharArray(buffer, int(length));
+        if (!shortName.contains(QLatin1Char(' ')))
+            return shortName;
+    }
+#endif
+    return {};
 }
 
 }

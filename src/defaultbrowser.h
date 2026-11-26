@@ -1,5 +1,8 @@
 #pragma once
+#include <QDesktopServices>
 #include <QObject>
+#include <QSettings>
+#include <QUrl>
 #include <QProcess>
 #include <QStandardPaths>
 #include <QtQml/qqmlregistration.h>
@@ -18,6 +21,15 @@ public:
 
     Q_INVOKABLE void refresh()
     {
+#ifdef Q_OS_WIN
+        const QSettings choice(QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\https\\UserChoice"), QSettings::NativeFormat);
+        const bool now = choice.value(QStringLiteral("ProgId")).toString() == QLatin1String("VelumHTML");
+        if (now != m_current) {
+            m_current = now;
+            emit changed();
+        }
+        return;
+#endif
         run({QStringLiteral("get"), QStringLiteral("default-web-browser")}, [this](const QByteArray &out, bool ok) {
             const bool now = ok && out.trimmed() == "velum.desktop";
             if (now != m_current) {
@@ -29,6 +41,11 @@ public:
     // only ever called by the button that says so
     Q_INVOKABLE void make()
     {
+#ifdef Q_OS_WIN
+        // Windows lets only you choose; this opens the right page of its settings
+        QDesktopServices::openUrl(QUrl(QStringLiteral("ms-settings:defaultapps?registeredAppUser=Velum")));
+        return;
+#endif
         run({QStringLiteral("set"), QStringLiteral("default-web-browser"), QStringLiteral("velum.desktop")},
             [this](const QByteArray &, bool) { refresh(); });
     }

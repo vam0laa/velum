@@ -410,6 +410,18 @@ Gizli görünüm: adres ya da arama kutusuna `velum:webcore` yazılınca açıl�
 
 `qml/ThemeWash.qml`: renk seçilince önce eski görünümün fotoğrafı çekilip üste konur, yeni renkler altta uygulanır, fotoğrafta ortadan büyüyen yuvarlak bir delik açılır (`MultiEffect` maskesi). Tema değiştiren her yer `Theme.change()` kullanır; animasyonlar kapalıysa doğrudan uygulanır.
 
+## Windows sürümü ve güncelleme
+
+```
+src/passwords_win.cpp, procinfo_win.cpp, notifier_win.h   Windows karşılıkları
+src/update.cpp        sürüm karşılaştırma, imza (Ed25519) ve dosya özeti doğrulama
+src/updatebridge.h    denetle → indir → doğrula → kapanışta kur
+installer/velum.iss   yönetici istemeyen kurulum
+.github/workflows/    Windows'ta derleme ve test
+scripts/release.sh    derlemeyi indirir, burada imzalar, yayınlar
+```
+İmzalama anahtarının gizli yarısı yalnızca `~/.config/velum-release/signing.pem` dosyasında. **Yedekle:** kaybolursa kurulu Velum'lar güncelleme alamaz. Başkasının eline geçerse sahte güncelleme imzalayabilir.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

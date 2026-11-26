@@ -14,6 +14,10 @@ constexpr int limit = 64 * 1024;    // a message is a few addresses, never more
 
 QString Instance::socketName(const QString &dataFolder)
 {
+#ifdef Q_OS_WIN
+    // a named pipe: a plain name, tied to this user's data folder
+    return QStringLiteral("velum-") + QString::fromLatin1(QCryptographicHash::hash(dataFolder.toUtf8(), QCryptographicHash::Sha256).toHex().left(12));
+#endif
     QString runtime = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
     const QByteArray id = QCryptographicHash::hash(dataFolder.toUtf8(), QCryptographicHash::Sha256).toHex().left(12);
     return runtime + QStringLiteral("/velum-") + QString::fromLatin1(id);

@@ -9,4 +9,8 @@ namespace widevine {
 QString find(const QString &home, const QStringList &systemDirs);
 QString find();
 
+// The path as it can be put on the engine's command line, which splits at spaces:
+// on Windows the short form of the name. Empty when that is not possible.
+QString forCommandLine(const QString &path);
+
 }

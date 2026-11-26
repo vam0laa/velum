@@ -21,6 +21,7 @@ void borrow(const char *name, const QByteArray &value)
     qputenv(name, value);
 }
 
+#ifdef Q_OS_LINUX
 // the output of a fixed command, or nothing
 QByteArray ask(const char *command)
 {
@@ -33,6 +34,7 @@ QByteArray ask(const char *command)
     }
     return out;
 }
+#endif
 
 }
 
@@ -78,6 +80,7 @@ void restoreEnvironment()
 
 void prepare()
 {
+#ifdef Q_OS_LINUX
     if (qEnvironmentVariableIsSet("HYPRLAND_INSTANCE_SIGNATURE") && qEnvironmentVariableIsSet("DISPLAY")
         && qEnvironmentVariableIntValue("VELUM_WAYLAND") == 0 && qgetenv("QT_QPA_PLATFORM") != "offscreen") {
         const double scale = xwaylandScale(ask("hyprctl monitors -j 2>/dev/null"),
@@ -94,6 +97,7 @@ void prepare()
         return;
     if (hybridWithNvidia(QStringLiteral("/sys/class/drm")))
         qputenv("VK_LOADER_DRIVERS_DISABLE", "*nvidia*");
+#endif
 }
 
 }

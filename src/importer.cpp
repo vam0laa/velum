@@ -137,6 +137,7 @@ QList<Source> find(const QString &home)
         {"Firefox", ".mozilla/firefox"}, {"Firefox", ".config/mozilla/firefox"},
         {"Firefox (Flatpak)", ".var/app/org.mozilla.firefox/.mozilla/firefox"},
         {"Zen", ".zen"}, {"Zen", ".config/zen"}, {"LibreWolf", ".librewolf"}, {"LibreWolf", ".config/librewolf/librewolf"},
+        {"Firefox", "AppData/Roaming/Mozilla/Firefox/Profiles"}, {"Zen", "AppData/Roaming/zen/Profiles"}, {"LibreWolf", "AppData/Roaming/librewolf/Profiles"},
     };
     for (const auto &[name, place] : foxes) {
         const QString root = home + QLatin1Char('/') + QLatin1String(place);
@@ -150,6 +151,9 @@ QList<Source> find(const QString &home)
     const std::pair<const char *, const char *> chromes[] = {
         {"Chromium", ".config/chromium"}, {"Chrome", ".config/google-chrome"}, {"Brave", ".config/BraveSoftware/Brave-Browser"},
         {"Helium", ".config/net.imput.helium"}, {"Vivaldi", ".config/vivaldi"}, {"Edge", ".config/microsoft-edge"},
+        {"Chrome", "AppData/Local/Google/Chrome/User Data"}, {"Edge", "AppData/Local/Microsoft/Edge/User Data"},
+        {"Brave", "AppData/Local/BraveSoftware/Brave-Browser/User Data"}, {"Chromium", "AppData/Local/Chromium/User Data"},
+        {"Vivaldi", "AppData/Local/Vivaldi/User Data"},
         {"Chrome (Flatpak)", ".var/app/com.google.Chrome/config/google-chrome"}, {"Brave (Flatpak)", ".var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser"},
     };
     for (const auto &[name, place] : chromes) {

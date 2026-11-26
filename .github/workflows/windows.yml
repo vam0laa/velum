@@ -1,0 +1,122 @@
+# Builds and tests Velum on Windows and makes the installer.
+# The release is signed and published from the maintainer's computer (scripts/release.sh),
+# so no signing secret is ever stored here.
+name: windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version, e.g. 0.1.0-beta.1"
+        required: true
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: version
+        shell: bash
+        run: |
+          v="${{ github.event.inputs.version }}"
+          [ -n "$v" ] || v="${GITHUB_REF_NAME#v}"
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]] || { echo "bad version: $v"; exit 1; }
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.10.3"
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: "qtwebengine qtwebchannel qtpositioning qtshadertools"
+          cache: true
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg-cache
+          key: vcpkg-openssl-x64-1
+
+      - name: OpenSSL
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "$env:GITHUB_WORKSPACE/vcpkg-cache" | Out-Null
+          $env:VCPKG_DEFAULT_BINARY_CACHE = "$env:GITHUB_WORKSPACE/vcpkg-cache"
+          & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install openssl:x64-windows
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Configure
+        shell: pwsh
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DVELUM_RELEASE=${{ steps.version.outputs.value }}
+          -DOPENSSL_ROOT_DIR="$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin;$env:PATH"
+          ctest --test-dir build --output-on-failure
+
+      - name: Collect the files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item build/velum.exe dist/
+          windeployqt --release --no-compiler-runtime --qmldir qml dist/velum.exe
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Copy-Item "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin/libcrypto-3-x64.dll" dist/
+          # the Visual C++ runtime beside the program, so installing needs no administrator
+          Copy-Item "$env:VCToolsRedistDir/x64/Microsoft.VC143.CRT/*.dll" dist/
+          Copy-Item LICENSE dist/LICENSE.txt
+
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          # the collected program must start and draw its window without anything else installed
+          $env:PATH = "C:\Windows\System32;C:\Windows"
+          $env:QT_QUICK_BACKEND = "software"
+          $env:VELUM_NO_UPDATES = "1"
+          $env:QT_FORCE_STDERR_LOGGING = "1"
+          $p = Start-Process -FilePath dist/velum.exe -ArgumentList "--screenshot", "$env:GITHUB_WORKSPACE\smoke.png" -PassThru -RedirectStandardError smoke.log
+          if (-not $p.WaitForExit(90000)) { $p.Kill(); Get-Content smoke.log; throw "Velum did not finish" }
+          Get-Content smoke.log
+          if ($p.ExitCode -ne 0 -or -not (Test-Path smoke.png)) { throw "Velum failed with $($p.ExitCode)" }
+
+      - name: Installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; if ($LASTEXITCODE) { exit $LASTEXITCODE } }
+          & $iscc "/DVersion=${{ steps.version.outputs.value }}" "/DSource=$env:GITHUB_WORKSPACE\dist" installer\velum.iss
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: velum-windows
+          path: out/*.exe
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: velum-smoke
+          path: |
+            smoke.png
+            smoke.log
+          if-no-files-found: ignore

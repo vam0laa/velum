@@ -45,7 +45,7 @@ Rectangle {
     signal startChanged(string name, var value)      // a property of the window and its new value
 
     readonly property string folderShown: downloadFolder !== "" ? downloadFolder
-        : decodeURIComponent(String(StandardPaths.writableLocation(StandardPaths.DownloadLocation)).replace("file://", ""))
+        : Files.toPath(StandardPaths.writableLocation(StandardPaths.DownloadLocation))
     readonly property bool narrow: width < 700
 
     readonly property var sections: [
@@ -85,14 +85,14 @@ Rectangle {
     FolderDialog {
         id: folders
         title: Lang.t("İndirme klasörünü seç", "Choose the downloads folder")
-        onAccepted: page.downloadFolderChosen(decodeURIComponent(String(selectedFolder).replace("file://", "")))
+        onAccepted: page.downloadFolderChosen(Files.toPath(selectedFolder))
     }
     FileDialog {
         id: pictures
         title: Lang.t("Arka plan resmini seç", "Choose the background picture")
         nameFilters: [Lang.t("Resimler", "Pictures") + " (*.png *.jpg *.jpeg *.webp)"]
         onAccepted: {
-            page.startChanged("startPicture", decodeURIComponent(String(selectedFile).replace("file://", "")))
+            page.startChanged("startPicture", Files.toPath(selectedFile))
             page.startChanged("startBackground", "image")
         }
     }
@@ -506,6 +506,16 @@ Rectangle {
                     wanted: page.shows("about", "hakkında sürüm about version velum")
                     Image { source: Qt.resolvedUrl("../data/velum.svg"); sourceSize: Qt.size(160, 160); Layout.preferredWidth: 80; Layout.preferredHeight: 80 }
                     Text { text: "Velum " + Qt.application.version; color: Theme.text; font.family: Theme.ui; font.pixelSize: 28; font.variableAxes: Theme.axes(800) }
+                    Line {
+                        visible: Updater.status !== "off"
+                        label: Updater.status === "checking" ? Lang.t("Güncelleme aranıyor…", "Looking for an update…")
+                             : Updater.status === "downloading" ? Lang.t("Yeni sürüm iniyor: " + Updater.version, "Downloading version " + Updater.version)
+                             : Updater.status === "ready" ? Lang.t("Velum " + Updater.version + " hazır; kapatınca kurulacak.", "Velum " + Updater.version + " is ready; it installs when you quit.")
+                             : Updater.status === "current" ? Lang.t("Velum güncel.", "Velum is up to date.")
+                             : Updater.status === "failed" ? Lang.t("Güncelleme denetlenemedi.", "Could not check for updates.")
+                             : Lang.t("Güncellemeler kendiliğinden denetlenir.", "Updates are checked automatically.")
+                        TextButton { text: Lang.t("Şimdi denetle", "Check now"); visible: Updater.status !== "ready"; onClicked: Updater.check() }
+                    }
                     Note { text: Lang.t("Sakin ve gizlilik odaklı bir tarayıcı. Motor: Qt WebEngine (Chromium). Engelleyici: Brave adblock-rust.", "A calm, private browser. Engine: Qt WebEngine (Chromium). Blocker: Brave adblock-rust.") }
                 }
             }

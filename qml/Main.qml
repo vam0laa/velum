@@ -31,6 +31,8 @@ ApplicationWindow {
     property var iconNames: []          // sites that have an icon on disk
     property bool showBookmarkBar: true
     property alias mainMenu: mainMenu
+    // tiling desktops draw no title bar; Windows does, with its own buttons
+    readonly property bool ownButtons: Qt.platform.os !== "windows"
     readonly property bool bookmarked: view !== null && shortcuts.some(s => s.url === String(view.url))
     function showMenu(at) {
         const place = at.mapToItem(null, at.width - mainMenu.width, at.height + 6)
@@ -981,7 +983,7 @@ ApplicationWindow {
     }
     function iconFor(url) {
         const name = iconName(url)
-        return iconFolder === "" || !iconNames.includes(name) ? "" : "file://" + iconFolder + "/" + name + ".png#" + iconRevision
+        return iconFolder === "" || !iconNames.includes(name) ? "" : String(Files.toUrl(iconFolder + "/" + name + ".png")) + "#" + iconRevision
     }
     function keepIcon(pageUrl, icon) {
         const name = iconName(pageUrl)
@@ -1214,8 +1216,9 @@ ApplicationWindow {
         commandBar.show(false, onStartPage ? "" : String(view.url))
     }
 
+    // a fresh page at once, ready for typing; the command box is Ctrl+K
     function newTab() {
-        commandBar.show(true, "")
+        openTab("")
     }
 
     // everything but the floating boxes; it is what a change of colours photographs
@@ -1252,7 +1255,7 @@ ApplicationWindow {
                 onClearData: clearDialog.open()
                 onSettings: window.openSettings()
                 downloads: window.downloads
-                onShowFolder: folder => Qt.openUrlExternally("file://" + folder.split("/").map(encodeURIComponent).join("/"))
+                onShowFolder: folder => Qt.openUrlExternally(Files.toUrl(folder))
                 onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
                 onMoved: (from, to) => window.moveTab(from, to)
                 onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
@@ -1262,6 +1265,8 @@ ApplicationWindow {
                 onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
                 onSpaceAdd: spaceDialog.show(0, "", false)
                 onMenu: at => window.showMenu(at)
+                closable: window.ownButtons
+                onCloseRequested: window.close()
             }
 
             TopBar {
@@ -1295,7 +1300,7 @@ ApplicationWindow {
                 onExtensions: window.openSettings("extensions")
                 onMenu: at => window.showMenu(at)
                 onMaximize: window.toggleWindowFullScreen()
-                onCloseTabRequested: window.closeTab(window.current)
+                onQuitRequested: window.close()
                 pageButtons.storeButton: card.storeButton
                 pageButtons.keyButton: card.keyButton
                 pageButtons.readerButton: card.readerButton
@@ -1306,7 +1311,7 @@ ApplicationWindow {
                 pageButtons.onFill: card.fill_()
                 pageButtons.onReader: card.reader()
                 pageButtons.onVideo: card.video()
-                onShowFolder: folder => Qt.openUrlExternally("file://" + folder.split("/").map(encodeURIComponent).join("/"))
+                onShowFolder: folder => Qt.openUrlExternally(Files.toUrl(folder))
                 onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
                 onSpaceChosen: id => window.switchSpace(id)
                 onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
@@ -1890,6 +1895,10 @@ ApplicationWindow {
         onSearchFor: text => window.openTab(String(Address.search(text)))
         onFind: window.findInPage()
     }
+
+    // a newer version has been fetched and will be installed when Velum is closed
+    readonly property bool updateReady: Updater.status === "ready"
+    onUpdateReadyChanged: if (updateReady) say(Lang.t("Güncelleme hazır: Velum " + Updater.version + " kapatınca kurulacak.", "Update ready: Velum " + Updater.version + " will be installed when you quit."))
 
     // colours spread from the middle when you pick others
     ThemeWash {

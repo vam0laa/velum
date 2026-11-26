@@ -4,6 +4,8 @@
 #include <QFile>
 #include <QMultiHash>
 
+#include <unistd.h>
+
 namespace procinfo {
 
 namespace {
@@ -15,6 +17,30 @@ QList<QByteArray> afterName(const QByteArray &stat)
     return close < 0 ? QList<QByteArray>() : stat.mid(close + 2).split(' ');
 }
 
+}
+
+namespace {
+QByteArray readAll(const QString &path)
+{
+    QFile f(path);
+    return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
+}
+}
+
+qint64 memoryKb(qint64 pid)
+{
+    return pssKb(readAll(QStringLiteral("/proc/%1/smaps_rollup").arg(pid)));
+}
+
+qint64 cpuMs(qint64 pid)
+{
+    const qint64 ticks = cpuTicks(readAll(QStringLiteral("/proc/%1/stat").arg(pid)));
+    return ticks < 0 ? -1 : ticks * 1000 / sysconf(_SC_CLK_TCK);
+}
+
+QList<qint64> tree(qint64 root)
+{
+    return tree(QStringLiteral("/proc"), root);
 }
 
 qint64 pssKb(const QByteArray &smapsRollup)

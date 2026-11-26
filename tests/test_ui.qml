@@ -56,8 +56,9 @@ Item {
             const count = () => { let n = 0; while (w.pageAt(n) !== null) n++; return n }
             const bar = w.commandBar
             const before = count()
-            w.newTab(); t.check("new tab opens the box, not a tab", bar.open && bar.forNewTab && count() === before)
-            bar.hide(); t.check("escaping leaves no empty tab", !bar.open && count() === before)
+            w.newTab(); t.check("a new tab opens at once, on the home page", !bar.open && count() === before + 1 && w.onStartPage)
+            w.closeTab(w.current); t.check("and closes again", count() === before)
+            w.showCommandBox(""); bar.hide(); t.check("escaping the command box leaves no empty tab", !bar.open && count() === before)
             const found = bar.find("example.org")
             t.check("the first result opens what was typed", found[0].kind === "go" && String(found[0].url) === "https://example.org")
             t.check("commands are found by name", bar.find("tam ekran").some(r => r.kind === "command"))

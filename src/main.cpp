@@ -19,8 +19,8 @@
 int main(int argc, char *argv[])
 {
     // The engine reads its switches once, while starting. So this comes before everything else.
-    const QString cdm = widevine::find();
-    if (!cdm.isEmpty() && !cdm.contains(QLatin1Char(' '))) {
+    const QString cdm = widevine::forCommandLine(widevine::find());
+    if (!cdm.isEmpty()) {
         QByteArray flags = qgetenv("QTWEBENGINE_CHROMIUM_FLAGS");
         flags += " --widevine-path=" + cdm.toLocal8Bit();
         qputenv("QTWEBENGINE_CHROMIUM_FLAGS", flags.trimmed());
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     graphics::restoreEnvironment();
     app.setApplicationName(QStringLiteral("velum"));
     app.setOrganizationName(QStringLiteral("velum"));
-    app.setApplicationVersion(QStringLiteral(VELUM_VERSION));
+    app.setApplicationVersion(QStringLiteral(VELUM_VERSION));      // may carry "-beta.N"
     app.setDesktopFileName(QStringLiteral("velum"));
     app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/Velum/data/velum.svg")));
     // the interface's own lettering for anything that does not choose a font

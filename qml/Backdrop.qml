@@ -74,7 +74,7 @@ Item {
         id: photo
         anchors.fill: parent
         visible: backdrop.mode === "image" && status === Image.Ready
-        source: backdrop.mode === "image" && backdrop.picture !== "" ? "file://" + backdrop.picture.split("/").map(encodeURIComponent).join("/") : ""
+        source: backdrop.mode === "image" && backdrop.picture !== "" ? Files.toUrl(backdrop.picture) : ""
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         sourceSize.width: 2560

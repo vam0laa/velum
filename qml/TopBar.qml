@@ -32,7 +32,7 @@ Item {
     signal spaceEdit(int id)
     signal spaceAdd()
     signal maximize()
-    signal closeTabRequested()
+    signal quitRequested()
     property var bookmarks: []
     property bool showBookmarks: true
     property var iconFor: url => ""
@@ -141,8 +141,8 @@ Item {
                 Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: add.hovered; y: add.height + 6 }
             }
             Item { Layout.fillWidth: true }
-            WindowButton { visible: Theme.web; kind: "max"; hint: Lang.t("Tam ekran (F11)", "Full screen (F11)"); onClicked: bar.maximize() }
-            WindowButton { visible: Theme.web; kind: "close"; hint: Lang.t("Sekmeyi kapat (Ctrl+W)", "Close the tab (Ctrl+W)"); onClicked: bar.closeTabRequested() }
+            WindowButton { visible: Qt.platform.os !== "windows"; kind: "max"; hint: Lang.t("Tam ekran (F11)", "Full screen (F11)"); onClicked: bar.maximize() }
+            WindowButton { visible: Qt.platform.os !== "windows"; kind: "close"; hint: Lang.t("Velum'u kapat (Ctrl+Q)", "Quit Velum (Ctrl+Q)"); onClicked: bar.quitRequested() }
         }
     }
 
