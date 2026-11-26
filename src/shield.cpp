@@ -1,0 +1,300 @@
+#include "shield.h"
+
+#include <QDateTime>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QElapsedTimer>
+#include <QLoggingCategory>
+#include <QNetworkReply>
+#include <QSaveFile>
+#include <QSettings>
+#include <QStandardPaths>
+#include <QThread>
+#include <QWebEngineCookieStore>
+#include <QWebEngineUrlRequestInfo>
+#include <QtWebEngineQuick/QQuickWebEngineProfile>
+
+#include "lists.h"
+
+// see it with: QT_LOGGING_RULES="velum.shield.debug=true" velum
+Q_LOGGING_CATEGORY(shieldLog, "velum.shield", QtInfoMsg)
+
+namespace {
+
+constexpr qint64 freshFor = 4 * 24 * 60 * 60;   // seconds before the lists are downloaded again
+
+const char *kindOf(QWebEngineUrlRequestInfo::ResourceType type)
+{
+    using Info = QWebEngineUrlRequestInfo;
+    switch (type) {
+    case Info::ResourceTypeSubFrame: return "sub_frame";
+    case Info::ResourceTypeStylesheet: return "stylesheet";
+    case Info::ResourceTypeScript:
+    case Info::ResourceTypeWorker:
+    case Info::ResourceTypeSharedWorker:
+    case Info::ResourceTypeServiceWorker: return "script";
+    case Info::ResourceTypeImage:
+    case Info::ResourceTypeFavicon: return "image";
+    case Info::ResourceTypeFontResource: return "font";
+    case Info::ResourceTypeObject:
+    case Info::ResourceTypePluginResource: return "object";
+    case Info::ResourceTypeMedia: return "media";
+    case Info::ResourceTypeXhr: return "xmlhttprequest";
+    case Info::ResourceTypePing:
+    case Info::ResourceTypeCspReport: return "ping";
+    case Info::ResourceTypeWebSocket: return "websocket";
+    default: return "other";
+    }
+}
+
+bool isMainPage(QWebEngineUrlRequestInfo::ResourceType type)
+{
+    return type == QWebEngineUrlRequestInfo::ResourceTypeMainFrame
+        || type == QWebEngineUrlRequestInfo::ResourceTypeNavigationPreloadMainFrame;
+}
+
+}
+
+Shield::Shield(QObject *parent) : QWebEngineUrlRequestInterceptor(parent)
+{
+    QSettings settings;
+    m_enabled = settings.value(QStringLiteral("shield/enabled"), true).toBool();
+    m_httpsFirst = settings.value(QStringLiteral("shield/httpsFirst"), true).toBool();
+    m_blockCookies = settings.value(QStringLiteral("shield/blockThirdPartyCookies"), true).toBool();
+    m_forget = settings.value(QStringLiteral("shield/forgetOnExit"), false).toBool();
+    m_forgettingThisRun = m_forget;
+    const QStringList allowed = settings.value(QStringLiteral("shield/allowed")).toStringList();
+    m_allowed = QSet<QString>(allowed.begin(), allowed.end());
+
+    // many requests are blocked at once; the interface is told at most four times a second
+    m_notify.setSingleShot(true);
+    m_notify.setInterval(250);
+    connect(&m_notify, &QTimer::timeout, this, [this] { ++m_revision; emit countsChanged(); });
+
+    load();
+    // tests set VELUM_NO_UPDATES so that they never touch the network
+    if (!qEnvironmentVariableIsSet("VELUM_NO_UPDATES")) {
+        const QFileInfo first(folder() + QLatin1Char('/') + lists::sources().constFirst().file);
+        if (!first.exists() || first.lastModified().secsTo(QDateTime::currentDateTime()) > freshFor)
+            updateLists();
+    }
+}
+
+QString Shield::folder() const
+{
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/filters");
+}
+
+void Shield::setStatus(const QString &text)
+{
+    m_status = text;
+    emit changed();
+}
+
+// Reads the lists on disk and builds the engine on a worker thread, so the window never stalls.
+void Shield::load()
+{
+    if (m_loading)
+        return;
+    QList<Blocker::List> found;
+    QByteArray resources;
+    for (const lists::Source &source : lists::sources()) {
+        QFile file(folder() + QLatin1Char('/') + source.file);
+        if (!file.open(QIODevice::ReadOnly))
+            continue;
+        if (source.file.endsWith(QLatin1String(".json")))
+            resources = file.readAll();
+        else
+            found.append({file.readAll(), source.trusted});
+    }
+    if (found.isEmpty()) {
+        setStatus(QStringLiteral("Filtre listeleri henüz yok"));
+        return;
+    }
+    m_loading = true;
+    setStatus(QStringLiteral("Listeler yükleniyor…"));
+    QThread *worker = QThread::create([this, found, resources] {
+        QElapsedTimer timer;
+        timer.start();
+        auto built = Blocker::build(found, resources);
+        qCDebug(shieldLog) << "engine built from" << found.size() << "lists and" << resources.size() << "bytes of scripts in" << timer.elapsed() << "ms";
+        QMetaObject::invokeMethod(this, [this, built, count = found.size()] {
+            m_loading = false;
+            if (built)
+                m_blocker = built;
+            setStatus(built ? QStringLiteral("Koruma açık · %1 liste").arg(count)
+                            : QStringLiteral("Listeler okunamadı"));
+        });
+    });
+    connect(worker, &QThread::finished, worker, &QObject::deleteLater);
+    worker->start();
+}
+
+void Shield::updateLists()
+{
+    if (m_pending > 0)
+        return;
+    QDir().mkpath(folder());
+    m_failed = 0;
+    setStatus(QStringLiteral("Listeler indiriliyor…"));
+    for (const lists::Source &source : lists::sources()) {
+        QNetworkRequest request(source.url);
+        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+        request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("Velum"));
+        request.setTransferTimeout(30000);
+        QNetworkReply *reply = m_network.get(request);
+        ++m_pending;
+        connect(reply, &QNetworkReply::finished, this, [this, reply, source] {
+            reply->deleteLater();
+            const QByteArray data = reply->readAll();
+            bool saved = false;
+            // a list is replaced only by a complete, sensible download
+            if (reply->error() == QNetworkReply::NoError && data.size() < 40 * 1024 * 1024 && lists::plausible(source.file, data)) {
+                QSaveFile file(folder() + QLatin1Char('/') + source.file);
+                saved = file.open(QIODevice::WriteOnly) && file.write(data) == data.size() && file.commit();
+            }
+            if (!saved)
+                ++m_failed;
+            if (--m_pending == 0) {
+                if (m_failed > 0 && !m_blocker)
+                    setStatus(QStringLiteral("%1 liste indirilemedi").arg(m_failed));
+                load();
+            }
+        });
+    }
+}
+
+void Shield::interceptRequest(QWebEngineUrlRequestInfo &info)
+{
+    const QUrl url = info.requestUrl();
+    const auto type = info.resourceType();
+
+    // "Global Privacy Control": asks sites not to sell or share what they learn
+    info.setHttpHeader("Sec-GPC", "1");
+
+    if (m_httpsFirst && lists::shouldUpgrade(url)) {
+        QUrl secure = url;
+        secure.setScheme(QStringLiteral("https"));
+        if (secure.port() == 80)
+            secure.setPort(-1);
+        info.redirect(secure);
+        return;
+    }
+
+    // the page the user asked for is never blocked; lists are about what the page pulls in
+    if (!m_enabled || !m_blocker || isMainPage(type))
+        return;
+    const QString site = info.firstPartyUrl().host();
+    if (m_allowed.contains(site))
+        return;
+    const QUrl source = info.initiator().isValid() && !info.initiator().host().isEmpty() ? info.initiator() : info.firstPartyUrl();
+    if (m_blocker->blocks(url, source, kindOf(type))) {
+        qCDebug(shieldLog).noquote() << "blocked" << url.host() << url.path().left(60);
+        info.block(true);
+        ++m_counts[site];
+        if (!m_notify.isActive())
+            m_notify.start();
+    }
+}
+
+void Shield::attach(QObject *profile)
+{
+    auto *quick = qobject_cast<QQuickWebEngineProfile *>(profile);
+    if (!quick)
+        return;
+    quick->setUrlRequestInterceptor(this);
+    // Cookies a page's helpers set about you on other people's sites are the classic way of
+    // following someone around. A site the user switched protection off for may set them.
+    quick->cookieStore()->setCookieFilter([this](const QWebEngineCookieStore::FilterRequest &request) {
+        if (!request.thirdParty || !m_blockCookies)
+            return true;
+        QReadLocker lock(&m_lock);
+        const bool excepted = m_allowed.contains(request.firstPartyUrl.host());
+        if (!excepted)
+            qCDebug(shieldLog) << "third party cookie refused for" << request.origin.host() << "on" << request.firstPartyUrl.host();
+        return excepted;
+    });
+    if (m_forget)
+        quick->cookieStore()->deleteAllCookies();
+}
+
+void Shield::clearData(QObject *profile)
+{
+    if (auto *quick = qobject_cast<QQuickWebEngineProfile *>(profile)) {
+        quick->cookieStore()->deleteAllCookies();
+        quick->clearHttpCache();
+        setStatus(QStringLiteral("Çerezler ve önbellek silindi"));
+    }
+}
+
+void Shield::setBlockThirdPartyCookies(bool on)
+{
+    if (m_blockCookies == on)
+        return;
+    m_blockCookies = on;
+    QSettings().setValue(QStringLiteral("shield/blockThirdPartyCookies"), on);
+    emit changed();
+}
+
+void Shield::setForgetOnExit(bool on)
+{
+    if (m_forget == on)
+        return;
+    m_forget = on;
+    QSettings().setValue(QStringLiteral("shield/forgetOnExit"), on);
+    emit changed();
+}
+
+void Shield::resetCount(const QString &host)
+{
+    if (m_counts.remove(host)) {
+        ++m_revision;
+        emit countsChanged();
+    }
+}
+
+void Shield::setEnabled(bool on)
+{
+    if (m_enabled == on)
+        return;
+    m_enabled = on;
+    QSettings().setValue(QStringLiteral("shield/enabled"), on);
+    emit changed();
+}
+
+void Shield::setHttpsFirst(bool on)
+{
+    if (m_httpsFirst == on)
+        return;
+    m_httpsFirst = on;
+    QSettings().setValue(QStringLiteral("shield/httpsFirst"), on);
+    emit changed();
+}
+
+void Shield::setAllowed(const QString &host, bool allow)
+{
+    if (host.isEmpty() || allow == m_allowed.contains(host))
+        return;
+    {
+        QWriteLocker lock(&m_lock);
+        if (allow)
+            m_allowed.insert(host);
+        else
+            m_allowed.remove(host);
+    }
+    QSettings().setValue(QStringLiteral("shield/allowed"), QStringList(m_allowed.begin(), m_allowed.end()));
+    ++m_revision;
+    emit countsChanged();
+    emit changed();
+}
+
+QString Shield::pageScript(const QUrl &url) const
+{
+    if (!m_enabled || !m_blocker || m_allowed.contains(url.host())
+        || (url.scheme() != QLatin1String("https") && url.scheme() != QLatin1String("http")))
+        return {};
+    const QString script = m_blocker->pageScript(url);
+    qCDebug(shieldLog) << "page script for" << url.host() << script.size() << "characters";
+    return script;
+}

@@ -1,0 +1,75 @@
+# Velum
+
+A calm, private web browser on the open source Qt WebEngine (Chromium).
+
+**Status: stage 1.** Not ready to be your daily browser.
+
+Measured memory use is in [docs/olcum.md](docs/olcum.md).
+
+## Build and run
+
+Needs Qt 6.9 or newer (base with the SQLite driver, declarative, webengine), CMake, Ninja and Rust (cargo).
+
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+ctest --test-dir build
+./build/velum
+```
+
+Install for your user: `cmake --install build --prefix ~/.local`
+
+## Keys
+
+| Key | Action |
+|---|---|
+| Ctrl+T / Ctrl+W | command box for a new tab / close tab |
+| Ctrl+K | command box: address, search, open tabs, commands |
+| Ctrl+Shift+T | reopen the closed tab |
+| Ctrl+Shift+P | pin or unpin the tab (pinned tabs return at the next start) |
+| Ctrl+D | add or remove a bookmark (the first ten show on the start page) |
+| Ctrl+H | history; type to search, Shift+Delete removes an entry |
+| Ctrl+J | downloads |
+| Shift+Esc | resources: memory and processor use per tab |
+| Ctrl+Tab, Ctrl+Shift+Tab | next / previous tab |
+| Ctrl+L | edit the address |
+| Ctrl+R, F5 | reload |
+| Alt+Left / Right | back / forward |
+| Ctrl+B | narrow or wide side bar |
+| Ctrl + / - / 0 | zoom |
+| F11 | full screen |
+| Ctrl+Q | quit |
+
+## What it does not do yet
+
+- **Video ads on YouTube are not blocked yet** (see below).
+- The download list lasts until Velum closes. Interrupted downloads cannot be resumed.
+- Notifications and screen sharing are refused.
+
+## Protection
+
+Ads and trackers are blocked with Brave's [adblock-rust](https://github.com/brave/adblock-rust) engine and the EasyList, EasyPrivacy and uBlock Origin filter lists. Plain `http` addresses of public sites are opened over `https`, and a Global Privacy Control header is sent. The shield button shows the count for the page and switches blocking off per site.
+
+Third party cookies are blocked (a site you switch protection off for may set them). Camera, microphone, location, clipboard and pointer lock are asked about, and the answer lasts until Velum closes. WebRTC does not reveal local network addresses. "Forget cookies on exit" and "Delete cookies and cache" are in the shield panel (Ctrl+Shift+Delete). Deleting covers cookies and the cache, not other site storage.
+
+History stays in an SQLite file on this computer (readable only by you), is kept for 90 days, and is cleared by "forget on exit" and by deleting browsing data. Downloads go to your downloads folder and are never opened automatically.
+
+Velum downloads the lists from easylist.to and GitHub on the first start and again when they are older than four days. This is the one connection it makes by itself.
+
+Limit: filters that need uBlock Origin's page scripts (among them the ones for YouTube video ads) have no effect yet, because only Brave's own script collection is loaded.
+
+## Sleeping tabs
+
+A tab you have not looked at is frozen after 2 minutes and discarded after 10, when the engine says that is safe ("relaxed" in the resource panel makes it 5 and 20, "off" turns it off). Pinned tabs and tabs playing sound stay awake. A discarded tab loads again when you open it, so text typed into a form on it may be lost; automatic sleeping can be switched off in the resource panel.
+
+## Look
+
+The colours follow the desktop theme written by Quickshell (`~/.local/state/quickshell/user/generated/colors.json`) and change with it. Without that file Velum uses Catppuccin Mocha.
+
+## Laptops with two graphics cards
+
+With an NVIDIA card next to an AMD or Intel one, Velum hides the NVIDIA Vulkan driver from the engine so that the page and the window use the same card (otherwise pages can stay black). Set `VELUM_USE_NVIDIA=1` to turn this off.
+
+## Netflix and other protected video
+
+Velum uses the Widevine module already on your computer (for example the one Chromium downloads). It is Google's closed software and is not shipped with Velum.

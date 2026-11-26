@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Velum
+Comment=A calm, private web browser
+Comment[tr]=Sakin ve gizlilik odaklı web tarayıcısı
+Exec=velum %U
+Icon=velum
+Categories=Network;WebBrowser;
+MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;
+StartupWMClass=velum

@@ -1,0 +1,18 @@
+[package]
+name = "velumblock"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "MIT"
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+adblock = { version = "0.13.6", default-features = false, features = ["embedded-domain-resolver", "full-regex-handling"] }
+serde_json = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "unwind"
