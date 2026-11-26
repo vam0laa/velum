@@ -354,6 +354,18 @@ private slots:
         QVERIFY(crx::verifiedZip("Cr24" + number(2) + number(0) + zip, id).isEmpty());
     }
 
+    void xwaylandOnlyWhenSharp()
+    {
+        const QByteArray screens = R"([{"scale":1.0,"focused":false},{"scale":1.6666666,"focused":true}])";
+        const QByteArray on = R"({"option":"xwayland:force_zero_scaling","bool":true,"set":true})";
+        QCOMPARE(graphics::xwaylandScale(screens, on), 1.6666666);
+        QCOMPARE(graphics::xwaylandScale(R"([{"scale":2.0}])", on), 2.0);
+        QCOMPARE(graphics::xwaylandScale(screens, R"({"bool":false})"), 0.0);
+        QCOMPARE(graphics::xwaylandScale(screens, "unknown option"), 0.0);
+        QCOMPARE(graphics::xwaylandScale("", on), 0.0);
+        QCOMPARE(graphics::xwaylandScale(R"([{"scale":40}])", on), 0.0);
+    }
+
     void processes()
     {
         QCOMPARE(procinfo::pssKb("55d0-7ffd ---p [rollup]\nRss:  900 kB\nPss:  1234 kB\nPss_Anon: 5 kB\n"), 1234);

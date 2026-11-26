@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
 
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
+    graphics::restoreEnvironment();
     app.setApplicationName(QStringLiteral("velum"));
     app.setOrganizationName(QStringLiteral("velum"));
     app.setApplicationVersion(QStringLiteral(VELUM_VERSION));

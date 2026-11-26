@@ -380,7 +380,7 @@ Eklentinin 32 harflik kimliği, onu imzalayan anahtarın özetidir. `verifiedZip
 
 ## Yarım ekran hatası
 
-Pencere yöneticisi Velum'u yeniden boyutlandırınca bazen yeni kare çizilmiyor, eski yarım kare esnetilip kırpılıyordu. `WAYLAND_DEBUG=client` günlüğünde bu açıkça görüldü: yeni boyut bildiriliyor, `attach` (yeni kare) gelmiyor. Çare `graphics.cpp`'de `QSG_RENDER_LOOP=basic`: çizim ana iş parçacığında yapılır.
+Hyprland'de Velum başka çalışma alanına taşınınca bazen yeni kare çizmiyor, eski yarım kare esnetilip kırpılıyordu. `WAYLAND_DEBUG` kaydında görüldü: yeni boyut geliyor, Qt onu uygulamayı erteliyor ve kare gelmiyor. Çare: `graphics.cpp` Hyprland'de, ekran ölçeğini `hyprctl`'den okuyup Velum'u XWayland üzerinden başlatır (`force_zero_scaling` açıksa net görünür). Bu ayarlar yalnızca Velum'a verilir; açtığı programlara geçmesin diye uygulama kurulunca geri alınır.
 
 ## İki görünüm
 

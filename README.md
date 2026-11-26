@@ -19,6 +19,8 @@ ctest --test-dir build
 
 Install for your user: `cmake --install build --prefix ~/.local`
 
+On Hyprland with `xwayland:force_zero_scaling`, Velum draws through XWayland (sharp, at the screen's scale), because on Wayland a window moved between workspaces could stop drawing. `VELUM_WAYLAND=1 velum` keeps Wayland. Sharing your screen from a web page may not work through XWayland.
+
 ## Keys
 
 | Key | Action |

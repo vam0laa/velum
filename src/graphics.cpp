@@ -2,8 +2,39 @@
 
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+
+#include <cstdio>
+#include <utility>
 
 namespace graphics {
+namespace {
+
+// what prepare() changed for Velum alone: name and the value to give back (null: unset)
+QList<std::pair<QByteArray, QByteArray>> borrowed;
+
+void borrow(const char *name, const QByteArray &value)
+{
+    borrowed.append({name, qEnvironmentVariableIsSet(name) ? qgetenv(name) : QByteArray()});
+    qputenv(name, value);
+}
+
+// the output of a fixed command, or nothing
+QByteArray ask(const char *command)
+{
+    QByteArray out;
+    if (FILE *pipe = popen(command, "r")) {
+        char block[4096];
+        for (size_t n; (n = fread(block, 1, sizeof block, pipe)) > 0 && out.size() < (1 << 20);)
+            out.append(block, qsizetype(n));
+        pclose(pipe);
+    }
+    return out;
+}
+
+}
 
 bool hybridWithNvidia(const QString &drm)
 {
@@ -24,12 +55,38 @@ bool hybridWithNvidia(const QString &drm)
     return nvidia && other;
 }
 
+double xwaylandScale(const QByteArray &monitors, const QByteArray &zeroScaling)
+{
+    // without zero scaling the compositor would stretch the window, which looks blurred
+    if (!QJsonDocument::fromJson(zeroScaling).object().value(QLatin1String("bool")).toBool())
+        return 0;
+    double scale = 0;
+    for (const QJsonValue &value : QJsonDocument::fromJson(monitors).array()) {
+        const QJsonObject monitor = value.toObject();
+        if (scale == 0 || monitor.value(QLatin1String("focused")).toBool())
+            scale = monitor.value(QLatin1String("scale")).toDouble();
+    }
+    return scale >= 0.5 && scale <= 4 ? scale : 0;
+}
+
+void restoreEnvironment()
+{
+    for (const auto &[name, value] : std::as_const(borrowed))
+        value.isNull() ? void(qunsetenv(name.constData())) : void(qputenv(name.constData(), value));
+    borrowed.clear();
+}
+
 void prepare()
 {
-    // Draw on the main thread. With the threaded loop a window resized by the compositor
-    // could stop drawing for seconds, showing its old picture stretched and cut in half.
-    if (!qEnvironmentVariableIsSet("QSG_RENDER_LOOP"))
-        qputenv("QSG_RENDER_LOOP", "basic");
+    if (qEnvironmentVariableIsSet("HYPRLAND_INSTANCE_SIGNATURE") && qEnvironmentVariableIsSet("DISPLAY")
+        && qEnvironmentVariableIntValue("VELUM_WAYLAND") == 0 && qgetenv("QT_QPA_PLATFORM") != "offscreen") {
+        const double scale = xwaylandScale(ask("hyprctl monitors -j 2>/dev/null"),
+                                           ask("hyprctl getoption xwayland:force_zero_scaling -j 2>/dev/null"));
+        if (scale > 0) {
+            borrow("QT_QPA_PLATFORM", "xcb");
+            borrow("QT_SCALE_FACTOR", QByteArray::number(scale, 'f', 6));
+        }
+    }
     if (qEnvironmentVariableIntValue("VELUM_USE_NVIDIA") != 0)
         return;
     // a choice the user already made about Vulkan drivers is left alone
