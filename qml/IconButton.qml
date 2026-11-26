@@ -1,33 +1,43 @@
 import QtQuick
 import QtQuick.Controls
 
-// A square button with one icon and a tooltip.
+// A square button with one icon: white with a blue outline and a hard shadow, or,
+// when "flat", only the icon until the pointer is on it.
 AbstractButton {
     id: button
     property string symbol        // a name from Icon.qml
     property string hint
     property real iconSize: 18
     property bool hintBeside: false
+    property bool flat: false
     property color tone: Theme.text
-    implicitWidth: 36
-    implicitHeight: 32
+    implicitWidth: 34
+    implicitHeight: 30
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
-    scale: down ? 0.9 : 1
-    Behavior on scale { NumberAnimation { duration: Theme.quick; easing.type: Easing.OutCubic } }
 
     contentItem: Item {
         Icon {
             anchors.centerIn: parent
+            anchors.horizontalCenterOffset: button.down && !button.flat ? 2 : 0
+            anchors.verticalCenterOffset: button.down && !button.flat ? 2 : 0
             name: button.symbol
             size: button.iconSize
-            color: button.enabled ? (button.hovered ? Theme.accent : button.tone) : Theme.line
+            color: button.enabled ? button.tone : Theme.dim
+            opacity: button.enabled ? 1 : 0.5
         }
     }
-    background: Rectangle {
-        radius: Theme.radius
-        color: button.down ? Theme.title : button.hovered && button.enabled ? Theme.raised : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.quick } }
+    background: Item {
+        Rectangle { x: 3; y: 3; width: parent.width; height: parent.height; color: Theme.hardShadow; visible: !button.flat && !button.down }
+        Rectangle {
+            x: button.down && !button.flat ? 2 : 0
+            y: x
+            width: parent.width
+            height: parent.height
+            color: button.hovered && button.enabled ? Theme.title : button.flat ? "transparent" : Theme.raised
+            border.width: button.flat ? 0 : 2
+            border.color: Theme.line
+        }
     }
     Accessible.name: hint
 

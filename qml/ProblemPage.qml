@@ -26,11 +26,11 @@ Rectangle {
             RowLayout {
                 spacing: 14
                 Icon { name: "alert"; size: 44; color: Theme.danger }
-                Text { Layout.fillWidth: true; text: page.heading; color: Theme.text; font.pixelSize: 24; font.weight: Font.ExtraBold; wrapMode: Text.WordWrap }
+                Text { Layout.fillWidth: true; text: page.heading; color: Theme.text; font.pixelSize: 31; font.weight: Font.Normal; wrapMode: Text.WordWrap }
             }
-            Text { Layout.fillWidth: true; visible: text !== ""; text: page.address; textFormat: Text.PlainText; color: Theme.accent; font.pixelSize: 13; wrapMode: Text.WrapAnywhere; maximumLineCount: 2; elide: Text.ElideRight }
-            Text { Layout.fillWidth: true; visible: text !== ""; text: page.detail; textFormat: Text.PlainText; color: Theme.text; font.pixelSize: 14; wrapMode: Text.WordWrap }
-            Text { Layout.fillWidth: true; visible: text !== ""; text: page.advice; color: Theme.dim; font.pixelSize: 13; wrapMode: Text.WordWrap }
+            Text { Layout.fillWidth: true; visible: text !== ""; text: page.address; textFormat: Text.PlainText; color: Theme.accent; font.pixelSize: 17; wrapMode: Text.WrapAnywhere; maximumLineCount: 2; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; visible: text !== ""; text: page.detail; textFormat: Text.PlainText; color: Theme.text; font.pixelSize: 18; wrapMode: Text.WordWrap }
+            Text { Layout.fillWidth: true; visible: text !== ""; text: page.advice; color: Theme.dim; font.pixelSize: 17; wrapMode: Text.WordWrap }
             TextButton { Layout.topMargin: 6; Layout.alignment: Qt.AlignRight; text: Lang.t("Yeniden dene", "Try again"); strong: true; onClicked: page.retry() }
         }
     }

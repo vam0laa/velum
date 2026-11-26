@@ -3,8 +3,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtWebEngine
 
-// The horizontal layout: a row of tabs, and under it navigation and the address.
-Rectangle {
+// Tabs along the top: a blue strip with the tabs, under it the toolbar and the address.
+Item {
     id: bar
     property WebEngineView view
     property alias tabModel: list.model
@@ -15,6 +15,7 @@ Rectangle {
     property var spaces: []
     property int space
     property alias address: field
+    property alias pageButtons: buttons
 
     signal picked(int index)
     signal closed(int index)
@@ -24,29 +25,41 @@ Rectangle {
     signal reloadPage()
     signal clearData()
     signal settings()
+    signal home()
     signal showFolder(string folder)
     signal clearDownloads()
     signal spaceChosen(int id)
     signal spaceEdit(int id)
     signal spaceAdd()
+    signal maximize()
+    signal closeTabRequested()
     function openDownloads() { downloadButton.show() }
 
-    implicitHeight: column.implicitHeight + 2 * Theme.gap
-    radius: Theme.corner
-    color: Theme.paneBack
-    border.color: Theme.line
+    implicitHeight: 90
 
-    ColumnLayout {
-        id: column
-        anchors { left: parent.left; right: parent.right; top: parent.top; margins: Theme.gap }
-        spacing: 6
-
+    // the strip with the tabs
+    Rectangle {
+        id: strip
+        width: parent.width
+        height: 42
+        gradient: Gradient {
+            GradientStop { position: 0; color: Theme.bar }
+            GradientStop { position: 1; color: Theme.barDeep }
+        }
         RowLayout {
-            Layout.fillWidth: true
+            anchors { fill: parent; leftMargin: 10; rightMargin: 8; topMargin: 6 }
             spacing: 8
 
+            Item {
+                implicitWidth: logo.implicitWidth + 6
+                implicitHeight: 34
+                component Word: Text { text: "VELUM"; font.pixelSize: 30; y: 2 }
+                Word { x: -2; color: "#3ff5ff" }
+                Word { x: 2; color: "#ff3fd0" }
+                Word { id: logo; color: "#ffffff" }
+            }
             SpaceBar {
-                Layout.preferredWidth: Math.min(360, naturalWidth)
+                Layout.preferredWidth: Math.min(300, naturalWidth)
                 Layout.alignment: Qt.AlignVCenter
                 spaces: bar.spaces
                 space: bar.space
@@ -54,13 +67,12 @@ Rectangle {
                 onEdit: id => bar.spaceEdit(id)
                 onAdd: bar.spaceAdd()
             }
-            Rectangle { implicitWidth: 1; implicitHeight: 22; color: Theme.line }
 
             ListView {
                 id: list
                 Layout.fillWidth: true
                 Layout.maximumWidth: Math.max(48, contentWidth)
-                implicitHeight: 36
+                Layout.fillHeight: true
                 orientation: ListView.Horizontal
                 clip: true
                 spacing: 0
@@ -80,7 +92,7 @@ Rectangle {
                 }
                 delegate: TabItem {
                     horizontal: true
-                    wide: Math.max(120, Math.min(220, (list.width - bar.pinnedCount * 48) / Math.max(1, list.shownCount)))
+                    wide: Math.max(120, Math.min(230, (strip.width - 420 - bar.pinnedCount * 48) / Math.max(1, list.shownCount)))
                     compact: pinned
                     current: index === bar.current
                     shown: pinned || space === bar.space
@@ -103,13 +115,34 @@ Rectangle {
                 }
             }
 
-            IconButton { symbol: "plus"; hint: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); tone: Theme.accent; onClicked: bar.newTab() }
+            AbstractButton {
+                id: add
+                implicitWidth: 30
+                implicitHeight: 30
+                hoverEnabled: true
+                focusPolicy: Qt.NoFocus
+                onClicked: bar.newTab()
+                Accessible.name: Lang.t("Yeni sekme", "New tab")
+                background: Rectangle { color: add.hovered ? Qt.alpha("#ffffff", 0.25) : "transparent" }
+                contentItem: Icon { name: "plus"; size: 20; color: Theme.barInk }
+                Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: add.hovered; y: add.height + 6 }
+            }
             Item { Layout.fillWidth: true }
+            WindowButton { kind: "max"; hint: Lang.t("Tam ekran (F11)", "Full screen (F11)"); onClicked: bar.maximize() }
+            WindowButton { kind: "close"; hint: Lang.t("Sekmeyi kapat (Ctrl+W)", "Close the tab (Ctrl+W)"); onClicked: bar.closeTabRequested() }
         }
+    }
+
+    // the toolbar
+    Rectangle {
+        anchors { top: strip.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        color: Theme.paneBack
+        Rectangle { width: parent.width; height: 2; color: Theme.edge }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: Theme.line }
 
         RowLayout {
-            Layout.fillWidth: true
-            spacing: 4
+            anchors { fill: parent; leftMargin: 10; rightMargin: 12; topMargin: 2; bottomMargin: 2 }
+            spacing: 9
             IconButton { symbol: "back"; hint: Lang.t("Geri (Alt+Sol)", "Back (Alt+Left)"); enabled: bar.view?.canGoBack ?? false; onClicked: bar.view.goBack() }
             IconButton { symbol: "forward"; hint: Lang.t("İleri (Alt+Sağ)", "Forward (Alt+Right)"); enabled: bar.view?.canGoForward ?? false; onClicked: bar.view.goForward() }
             IconButton {
@@ -117,23 +150,15 @@ Rectangle {
                 hint: bar.view?.loading ? Lang.t("Durdur", "Stop") : Lang.t("Yenile (Ctrl+R)", "Reload (Ctrl+R)")
                 onClicked: bar.view.loading ? bar.view.stop() : bar.view.reload()
             }
+            IconButton { symbol: "home"; hint: Lang.t("Ana sayfa", "Home page"); onClicked: bar.home() }
             AddressField {
                 id: field
                 Layout.fillWidth: true
-                Layout.leftMargin: 4
-                Layout.rightMargin: 4
-                implicitHeight: 34
+                implicitHeight: 32
                 pageUrl: bar.view?.url ?? ""
                 onGo: target => { bar.view.url = target; bar.view.forceActiveFocus() }
-                Rectangle {
-                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: 16 }
-                    height: 2
-                    radius: 1
-                    color: Theme.accent
-                    width: (parent.width - 32) * (bar.view?.loadProgress ?? 0) / 100
-                    visible: bar.view?.loading ?? false
-                }
             }
+            PageButtons { id: buttons }
             ShieldButton { host: bar.host; onReload: bar.reloadPage(); onClearRequested: bar.clearData() }
             DownloadButton { id: downloadButton; downloads: bar.downloads; onShowFolder: folder => bar.showFolder(folder); onClearFinished: bar.clearDownloads() }
             IconButton { symbol: "settings"; hint: Lang.t("Ayarlar (Ctrl+,)", "Settings (Ctrl+,)"); onClicked: bar.settings() }

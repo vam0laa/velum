@@ -41,7 +41,7 @@ Popup {
             Item { Layout.fillWidth: true }
             TextButton { text: Lang.t("Bitenleri temizle", "Clear finished"); visible: panel.downloads.length > 0; onClicked: panel.clearFinished() }
         }
-        Text { visible: panel.downloads.length === 0; text: Lang.t("Henüz bir şey indirmedin.", "Nothing downloaded yet."); color: Theme.dim; font.pixelSize: 12 }
+        Text { visible: panel.downloads.length === 0; text: Lang.t("Henüz bir şey indirmedin.", "Nothing downloaded yet."); color: Theme.dim; font.pixelSize: 16 }
         ListView {
             Layout.fillWidth: true
             implicitHeight: Math.min(contentHeight, 320)
@@ -54,25 +54,25 @@ Popup {
                 readonly property bool running: modelData.state === WebEngineDownloadRequest.DownloadInProgress
                 width: ListView.view.width
                 height: 54
-                radius: Theme.radius
+                radius: 0
                 color: Theme.frame
                 ColumnLayout {
                     anchors { fill: parent; leftMargin: 10; rightMargin: 6 }
                     spacing: 2
                     RowLayout {
-                        Text { Layout.fillWidth: true; text: row.modelData.downloadFileName; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.text; font.pixelSize: 12 }
+                        Text { Layout.fillWidth: true; text: row.modelData.downloadFileName; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.text; font.pixelSize: 16 }
                         IconButton { implicitWidth: 26; implicitHeight: 26; iconSize: 14; symbol: "folder"; hint: Lang.t("Klasörde göster", "Show in folder"); onClicked: panel.showFolder(row.modelData.downloadDirectory) }
                         IconButton { implicitWidth: 26; implicitHeight: 26; iconSize: 13; symbol: "close"; hint: Lang.t("İptal", "Cancel"); visible: row.running; onClicked: row.modelData.cancel() }
                     }
-                    Text { text: panel.describe(row.modelData.state, row.modelData.receivedBytes, row.modelData.totalBytes); color: Theme.dim; font.pixelSize: 11 }
+                    Text { text: panel.describe(row.modelData.state, row.modelData.receivedBytes, row.modelData.totalBytes); color: Theme.dim; font.pixelSize: 14 }
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.rightMargin: 4
                         implicitHeight: 3
-                        radius: 2
+                        radius: 0
                         color: Theme.raised
                         visible: row.running
-                        Rectangle { height: parent.height; radius: 2; color: Theme.accent; width: row.modelData.totalBytes > 0 ? parent.width * row.modelData.receivedBytes / row.modelData.totalBytes : 0 }
+                        Rectangle { height: parent.height; radius: 0; color: Theme.accent; width: row.modelData.totalBytes > 0 ? parent.width * row.modelData.receivedBytes / row.modelData.totalBytes : 0 }
                     }
                 }
             }

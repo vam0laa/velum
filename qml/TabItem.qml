@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Shapes
 
 // One tab: a row with icon and title, or only the icon when the side bar is narrow.
 ItemDelegate {
@@ -27,7 +28,7 @@ ItemDelegate {
     property bool lastPinned: false
 
     width: !horizontal ? (ListView.view?.width ?? 0) : !shown ? 0 : compact ? 48 : wide
-    height: horizontal ? 36 : shown ? 42 : 0
+    height: horizontal ? 36 : shown ? 40 : 0
     visible: shown
     padding: 0
     bottomPadding: horizontal ? 0 : 4
@@ -39,23 +40,33 @@ ItemDelegate {
     onClicked: picked(index)
     Accessible.name: label
 
+    // on the blue strip an idle tab is a darker folder; the current one joins the toolbar
+    readonly property color ink: !horizontal ? (current ? Theme.text : Theme.dim) : current ? Theme.text : "#dbe6ff"
+
     background: Item {
+        // vertical: a row, outlined when chosen
         Rectangle {
             anchors.fill: parent
-            radius: Theme.radius
-            color: row.current ? Qt.tint(Theme.surface, Qt.alpha(row.tone, 0.2)) : row.hovered ? Theme.raised : "transparent"
-            Behavior on color { ColorAnimation { duration: Theme.quick } }
+            visible: !row.horizontal
+            color: row.current ? Theme.raised : row.hovered ? Theme.title : "transparent"
+            border.width: row.current ? 2 : 0
+            border.color: Theme.line
         }
-        // a small coloured mark, one colour per tab
-        Rectangle {
-            x: row.horizontal ? (parent.width - width) / 2 : 3
-            y: row.horizontal ? parent.height - height - 2 : (parent.height - height) / 2
-            width: !row.horizontal ? 3 : row.current ? 22 : 8
-            radius: 2
-            height: row.horizontal ? 3 : row.current ? 18 : 8
-            color: row.tone
-            opacity: row.current ? 1 : 0.55
-            Behavior on height { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
+        Shape {
+            id: folder
+            anchors.fill: parent
+            visible: row.horizontal
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+                strokeWidth: 2
+                strokeColor: Theme.edge
+                fillColor: row.current ? Theme.window : row.hovered ? Theme.bar : Theme.barDeep
+                startX: 1; startY: folder.height
+                PathLine { x: 1; y: 1 }
+                PathLine { x: folder.width - 13; y: 1 }
+                PathLine { x: folder.width - 1; y: 13 }
+                PathLine { x: folder.width - 1; y: folder.height }
+            }
         }
     }
 
@@ -77,7 +88,7 @@ ItemDelegate {
                 anchors.centerIn: parent
                 name: row.kind === "settings" ? "settings" : "globe"
                 size: 17
-                color: row.tone
+                color: row.horizontal ? row.ink : row.tone
                 visible: !row.loading && !favicon.visible
             }
             // loading: four squares lighting up in turn
@@ -99,9 +110,9 @@ ItemDelegate {
             anchors { left: mark.right; leftMargin: 10; right: close.visible ? close.left : parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
             text: row.label
             textFormat: Text.PlainText     // a page title is never treated as markup
-            color: row.current ? Theme.text : Theme.dim
+            color: row.ink
             opacity: row.asleep > 0 ? 0.55 : 1
-            font.pixelSize: 13
+            font.pixelSize: 17
             font.weight: row.current ? Font.DemiBold : Font.Normal
             elide: Text.ElideRight
             visible: !row.compact
@@ -123,6 +134,8 @@ ItemDelegate {
         IconButton {
             id: close
             anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
+            flat: true
+            tone: row.ink
             implicitWidth: 22
             implicitHeight: 22
             iconSize: 13

@@ -22,8 +22,8 @@ Popup {
     ColumnLayout {
         anchors { left: parent.left; right: parent.right }
         spacing: 12
-        Text { Layout.fillWidth: true; text: dialog.heading; color: Theme.text; font.pixelSize: 15; font.weight: Font.Bold; wrapMode: Text.WordWrap }
-        Text { Layout.fillWidth: true; text: dialog.detail; color: Theme.dim; font.pixelSize: 13; wrapMode: Text.WordWrap }
+        Text { Layout.fillWidth: true; text: dialog.heading; color: Theme.text; font.pixelSize: 20; font.weight: Font.Normal; wrapMode: Text.WordWrap }
+        Text { Layout.fillWidth: true; text: dialog.detail; color: Theme.dim; font.pixelSize: 17; wrapMode: Text.WordWrap }
         RowLayout {
             Layout.alignment: Qt.AlignRight
             spacing: 8

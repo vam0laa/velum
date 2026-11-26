@@ -30,7 +30,7 @@ Popup {
             Layout.fillWidth: true
             text: Lang.t("Dosyalar yalnızca okunur; öbür tarayıcıda hiçbir şey değişmez. Parolalar ve çerezler alınmaz.", "Files are only read; nothing changes in the other browser. Passwords and cookies are not taken.")
             color: Theme.dim
-            font.pixelSize: 12
+            font.pixelSize: 16
             wrapMode: Text.WordWrap
         }
         Toggle {
@@ -54,7 +54,7 @@ Popup {
             visible: panel.sources.length === 0
             text: Lang.t("Bu bilgisayarda tanınan başka bir tarayıcı bulunamadı.", "No other browser that Velum knows was found on this computer.")
             color: Theme.text
-            font.pixelSize: 13
+            font.pixelSize: 17
             wrapMode: Text.WordWrap
         }
         Text {
@@ -62,7 +62,7 @@ Popup {
             visible: panel.result !== ""
             text: panel.result
             color: Theme.green
-            font.pixelSize: 13
+            font.pixelSize: 17
             wrapMode: Text.WordWrap
         }
         TextButton { Layout.alignment: Qt.AlignRight; text: Lang.t("Kapat", "Close"); onClicked: panel.close() }

@@ -15,7 +15,7 @@ Rectangle {
 
     width: 380
     height: column.implicitHeight + 28
-    radius: Theme.corner
+    radius: 0
     color: Theme.window
     border.color: Theme.green
 
@@ -27,10 +27,10 @@ Rectangle {
             Layout.fillWidth: true
             text: bar.offer?.changed ? Lang.t("Kayıtlı parola güncellensin mi?", "Update the saved password?") : Lang.t("Parola kaydedilsin mi?", "Save this password?")
             color: Theme.text
-            font.pixelSize: 14
-            font.weight: Font.Bold
+            font.pixelSize: 18
+            font.weight: Font.Normal
         }
-        Text { Layout.fillWidth: true; text: bar.offer?.origin ?? ""; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 12 }
+        Text { Layout.fillWidth: true; text: bar.offer?.origin ?? ""; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 16 }
         TextField {
             id: name
             Layout.fillWidth: true
@@ -41,9 +41,9 @@ Rectangle {
             placeholderTextColor: Theme.dim
             color: Theme.text
             selectionColor: Theme.accent
-            selectedTextColor: Theme.onAccent
-            font.pixelSize: 13
-            background: Rectangle { radius: height / 2; color: Theme.frame; border.color: name.activeFocus ? Theme.accent : Theme.line }
+            selectedTextColor: Theme.accentInk
+            font.pixelSize: 17
+            background: Rectangle { radius: 0; color: Theme.frame; border.color: name.activeFocus ? Theme.accent : Theme.line }
         }
         RowLayout {
             Layout.fillWidth: true

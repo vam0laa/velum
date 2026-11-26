@@ -46,11 +46,11 @@ Popup {
             maximumLength: 20
             color: Theme.text
             selectionColor: Theme.accent
-            selectedTextColor: Theme.onAccent
+            selectedTextColor: Theme.accentInk
             placeholderText: Lang.t("Alanın adı, örn. Okul", "Name, e.g. School")
             placeholderTextColor: Theme.dim
-            font.pixelSize: 13
-            background: Bevel { sunken: true; radius: height / 2; color: Theme.frame; shade: input.activeFocus ? Theme.accent : Theme.line }
+            font.pixelSize: 17
+            background: Bevel { sunken: true; radius: 0; color: Theme.frame; shade: input.activeFocus ? Theme.accent : Theme.line }
             onAccepted: dialog.save()
         }
         Text {
@@ -58,7 +58,7 @@ Popup {
             visible: dialog.removable
             text: Lang.t("Silersen sekmeleri kaybolmaz, başka bir alana taşınır.", "Deleting keeps its tabs: they move to another workspace.")
             color: Theme.dim
-            font.pixelSize: 12
+            font.pixelSize: 16
             wrapMode: Text.WordWrap
         }
         RowLayout {

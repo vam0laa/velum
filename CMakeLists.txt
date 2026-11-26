@@ -86,10 +86,13 @@ qt_add_qml_module(velum
         qml/Shadow.qml
         qml/Dropdown.qml
         qml/AccentDots.qml
+        qml/WindowButton.qml
+        qml/PageButtons.qml
+        qml/Sparkle.qml
         qml/PermissionBar.qml
         qml/TextButton.qml
         qml/ConfirmDialog.qml
-    RESOURCES data/velum.svg data/fonts/GoogleSansFlex.woff data/fonts/VT323-Regular.ttf
+    RESOURCES data/velum.svg data/sky.jpg data/scanline.png data/fonts/VT323-Regular.ttf
     SOURCES src/addressbridge.h src/desktopcolors.h src/shield.h src/historybridge.h src/resources.h src/notifier.h src/importbridge.h src/passwordbridge.h src/storebridge.h
     IMPORTS QtQuick
 )

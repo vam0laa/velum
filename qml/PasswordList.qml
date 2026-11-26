@@ -26,7 +26,7 @@ ColumnLayout {
         Layout.fillWidth: true
         text: Lang.t("Parolalar sistem anahtarlığında şifreli durur. Doldurma yalnızca sen isteyince (Ctrl+Shift+L) ve adres birebir eşleşince yapılır.", "Passwords are kept encrypted in the system keyring. A form is filled only when you ask (Ctrl+Shift+L) and the address matches exactly.")
         color: Theme.dim
-        font.pixelSize: 12
+        font.pixelSize: 16
         wrapMode: Text.WordWrap
     }
     Text {
@@ -34,7 +34,7 @@ ColumnLayout {
         visible: panel.broken || (panel.accounts.length === 0)
         text: panel.broken ? Lang.t("Anahtarlığa ulaşılamadı. Kilidi açık mı?", "The keyring cannot be reached. Is it unlocked?") : Lang.t("Henüz kayıtlı parola yok.", "No saved passwords yet.")
         color: panel.broken ? Theme.danger : Theme.text
-        font.pixelSize: 13
+        font.pixelSize: 17
         wrapMode: Text.WordWrap
     }
     ListView {
@@ -51,15 +51,15 @@ ColumnLayout {
             readonly property string key: modelData.origin + " " + modelData.user
             width: ListView.view.width
             height: 48
-            radius: Theme.radius
+            radius: 0
             color: Theme.window
             RowLayout {
                 anchors { fill: parent; leftMargin: 12; rightMargin: 8 }
                 spacing: 8
                 Column {
                     Layout.fillWidth: true
-                    Text { width: parent.width; text: row.modelData.user || Lang.t("(adsız)", "(no name)"); textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.pixelSize: 13 }
-                    Text { width: parent.width; text: row.modelData.origin; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 11 }
+                    Text { width: parent.width; text: row.modelData.user || Lang.t("(adsız)", "(no name)"); textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.text; font.pixelSize: 17 }
+                    Text { width: parent.width; text: row.modelData.origin; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 14 }
                 }
                 TextButton {
                     implicitHeight: 28
@@ -83,8 +83,8 @@ ColumnLayout {
             }
         }
     }
-    Text { Layout.fillWidth: true; visible: text !== ""; text: panel.said; color: Theme.green; font.pixelSize: 12; wrapMode: Text.WordWrap }
-    Text { visible: panel.neverSites.length > 0; text: Lang.t("Hiç sorulmayan siteler (tıkla: yine sor)", "Never asked on (click to ask again)"); color: Theme.dim; font.pixelSize: 12 }
+    Text { Layout.fillWidth: true; visible: text !== ""; text: panel.said; color: Theme.green; font.pixelSize: 16; wrapMode: Text.WordWrap }
+    Text { visible: panel.neverSites.length > 0; text: Lang.t("Hiç sorulmayan siteler (tıkla: yine sor)", "Never asked on (click to ask again)"); color: Theme.dim; font.pixelSize: 16 }
     Flow {
         Layout.fillWidth: true
         visible: panel.neverSites.length > 0

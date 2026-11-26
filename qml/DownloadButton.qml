@@ -17,7 +17,7 @@ IconButton {
     Rectangle {
         visible: button.running > 0
         anchors { right: parent.right; top: parent.top }
-        width: 9; height: 9; radius: 5; color: Theme.green
+        width: 9; height: 9; radius: 0; color: Theme.green
     }
     DownloadsPanel {
         id: panel

@@ -76,7 +76,7 @@ Window {
             anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 10 }
             width: controls.implicitWidth + 12
             height: 40
-            radius: 20
+            radius: 0
             color: Qt.alpha(Theme.window, 0.92)
             border.color: Theme.line
             opacity: over.hovered ? 1 : 0

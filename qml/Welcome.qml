@@ -43,7 +43,7 @@ Popup {
     onClosed: finished()
     padding: 0
     Overlay.modal: Rectangle { color: Qt.alpha(Theme.frame, 0.94) }
-    background: Rectangle { radius: 22; color: Theme.surface; border.color: Theme.line }
+    background: Rectangle { radius: 0; color: Theme.surface; border.color: Theme.line }
     enter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.smooth } }
 
     ColumnLayout {
@@ -59,13 +59,13 @@ Popup {
                     required property int index
                     implicitWidth: index === welcome.step ? 28 : 8
                     implicitHeight: 8
-                    radius: 4
+                    radius: 0
                     color: index <= welcome.step ? Theme.rainbow[index % Theme.rainbow.length] : Theme.raised
                     Behavior on implicitWidth { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
                 }
             }
             Item { Layout.fillWidth: true }
-            Text { text: "velum"; color: Theme.mauve; font.family: Theme.pixel; font.pixelSize: 22 }
+            Text { text: "velum"; color: Theme.mauve; font.family: Theme.pixel; font.pixelSize: 29 }
         }
 
         Text {
@@ -73,12 +73,12 @@ Popup {
             Layout.topMargin: 6
             text: welcome.headlines[welcome.step][0]
             color: Theme.text
-            font.pixelSize: 40
-            font.weight: Font.ExtraBold
-            font.letterSpacing: -1
+            font.pixelSize: 52
+            font.weight: Font.Normal
+            font.letterSpacing: 0
             wrapMode: Text.WordWrap
         }
-        Text { Layout.fillWidth: true; text: welcome.headlines[welcome.step][1]; color: Theme.dim; font.pixelSize: 14; wrapMode: Text.WordWrap }
+        Text { Layout.fillWidth: true; text: welcome.headlines[welcome.step][1]; color: Theme.dim; font.pixelSize: 18; wrapMode: Text.WordWrap }
 
         Flickable {
             id: area
@@ -128,14 +128,14 @@ Popup {
                             required property int index
                             width: 190
                             height: 70
-                            radius: Theme.corner
+                            radius: 0
                             color: Theme.window
                             border.color: Theme.line
                             Column {
                                 anchors.centerIn: parent
                                 spacing: 2
-                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: tip.modelData[0]; color: Theme.rainbow[tip.index % Theme.rainbow.length]; font.family: Theme.pixel; font.pixelSize: 24 }
-                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: tip.modelData[1]; color: Theme.dim; font.pixelSize: 12 }
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: tip.modelData[0]; color: Theme.rainbow[tip.index % Theme.rainbow.length]; font.family: Theme.pixel; font.pixelSize: 31 }
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: tip.modelData[1]; color: Theme.dim; font.pixelSize: 16 }
                             }
                         }
                     }

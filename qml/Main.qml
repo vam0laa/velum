@@ -15,12 +15,12 @@ ApplicationWindow {
     property string profileName: "velum"   // the folder logins are kept in; tests use their own
     property int current: 0
     property bool compactSidebar: false
-    property bool horizontalTabs: false     // the tabs along the top instead of down the side
+    property bool horizontalTabs: true     // the tabs along the top instead of down the side
     // the start page, as you set it up
-    property string startBackground: "glow"
+    property string startBackground: "sky"
     property string startPicture: ""
     property bool showClock: true
-    property bool showShield: false
+    property bool showShield: true
     property bool showNote: false
     property bool showFrequent: false
     property string note: ""
@@ -225,11 +225,11 @@ ApplicationWindow {
         property alias downloadFolder: window.downloadFolder
         property alias sleepMode: window.sleepMode
         property alias compactSidebar: window.compactSidebar
-        property alias horizontalTabs: window.horizontalTabs
-        property alias startBackground: window.startBackground
+        property alias tabsOnTop: window.horizontalTabs
+        property alias startSky: window.startBackground
         property alias startPicture: window.startPicture
         property alias showClock: window.showClock
-        property alias startShield: window.showShield
+        property alias startNotice: window.showShield
         property alias startNote: window.showNote
         property alias startFrequent: window.showFrequent
         property alias note: window.note
@@ -420,6 +420,17 @@ ApplicationWindow {
                 return s
             return to.trim() === "" ? { title: s.title, url: s.url } : { title: s.title, url: s.url, folder: to.trim() }
         }))
+    }
+
+    // the home button: an empty tab becomes the start page again
+    function goHome() {
+        if (onStartPage)
+            return
+        const at = visibleTabs().find(i => tabs.get(i).kind === "" && (tabs.get(i).pageUrl === "" || tabs.get(i).pageUrl === "about:blank"))
+        if (at === undefined)
+            openTab("")
+        else
+            current = at
     }
 
     function openBookmarks() { bookmarksPage.open() }
@@ -1165,10 +1176,12 @@ ApplicationWindow {
     }
 
     GridLayout {
-        anchors { fill: parent; margins: window.pageFullScreen ? 0 : 8 }
+        // with the tabs on top the page reaches the edges; beside them the windows float
+        readonly property int gaps: window.pageFullScreen || window.horizontalTabs ? 0 : 10
+        anchors { fill: parent; margins: gaps; rightMargin: gaps ? gaps + 4 : 0; bottomMargin: gaps ? gaps + 4 : 0 }
         columns: window.horizontalTabs ? 1 : 2
-        rowSpacing: window.pageFullScreen ? 0 : 8
-        columnSpacing: window.pageFullScreen ? 0 : 8
+        rowSpacing: 0
+        columnSpacing: gaps ? 18 : 0
 
         Sidebar {
             id: side
@@ -1221,6 +1234,19 @@ ApplicationWindow {
             onReloadPage: window.view.reload()
             onClearData: clearDialog.open()
             onSettings: window.openSettings()
+            onHome: window.goHome()
+            onMaximize: window.toggleWindowFullScreen()
+            onCloseTabRequested: window.closeTab(window.current)
+            pageButtons.storeButton: card.storeButton
+            pageButtons.keyButton: card.keyButton
+            pageButtons.readerButton: card.readerButton
+            pageButtons.readerOn: card.readerOn
+            pageButtons.videoButton: card.videoButton
+            pageButtons.videoOut: card.videoOut
+            pageButtons.onStore: card.store()
+            pageButtons.onFill: card.fill_()
+            pageButtons.onReader: card.reader()
+            pageButtons.onVideo: card.video()
             onShowFolder: folder => Qt.openUrlExternally("file://" + folder.split("/").map(encodeURIComponent).join("/"))
             onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
             onSpaceChosen: id => window.switchSpace(id)
@@ -1233,7 +1259,7 @@ ApplicationWindow {
             id: card
             Layout.fillWidth: true
             Layout.fillHeight: true
-            chrome: !window.pageFullScreen
+            chrome: !window.pageFullScreen && !window.horizontalTabs
             title: window.onSettings ? Lang.t("ayarlar", "settings") : window.onStartPage ? Lang.t("başlangıç", "start") : window.view && window.view.title !== "" ? window.view.title : window.currentHost
             stripe: Theme.rainbow[Math.max(0, window.current) % Theme.rainbow.length]
             minimizable: !window.horizontalTabs
@@ -1245,7 +1271,7 @@ ApplicationWindow {
             storeButton: window.view !== null && !window.fetchingExtension && WebStore.idFrom(window.view.url) !== ""
             onStore: window.askExtension(String(window.view.url), false)
             keyButton: !window.onStartPage && (window.view?.accounts.length ?? 0) > 0
-            onFill: window.fillPassword()
+            onFill_: window.fillPassword()
             readerButton: !window.onStartPage && window.view !== null && window.view !== window.miniPage && (window.view.readable || window.view.reading)
             readerOn: window.view?.reading ?? false
             onReader: window.toggleReader()
@@ -1465,7 +1491,7 @@ ApplicationWindow {
                 x: window.view?.x ?? 0
                 z: 3
                 height: 3
-                radius: 2
+                radius: 0
                 width: (window.view?.width ?? 0) * (busy ? Math.max(0.08, window.view.loadProgress / 100) : 1)
                 opacity: busy ? 1 : 0
                 gradient: Gradient {
@@ -1559,7 +1585,7 @@ ApplicationWindow {
                     anchors.centerIn: parent
                     spacing: 14
                     Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "pip"; size: 48; color: Theme.mauve }
-                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("Video küçük pencerede oynuyor", "The video is playing in the small window"); color: Theme.text; font.pixelSize: 18; font.weight: Font.Bold }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: Lang.t("Video küçük pencerede oynuyor", "The video is playing in the small window"); color: Theme.text; font.pixelSize: 23; font.weight: Font.Normal }
                     TextButton { anchors.horizontalCenter: parent.horizontalCenter; strong: true; text: Lang.t("Buraya geri al", "Bring it back"); onClicked: window.closeMini() }
                 }
             }
@@ -1571,7 +1597,7 @@ ApplicationWindow {
                 z: 3
                 width: readerControls.implicitWidth + 14
                 height: 42
-                radius: 21
+                radius: 0
                 color: Theme.window
                 border.color: Theme.line
                 Row {
@@ -1599,16 +1625,16 @@ ApplicationWindow {
                 anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: window.notice !== "" ? 18 : -10 }
                 width: Math.min(parent.width - 24, noticeText.implicitWidth + 32)
                 height: 38
-                radius: 19
+                radius: 0
                 z: 3
                 opacity: window.notice !== "" ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Theme.smooth } }
                 Behavior on anchors.bottomMargin { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
-                Shadow { radius: 19 }
+                Shadow { radius: 0 }
                 color: Theme.raised
                 border.color: Theme.line
-                Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.pixelSize: 13; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+                Text { id: noticeText; anchors { fill: parent; leftMargin: 16; rightMargin: 16 } text: window.notice; color: Theme.text; font.pixelSize: 17; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
             }
 
             SettingsPage {

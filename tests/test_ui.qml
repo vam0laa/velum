@@ -184,6 +184,9 @@ Item {
             w.prefs.startChanged("showNote", false); w.prefs.startChanged("startBackground", "dots")
             t.check("the start page follows the settings", !w.showNote && w.startBackground === "dots")
             w.showNote = true; w.startBackground = "glow"
+            Theme.palette = "cybercore"
+            t.check("text on blue is white", String(Theme.accentInk) === "#ffffff" && String(Theme.barInk) === "#ffffff")
+            Theme.palette = "mocha"
             Theme.glass = true
             t.check("glass makes the backgrounds see-through, popups stay solid", Theme.frameBack.a < 0.6 && Theme.paneBack.a < 0.6 && Theme.window.a === 1)
             Theme.glass = false; t.check("without glass they are solid", Theme.frameBack.a === 1 && Theme.sheetBack.a === 1)

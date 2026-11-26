@@ -20,14 +20,14 @@ Bevel {
     implicitHeight: column.implicitHeight + 28
     color: Theme.window
     light: Theme.peach
-    radius: Theme.corner
+    radius: 0
 
     ColumnLayout {
         id: column
         anchors { fill: parent; margins: 14 }
         spacing: 10
-        Text { Layout.fillWidth: true; text: bar.site; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.text; font.pixelSize: 14; font.weight: Font.Bold }
-        Text { Layout.fillWidth: true; text: bar.wish; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13 }
+        Text { Layout.fillWidth: true; text: bar.site; textFormat: Text.PlainText; elide: Text.ElideMiddle; color: Theme.text; font.pixelSize: 18; font.weight: Font.Normal }
+        Text { Layout.fillWidth: true; text: bar.wish; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 17 }
         RowLayout {
             Layout.alignment: Qt.AlignRight
             spacing: 8

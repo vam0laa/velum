@@ -9,7 +9,7 @@ Rectangle {
     property color shade: Theme.line       // outline of a sunken block
 
     color: Theme.raised
-    radius: Theme.radius
+    radius: 0
     border.width: edge
     border.color: sunken ? shade : light
 }

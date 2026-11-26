@@ -89,9 +89,9 @@ Rectangle {
         Layout.fillWidth: true
         Layout.minimumHeight: 40
         spacing: 12
-        Text { id: name; Layout.fillWidth: true; color: Theme.text; font.pixelSize: 13; wrapMode: Text.WrapAtWordBoundaryOrAnywhere }
+        Text { id: name; Layout.fillWidth: true; color: Theme.text; font.pixelSize: 17; wrapMode: Text.WrapAtWordBoundaryOrAnywhere }
     }
-    component Note: Text { Layout.fillWidth: true; color: Theme.dim; font.pixelSize: 12; wrapMode: Text.WordWrap }
+    component Note: Text { Layout.fillWidth: true; color: Theme.dim; font.pixelSize: 16; wrapMode: Text.WordWrap }
 
     RowLayout {
         anchors.fill: parent
@@ -116,8 +116,8 @@ Rectangle {
                     Layout.bottomMargin: 10
                     text: Lang.t("Ayarlar", "Settings")
                     color: Theme.text
-                    font.pixelSize: 17
-                    font.weight: Font.ExtraBold
+                    font.pixelSize: 22
+                    font.weight: Font.Normal
                 }
                 Repeater {
                     model: page.sections
@@ -130,10 +130,10 @@ Rectangle {
                         hoverEnabled: true
                         onClicked: page.section = modelData.key
                         Accessible.name: modelData.label
-                        background: Rectangle { radius: Theme.radius; color: entry.chosen ? Theme.raised : entry.hovered ? Qt.alpha(Theme.raised, 0.5) : "transparent" }
+                        background: Rectangle { color: entry.chosen ? Theme.accent : entry.hovered ? Theme.title : "transparent" }
                         contentItem: Item {
-                            Icon { x: 9; anchors.verticalCenter: parent.verticalCenter; name: entry.modelData.icon; size: 15; color: entry.chosen ? Theme.accent : Theme.dim }
-                            Text { anchors { left: parent.left; leftMargin: 32; right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter } text: entry.modelData.label; elide: Text.ElideRight; color: entry.chosen ? Theme.text : Theme.dim; font.pixelSize: 13; font.weight: entry.chosen ? Font.Bold : Font.Normal }
+                            Icon { x: 9; anchors.verticalCenter: parent.verticalCenter; name: entry.modelData.icon; size: 15; color: entry.chosen ? Theme.accentInk : Theme.text }
+                            Text { anchors { left: parent.left; leftMargin: 32; right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter } text: entry.modelData.label; elide: Text.ElideRight; color: entry.chosen ? Theme.accentInk : Theme.text; font.pixelSize: 17; font.weight: entry.chosen ? Font.Bold : Font.Normal }
                         }
                     }
                 }
@@ -159,12 +159,12 @@ Rectangle {
                     NumberAnimation { target: content; property: "opacity"; from: 0; to: 1; duration: Theme.smooth }
                     NumberAnimation { target: slide; property: "y"; from: 18; to: 0; duration: Theme.smooth; easing.type: Easing.OutCubic }
                 }
-                width: Math.min(parent.width - 36, 620)
-                x: 18
+                width: Math.min(parent.width - 36, 720)
+                x: (parent.width - width) / 2
                 y: 18
                 spacing: 8
 
-                Text { text: page.current.label; color: Theme.text; font.pixelSize: 22; font.weight: Font.ExtraBold; Layout.bottomMargin: 12 }
+                Text { text: page.current.label; color: Theme.text; font.pixelSize: 29; font.weight: Font.Normal; Layout.bottomMargin: 12 }
 
                 // ---- appearance ----
                 Card {
@@ -219,7 +219,7 @@ Rectangle {
                     Line {
                         label: Lang.t("Arka plan", "Background")
                         Dropdown {
-                            options: [{ key: "plain", label: Lang.t("Sade", "Plain") }, { key: "glow", label: Lang.t("Işıltı", "Glow") }, { key: "dots", label: Lang.t("Noktalar", "Dots") }, { key: "image", label: Lang.t("Resim", "Picture") }]
+                            options: [{ key: "sky", label: Lang.t("Gökyüzü", "Sky") }, { key: "plain", label: Lang.t("Sade", "Plain") }, { key: "dots", label: Lang.t("Noktalar", "Dots") }, { key: "image", label: Lang.t("Resim", "Picture") }]
                             current: page.startBackground
                             onChosen: key => {
                                 if (key === "image" && page.startPicture === "")
@@ -235,7 +235,7 @@ Rectangle {
                         TextButton { text: Lang.t("Resim seç…", "Choose…"); onClicked: pictures.open() }
                     }
                     Toggle { label: Lang.t("Saat ve tarih", "Clock and date"); on: page.showClock; onClicked: page.startChanged("showClock", !page.showClock) }
-                    Toggle { label: Lang.t("Kalkan sayacı", "Shield counter"); on: page.showShield; onClicked: page.startChanged("showShield", !page.showShield) }
+                    Toggle { label: Lang.t("Kalkan uyarısı", "Shield notice"); on: page.showShield; onClicked: page.startChanged("showShield", !page.showShield) }
                     Toggle { label: Lang.t("Sık gidilenler", "Most visited"); on: page.showFrequent; onClicked: page.startChanged("showFrequent", !page.showFrequent) }
                     Toggle { label: Lang.t("Not kâğıdı", "Note"); on: page.showNote; onClicked: page.startChanged("showNote", !page.showNote) }
                 }
@@ -387,9 +387,9 @@ Rectangle {
                             Rectangle {
                                 implicitWidth: key.implicitWidth + 20
                                 implicitHeight: 26
-                                radius: 8
+                                radius: 0
                                 color: Theme.raised
-                                Text { id: key; anchors.centerIn: parent; text: shortcut.modelData[0]; color: Theme.accent; font.family: Theme.pixel; font.pixelSize: 17 }
+                                Text { id: key; anchors.centerIn: parent; text: shortcut.modelData[0]; color: Theme.accent; font.family: Theme.pixel; font.pixelSize: 22 }
                             }
                         }
                     }
@@ -399,8 +399,8 @@ Rectangle {
                 Card {
                     visible: page.section === "about"
                     Image { source: Qt.resolvedUrl("../data/velum.svg"); sourceSize: Qt.size(160, 160); Layout.preferredWidth: 80; Layout.preferredHeight: 80 }
-                    Text { text: "Velum " + Qt.application.version; color: Theme.text; font.pixelSize: 24; font.weight: Font.ExtraBold }
-                    Note { font.pixelSize: 13; text: Lang.t("Sakin ve gizlilik odaklı bir tarayıcı. Motor: Qt WebEngine (Chromium). Engelleyici: Brave adblock-rust.", "A calm, private browser. Engine: Qt WebEngine (Chromium). Blocker: Brave adblock-rust.") }
+                    Text { text: "Velum " + Qt.application.version; color: Theme.text; font.pixelSize: 31; font.weight: Font.Normal }
+                    Note { font.pixelSize: 17; text: Lang.t("Sakin ve gizlilik odaklı bir tarayıcı. Motor: Qt WebEngine (Chromium). Engelleyici: Brave adblock-rust.", "A calm, private browser. Engine: Qt WebEngine (Chromium). Blocker: Brave adblock-rust.") }
                     Note { text: Lang.t("Varsayılan tarayıcı yapmak için: xdg-settings set default-web-browser velum.desktop", "To make it the default browser: xdg-settings set default-web-browser velum.desktop") }
                 }
             }

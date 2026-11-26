@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 
-// A bevelled button with words; "strong" marks the choice that does something.
+// A square button with words; "strong" marks the choice that does something.
 AbstractButton {
     id: button
     property bool strong: false
@@ -10,20 +10,26 @@ AbstractButton {
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
     opacity: enabled ? 1 : 0.45
-    scale: down ? 0.95 : 1
-    Behavior on scale { NumberAnimation { duration: Theme.quick; easing.type: Easing.OutCubic } }
     contentItem: Text {
         id: label
         text: button.text
-        color: button.strong ? Theme.onAccent : Theme.text
-        font.pixelSize: 13
-        font.weight: Font.Medium
+        color: button.strong ? Theme.accentInk : Theme.text
+        font.pixelSize: 18
+        leftPadding: button.down ? 2 : 0
+        topPadding: button.down ? 2 : 0
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }
-    background: Rectangle {
-        radius: Theme.radius
-        color: button.strong ? Theme.accent : button.hovered ? Theme.title : Theme.raised
-        opacity: button.down ? 0.8 : 1
+    background: Item {
+        Rectangle { x: 3; y: 3; width: parent.width; height: parent.height; color: Theme.hardShadow; visible: !button.down }
+        Rectangle {
+            x: button.down ? 2 : 0
+            y: x
+            width: parent.width
+            height: parent.height
+            color: button.strong ? (button.hovered ? Theme.barDeep : Theme.accent) : button.hovered ? Theme.title : Theme.raised
+            border.width: 2
+            border.color: Theme.line
+        }
     }
 }

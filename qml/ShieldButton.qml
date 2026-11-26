@@ -18,9 +18,9 @@ IconButton {
         anchors { right: parent.right; top: parent.top; rightMargin: -2; topMargin: -2 }
         height: 14
         width: Math.max(14, count.implicitWidth + 6)
-        radius: 7
+        radius: 0
         color: Theme.green
-        Text { id: count; anchors.centerIn: parent; text: button.blocked > 99 ? "99+" : button.blocked; color: Theme.onAccent; font.pixelSize: 9; font.weight: Font.Bold }
+        Text { id: count; anchors.centerIn: parent; text: button.blocked > 99 ? "99+" : button.blocked; color: Theme.accentInk; font.pixelSize: 12; font.weight: Font.Normal }
     }
     ShieldPanel {
         id: panel

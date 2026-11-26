@@ -31,7 +31,7 @@ Popup {
         spacing: 10
         RowLayout {
             Item { Layout.fillWidth: true }
-            Text { text: Math.round(panel.total.memory) + Lang.t(" MB · işlemci %", " MB · CPU %") + Math.round(panel.total.cpu); color: Theme.accent; font.pixelSize: 13 }
+            Text { text: Math.round(panel.total.memory) + Lang.t(" MB · işlemci %", " MB · CPU %") + Math.round(panel.total.cpu); color: Theme.accent; font.pixelSize: 17 }
         }
         ListView {
             Layout.fillWidth: true
@@ -48,13 +48,13 @@ Popup {
                 focusPolicy: Qt.NoFocus
                 hoverEnabled: true
                 onClicked: { panel.close(); panel.choose(modelData.index) }
-                background: Rectangle { radius: Theme.radius; color: row.hovered ? Theme.raised : Theme.surface }
+                background: Rectangle { radius: 0; color: row.hovered ? Theme.raised : Theme.surface }
                 contentItem: RowLayout {
                     spacing: 10
-                    Text { Layout.leftMargin: 12; Layout.fillWidth: true; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: row.modelData.state === 0 ? Theme.text : Theme.dim; font.pixelSize: 13 }
-                    Text { text: row.modelData.state === 2 ? Lang.t("uyuyor", "asleep") : row.modelData.state === 1 ? Lang.t("donduruldu", "frozen") : row.modelData.shared ? Lang.t("ortak", "shared") : ""; color: Theme.dim; font.pixelSize: 11 }
-                    Text { Layout.preferredWidth: 64; horizontalAlignment: Text.AlignRight; text: row.modelData.state === 2 ? "—" : Math.round(row.modelData.memory) + " MB"; color: Theme.text; font.pixelSize: 12 }
-                    Text { Layout.preferredWidth: 40; horizontalAlignment: Text.AlignRight; text: row.modelData.state === 2 ? "" : "%" + Math.round(row.modelData.cpu); color: Theme.dim; font.pixelSize: 12 }
+                    Text { Layout.leftMargin: 12; Layout.fillWidth: true; text: row.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: row.modelData.state === 0 ? Theme.text : Theme.dim; font.pixelSize: 17 }
+                    Text { text: row.modelData.state === 2 ? Lang.t("uyuyor", "asleep") : row.modelData.state === 1 ? Lang.t("donduruldu", "frozen") : row.modelData.shared ? Lang.t("ortak", "shared") : ""; color: Theme.dim; font.pixelSize: 14 }
+                    Text { Layout.preferredWidth: 64; horizontalAlignment: Text.AlignRight; text: row.modelData.state === 2 ? "—" : Math.round(row.modelData.memory) + " MB"; color: Theme.text; font.pixelSize: 16 }
+                    Text { Layout.preferredWidth: 40; horizontalAlignment: Text.AlignRight; text: row.modelData.state === 2 ? "" : "%" + Math.round(row.modelData.cpu); color: Theme.dim; font.pixelSize: 16 }
                     IconButton {
                         Layout.rightMargin: 4
                         implicitWidth: 28; implicitHeight: 28; iconSize: 14
@@ -71,7 +71,7 @@ Popup {
             Text {
                 Layout.fillWidth: true
                 text: panel.mode === 0 ? Lang.t("Otomatik uyutma kapalı.", "Automatic sleeping is off.") : panel.mode === 1 ? Lang.t("Boşta sekme 2 dakikada donar, 10 dakikada uyur.", "Idle tabs freeze after 2 minutes, sleep after 10.") : Lang.t("Boşta sekme 5 dakikada donar, 20 dakikada uyur.", "Idle tabs freeze after 5 minutes, sleep after 20.")
-                color: Theme.dim; font.pixelSize: 11; wrapMode: Text.WordWrap
+                color: Theme.dim; font.pixelSize: 14; wrapMode: Text.WordWrap
             }
             Repeater {
                 model: [Lang.t("Kapalı", "Off"), Lang.t("Erken", "Early"), Lang.t("Rahat", "Relaxed")]

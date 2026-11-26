@@ -15,10 +15,10 @@ AbstractButton {
     onClicked: list.open()
     Accessible.name: chosenOption?.label ?? ""
 
-    background: Rectangle { radius: Theme.radius; color: drop.hovered || list.opened ? Theme.title : Theme.raised }
+    background: Rectangle { radius: 0; color: drop.hovered || list.opened ? Theme.title : Theme.raised }
     contentItem: Item {
-        Rectangle { id: swatch; visible: drop.chosenOption?.color !== undefined; x: 12; anchors.verticalCenter: parent.verticalCenter; width: 12; height: 12; radius: 6; color: drop.chosenOption?.color ?? "transparent" }
-        Text { anchors { left: parent.left; leftMargin: swatch.visible ? 32 : 12; right: arrow.left; rightMargin: 6; verticalCenter: parent.verticalCenter } text: drop.chosenOption?.label ?? ""; color: Theme.text; font.pixelSize: 13; elide: Text.ElideRight }
+        Rectangle { id: swatch; visible: drop.chosenOption?.color !== undefined; x: 12; anchors.verticalCenter: parent.verticalCenter; width: 12; height: 12; radius: 0; color: drop.chosenOption?.color ?? "transparent" }
+        Text { anchors { left: parent.left; leftMargin: swatch.visible ? 32 : 12; right: arrow.left; rightMargin: 6; verticalCenter: parent.verticalCenter } text: drop.chosenOption?.label ?? ""; color: Theme.text; font.pixelSize: 17; elide: Text.ElideRight }
         Icon { id: arrow; anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter } name: "down"; size: 14; color: Theme.dim }
     }
 
@@ -32,7 +32,7 @@ AbstractButton {
         margins: 8
         enter: PopIn {}
         exit: PopOut {}
-        background: Rectangle { radius: 14; color: Theme.window; border.color: Theme.line; Shadow { radius: 14 } }
+        background: Rectangle { radius: 0; color: Theme.window; border.color: Theme.line; Shadow { radius: 0 } }
         contentItem: ListView {
             id: rows
             clip: true
@@ -45,10 +45,10 @@ AbstractButton {
                 height: 32
                 padding: 0
                 onClicked: { list.close(); drop.chosen(modelData.key) }
-                background: Rectangle { radius: 9; color: row.hovered ? Theme.raised : "transparent" }
+                background: Rectangle { radius: 0; color: row.hovered ? Theme.raised : "transparent" }
                 contentItem: Item {
-                    Rectangle { id: mark; visible: row.modelData.color !== undefined; x: 10; anchors.verticalCenter: parent.verticalCenter; width: 12; height: 12; radius: 6; color: row.modelData.color ?? "transparent" }
-                    Text { x: mark.visible ? 30 : 10; anchors.verticalCenter: parent.verticalCenter; text: row.modelData.label; color: drop.current === row.modelData.key ? Theme.accent : Theme.text; font.pixelSize: 13; font.weight: drop.current === row.modelData.key ? Font.Bold : Font.Normal }
+                    Rectangle { id: mark; visible: row.modelData.color !== undefined; x: 10; anchors.verticalCenter: parent.verticalCenter; width: 12; height: 12; radius: 0; color: row.modelData.color ?? "transparent" }
+                    Text { x: mark.visible ? 30 : 10; anchors.verticalCenter: parent.verticalCenter; text: row.modelData.label; color: drop.current === row.modelData.key ? Theme.accent : Theme.text; font.pixelSize: 17; font.weight: drop.current === row.modelData.key ? Font.Bold : Font.Normal }
                 }
             }
         }

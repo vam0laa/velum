@@ -2,11 +2,11 @@ pragma Singleton
 import QtCore
 import QtQuick
 
-// One place for every colour, font and size: Catppuccin and friends, rounded windows
-// with thin title bars, and a little pixel lettering, after vamola.dev.
+// One place for every colour, font and size. The look is webcore: square windows with
+// blue title bars, pixel lettering and a sky behind the start page.
 QtObject {
     id: theme
-    property string palette: "mocha"       // a key of "palettes", or "desktop"
+    property string palette: "cybercore"   // a key of "palettes", or "desktop"
     property string accentChoice: ""       // "" keeps the palette's own accent
     property bool glass: false             // see-through windows; the desktop blurs behind them
     property real solidity: 0.72           // how opaque the glass is: 0.55, 0.72 or 0.88
@@ -14,15 +14,16 @@ QtObject {
 
     property Settings saved: Settings {
         category: "look"
-        property alias palette: theme.palette
+        property alias skin: theme.palette
         property alias accent: theme.accentChoice
         property alias glass: theme.glass
         property alias solidity: theme.solidity
         property alias motion: theme.motion
     }
 
-    // frame, window, card, raised, title, line, text, dim, accent, onAccent, mauve, pink, green, peach, danger
+    // frame, window, card, raised, title, line, text, dim, accent, accentInk, mauve, pink, green, peach, danger
     readonly property var palettes: ({
+        cybercore:  ["#050a5c", "#c9d8ff", "#eef3ff", "#ffffff", "#b4c6ff", "#1a2cff", "#0b17a8", "#46549c", "#1a2cff", "#ffffff", "#6a22d6", "#c2188a", "#08765a", "#a84e00", "#c8102e"],
         mocha:      ["#11111b", "#181825", "#1e1e2e", "#313244", "#45475a", "#45475a", "#cdd6f4", "#a6adc8", "#89b4fa", "#11111b", "#cba6f7", "#f5c2e7", "#a6e3a1", "#fab387", "#f38ba8"],
         macchiato:  ["#181926", "#1e2030", "#24273a", "#363a4f", "#494d64", "#494d64", "#cad3f5", "#a5adcb", "#8aadf4", "#181926", "#c6a0f6", "#f5bde6", "#a6da95", "#f5a97f", "#ed8796"],
         frappe:     ["#232634", "#292c3c", "#303446", "#414559", "#51576d", "#51576d", "#c6d0f5", "#a5adce", "#8caaee", "#232634", "#ca9ee6", "#f4b8e4", "#a6d189", "#ef9f76", "#e78284"],
@@ -36,7 +37,7 @@ QtObject {
 
     // what the pickers offer, in order
     readonly property var themes: [
-        { key: "mocha", label: "Mocha" }, { key: "macchiato", label: "Macchiato" }, { key: "frappe", label: "Frappé" }, { key: "latte", label: "Latte" },
+        { key: "cybercore", label: "Cybercore" }, { key: "mocha", label: "Mocha" }, { key: "macchiato", label: "Macchiato" }, { key: "frappe", label: "Frappé" }, { key: "latte", label: "Latte" },
         { key: "rosepine", label: "Rosé Pine" }, { key: "everforest", label: "Everforest" }, { key: "gruvbox", label: "Gruvbox" }, { key: "nord", label: "Nord" },
         { key: "tokyo", label: "Tokyo Night" }, { key: "desktop", label: Lang.t("Masaüstü", "Desktop") }
     ]
@@ -47,7 +48,7 @@ QtObject {
 
     // colour i of any theme, used by the pickers to draw previews
     function colorOf(key, i) {
-        const base = palettes[key] ?? palettes.mocha
+        const base = palettes[key] ?? palettes.cybercore
         if (key === "desktop")
             return DesktopColors.colors[desktopRoles[i]] ?? base[i]
         return base[i]
@@ -63,13 +64,19 @@ QtObject {
     readonly property color text: pick(6)
     readonly property color dim: pick(7)
     readonly property color accent: pick(accents[accentChoice] ?? 8)
-    readonly property color onAccent: pick(9)
+    readonly property color accentInk: pick(9)
     readonly property color mauve: pick(10)
     readonly property color pink: pick(11)
     readonly property color green: pick(12)
     readonly property color peach: pick(13)
     readonly property color danger: pick(14)
     readonly property bool dark: surface.hslLightness < 0.5
+    // title bars, the tab strip and the few white lines drawn on them
+    readonly property color bar: accent
+    readonly property color barInk: accentInk
+    readonly property color barDeep: Qt.darker(accent, 1.45)
+    readonly property color edge: dark ? line : "#ffffff"       // the bright outer line of a window
+    readonly property color hardShadow: Qt.rgba(0, 0.015, 0.2, 0.45)
 
     // The backgrounds of the window itself. Popups and menus stay solid, to be readable.
     // The layers lie on each other, so each one is thinner than the whole should look.
@@ -79,12 +86,11 @@ QtObject {
     readonly property var rainbow: [accent, mauve, pink, green, peach]
 
     property FontLoader pixelFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/VT323-Regular.ttf") }
-    property FontLoader uiFont: FontLoader { source: Qt.resolvedUrl("../data/fonts/GoogleSansFlex.woff") }
     readonly property string pixel: pixelFont.name      // has the Turkish letters
-    readonly property string ui: uiFont.name
+    readonly property string ui: pixelFont.name         // pixel letters everywhere
 
-    readonly property int radius: 10       // buttons, fields, rows
-    readonly property int corner: 16       // windows
+    readonly property int radius: 0        // everything is square
+    readonly property int corner: 0
     readonly property int gap: 8
     readonly property int sidebar: 280
     readonly property int strip: 60

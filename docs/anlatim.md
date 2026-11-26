@@ -370,6 +370,14 @@ Eklentinin 32 harflik kimliği, onu imzalayan anahtarın özetidir. `verifiedZip
 - `qml/Shadow.qml`: bulanıklaştırma yerine üç soluk katman; ucuzdur, cam görünümde kapanır.
 - Süreler `Theme.quick` ve `Theme.smooth`'tan gelir. "Animasyonlar" kapatılınca ikisi de 0 olur.
 
+## 7q2. Mavi cybercore tasarımı
+
+- `qml/Theme.qml`: renkler. `bar` başlık çubuklarının mavisi, `accentInk` onun üstündeki yazı. (Bir renge `on...` diye ad verilemez: QML onu olay işleyicisi sanır.)
+- `qml/Panel.qml`, `TitleBar.qml`, `WindowButton.qml`: `.exe` pencereleri.
+- `qml/TopBar.qml`, `TabItem.qml`: üstteki klasör biçimli sekmeler (`Shape` ile köşesi kesik).
+- `qml/StartPage.qml`: glitch saat, aynı yazının dört renkte üst üste, birkaç piksel kaydırılmış hali.
+- `data/sky.jpg`, `data/scanline.png`: Velum için çizilmiş gökyüzü ve tarama çizgisi.
+
 ## 8. CMakeLists.txt
 
 - `velumcore`: penceresiz kod ayrı bir kütüphane, böylece testler pencere açmadan çalışır.

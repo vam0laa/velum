@@ -25,8 +25,8 @@ Popup {
         Text {
             text: Shield.blockedCount(panel.host, Shield.revision)
             color: Theme.accent
-            font.pixelSize: 34
-            font.weight: Font.Bold
+            font.pixelSize: 44
+            font.weight: Font.Normal
         }
         Text {
             Layout.fillWidth: true
@@ -35,7 +35,7 @@ Popup {
             textFormat: Text.PlainText
             elide: Text.ElideRight
             color: Theme.dim
-            font.pixelSize: 12
+            font.pixelSize: 16
         }
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.line }
         Toggle {
@@ -73,7 +73,7 @@ Popup {
         TextButton { Layout.fillWidth: true; text: Lang.t("Çerezleri ve önbelleği sil…", "Delete cookies and cache…"); onClicked: { panel.close(); panel.clearRequested() } }
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.line }
         RowLayout {
-            Text { Layout.fillWidth: true; text: Shield.statusText(Lang.turkish, Shield.revision, Shield.statusCode); color: Theme.dim; font.pixelSize: 11; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: Shield.statusText(Lang.turkish, Shield.revision, Shield.statusCode); color: Theme.dim; font.pixelSize: 14; elide: Text.ElideRight }
             IconButton { symbol: "reload"; iconSize: 14; implicitWidth: 28; implicitHeight: 28; hint: Lang.t("Listeleri güncelle", "Update lists"); onClicked: Shield.updateLists() }
         }
     }

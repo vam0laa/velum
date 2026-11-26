@@ -36,7 +36,6 @@ Panel {
     function openDownloads() { downloadButton.show() }
 
     title: compact ? "" : "velum"
-    stripe: Theme.mauve
     implicitWidth: compact ? Theme.strip : Theme.sidebar
     Behavior on implicitWidth { NumberAnimation { duration: Theme.smooth; easing.type: Easing.OutCubic } }
 
@@ -96,11 +95,11 @@ Panel {
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: 2
-            radius: 1
+            radius: 0
             color: "transparent"
             Rectangle {
                 height: parent.height
-                radius: 1
+                radius: 0
                 color: Theme.accent
                 width: parent.width * (side.view?.loadProgress ?? 0) / 100
                 visible: side.view?.loading ?? false
@@ -117,11 +116,11 @@ Panel {
             focusPolicy: Qt.NoFocus
             onClicked: side.newTab()
             Accessible.name: Lang.t("Yeni sekme", "New tab")
-            background: Rectangle { radius: Theme.radius; color: add.hovered ? Qt.alpha(Theme.accent, 0.24) : Qt.alpha(Theme.accent, 0.13); opacity: add.down ? 0.8 : 1 }
+            background: Rectangle { color: add.hovered ? Theme.title : Theme.raised; border.width: 2; border.color: Theme.line; opacity: add.down ? 0.8 : 1 }
             contentItem: Item {
                 Icon { x: side.compact ? (parent.width - width) / 2 : 14; anchors.verticalCenter: parent.verticalCenter; name: "plus"; color: Theme.accent; size: 17 }
-                Text { x: 42; visible: !side.compact; anchors.verticalCenter: parent.verticalCenter; text: Lang.t("Yeni sekme", "New tab"); color: Theme.text; font.pixelSize: 13; font.weight: Font.DemiBold }
-                Text { visible: !side.compact; anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter } text: "Ctrl+T"; color: Theme.dim; font.pixelSize: 11 }
+                Text { x: 42; visible: !side.compact; anchors.verticalCenter: parent.verticalCenter; text: Lang.t("Yeni sekme", "New tab"); color: Theme.text; font.pixelSize: 17; font.weight: Font.Normal }
+                Text { visible: !side.compact; anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter } text: "Ctrl+T"; color: Theme.dim; font.pixelSize: 14 }
             }
             Hint { text: Lang.t("Yeni sekme (Ctrl+T)", "New tab (Ctrl+T)"); shown: side.compact && add.hovered; x: add.width + 8; y: (add.height - height) / 2 }
         }
