@@ -32,8 +32,9 @@ QByteArray cursorTheme(const QByteArray &answer, const QStringList &folders);
 // that means `theme`.
 bool writePointerFolder(const QString &folder, const QByteArray &theme);
 
-// The pointer's size in real pixels, from the answer about "cursor-size"; 0 if unusable.
-int cursorPixels(const QByteArray &answer, double scale);
+// The desktop's pointer size, from the answer about "cursor-size"; 0 if unusable. It is
+// passed on as it is: the compositor enlarges an XWayland pointer to the screen's scale.
+int cursorSize(const QByteArray &answer);
 
 // Chooses how to draw. Must run before the application is made.
 // VELUM_WAYLAND=1 keeps Wayland; VELUM_USE_NVIDIA=1 leaves the graphics cards alone.

@@ -107,10 +107,10 @@ bool writePointerFolder(const QString &folder, const QByteArray &theme)
     return file.open(QIODevice::WriteOnly | QIODevice::Truncate) && file.write(text) == text.size();
 }
 
-int cursorPixels(const QByteArray &answer, double scale)
+int cursorSize(const QByteArray &answer)
 {
     const int size = answer.trimmed().toInt();
-    return size >= 8 && size <= 128 && scale > 0 ? qRound(size * scale) : 0;
+    return size >= 8 && size <= 128 ? size : 0;
 }
 
 void restoreEnvironment()
@@ -142,9 +142,9 @@ void prepare()
                 if (!usual.startsWith(cache.toLocal8Bit() + ':'))
                     qputenv("XCURSOR_PATH", cache.toLocal8Bit() + ':' + usual);
                 qputenv("XCURSOR_THEME", theme);
-                const int pixels = cursorPixels(ask("gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null"), scale);
-                if (pixels > 0 && !qEnvironmentVariableIsSet("XCURSOR_SIZE"))
-                    borrow("XCURSOR_SIZE", QByteArray::number(pixels));      // read once, at start
+                const int size = cursorSize(ask("gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null"));
+                if (size > 0 && !qEnvironmentVariableIsSet("XCURSOR_SIZE"))
+                    borrow("XCURSOR_SIZE", QByteArray::number(size));      // read once, at start
             }
         }
     }
