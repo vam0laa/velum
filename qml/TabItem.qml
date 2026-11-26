@@ -9,6 +9,9 @@ ItemDelegate {
     required property string title
     required property string siteIcon
     required property bool loading
+    required property bool audible
+    required property bool muted
+    signal muteToggled(int index)
     required property bool pinned
     required property int asleep       // 0 awake, 1 frozen, 2 discarded
     required property int space        // the workspace it belongs to
@@ -128,7 +131,7 @@ ItemDelegate {
             }
         }
         Text {
-            anchors { left: mark.right; leftMargin: 10; right: close.visible ? close.left : parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+            anchors { left: mark.right; leftMargin: 10; right: sound.visible ? sound.left : close.visible ? close.left : parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
             text: row.label
             textFormat: Text.PlainText     // a page title is never treated as markup
             color: row.ink
@@ -138,12 +141,24 @@ ItemDelegate {
             elide: Text.ElideRight
             visible: !row.compact
         }
+        // sound: press to silence or let be heard
+        IconButton {
+            id: sound
+            anchors { right: close.visible ? close.left : parent.right; rightMargin: close.visible ? 0 : 7; verticalCenter: parent.verticalCenter }
+            visible: (row.audible || row.muted) && !row.compact
+            flat: true
+            tone: row.muted ? Theme.dim : row.ink
+            implicitWidth: 22; implicitHeight: 22; iconSize: 13
+            symbol: row.muted ? "muted" : "sound"
+            hint: row.muted ? Lang.t("Sesi aç", "Unmute") : Lang.t("Sesi kapat", "Mute")
+            onClicked: row.muteToggled(row.index)
+        }
         Icon {
             anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
             name: "pin"
             size: 14
             color: Theme.peach
-            visible: !row.compact && row.pinned && row.asleep < 2
+            visible: !row.compact && row.pinned && row.asleep < 2 && !sound.visible
         }
         Icon {
             anchors { right: parent.right; rightMargin: row.compact ? 3 : 12; top: row.compact ? parent.top : undefined; verticalCenter: row.compact ? undefined : parent.verticalCenter }

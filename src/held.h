@@ -12,6 +12,10 @@ inline const QString ending = QStringLiteral(".velum-hold");
 // Returns that name, or nothing.
 QString release(const QString &folder, const QString &file);
 
+// A path in `folder` for a new file named after `title` (which a page chose): characters
+// that mean something to a file system are replaced, and an existing file is never named.
+QString freePath(const QString &folder, const QString &title, const QString &suffix);
+
 // You refused: removes the file and what the engine had started of it.
 bool discard(const QString &folder, const QString &file);
 

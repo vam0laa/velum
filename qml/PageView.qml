@@ -50,7 +50,7 @@ WebEngineView {
     }
     onLifecycleStateChanged: app.tabs.setProperty(index, "asleep", lifecycleState)
     readonly property bool beside: app.splitShown && (web === app.splitLeft || web === app.splitRight)
-    // "parent" is the small app while the video is out there
+    // "parent" is the small window while the video is out there
     readonly property real room: parent?.width ?? 0
     readonly property real divide: Math.round(room * app.splitRatio)
     visible: web === app.view || web === app.miniPage || beside
@@ -150,6 +150,7 @@ WebEngineView {
             failure = null
         }
         if (info.status === WebEngineView.LoadSucceededStatus) {
+            zoomFactor = app.zoomOf(url)
             History.add(String(url), title)
             web.runJavaScript(app.reader.probe, WebEngineScript.ApplicationWorld, found => web.readable = found === true)
         }
@@ -174,7 +175,14 @@ WebEngineView {
             app.savePinned()
     }
 
-    // links that ask for a new app become app.tabs
+    onLinkHovered: url => { if (web === app.view) app.hoveredLink = String(url) }
+    // a page's own print button: Velum saves a PDF
+    onPrintRequested: app.savePdf(web)
+    onPdfPrintingFinished: (path, success) => app.pdfDone(path, success)
+    onRecentlyAudibleChanged: app.tabs.setProperty(index, "audible", web.recentlyAudible)
+    onAudioMutedChanged: app.tabs.setProperty(index, "muted", web.audioMuted)
+
+    // links that ask for a new window become tabs
     onNewWindowRequested: request => app.newWindowFrom(web, request.userInitiated,
         request.destination === WebEngineNewWindowRequest.InNewBackgroundTab, page => request.openIn(page))
     onWindowCloseRequested: app.closeTab(index)

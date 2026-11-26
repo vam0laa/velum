@@ -6,6 +6,11 @@ IconButton {
     property var downloads: []
     property bool beside: false         // the panel opens to the right
     property bool above: false          // ... or above the button
+    property var past: []
+    property var canOpen: name => true
+    signal openFile(string folder, string name)
+    signal again(string url)
+    signal forget(int index)
     readonly property int running: downloads.filter(d => !d.isFinished).length
     signal showFolder(string folder)
     signal clearFinished()
@@ -22,6 +27,11 @@ IconButton {
     DownloadsPanel {
         id: panel
         downloads: button.downloads
+        past: button.past
+        canOpen: button.canOpen
+        onOpenFile: (folder, name) => button.openFile(folder, name)
+        onAgain: url => button.again(url)
+        onForget: index => button.forget(index)
         x: button.beside ? button.width + 8 : button.width - width
         y: button.beside ? button.height - height : button.above ? -height - 6 : button.height + 6
         onShowFolder: folder => button.showFolder(folder)

@@ -10,5 +10,6 @@ QtObject {
     function heldEnding() { return ".velum-hold" }
     function release(folder, file) { settled.push("release " + file); return file.replace(".velum-hold", "") }
     function discard(folder, file) { settled.push("discard " + file); return true }
+    function freePath(folder, title, suffix) { return folder + "/" + String(title).replace(/\//g, " ") + "." + suffix }
     function toPath(url) { return decodeURIComponent(String(url).replace("file://", "")) }
 }

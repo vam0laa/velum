@@ -33,6 +33,11 @@ QtObject {
         { id: "gameMode", keys: "Ctrl+Shift+G", name: Lang.t("Oyun modu", "Game mode") },
         { id: "resources", keys: "Shift+Esc", name: Lang.t("Kaynaklar", "Resources") },
         { id: "settings", keys: "Ctrl+,", name: Lang.t("Ayarlar", "Settings") },
+        { id: "pdf", keys: "Ctrl+P", name: Lang.t("PDF olarak kaydet", "Save as PDF") },
+        { id: "savePage", keys: "Ctrl+S", name: Lang.t("Sayfayı kaydet", "Save page") },
+        { id: "source", keys: "Ctrl+U", name: Lang.t("Sayfa kaynağı", "Page source") },
+        { id: "devTools", keys: "F12", also: "Ctrl+Shift+I", name: Lang.t("Geliştirici araçları", "Developer tools") },
+        { id: "mute", keys: "Ctrl+M", name: Lang.t("Sekmenin sesini kapat ya da aç", "Mute or unmute the tab") },
         { id: "resetLook", keys: "Ctrl+Shift+0", name: Lang.t("Görünümü sıfırla", "Reset the look") },
         { id: "clear", keys: "Ctrl+Shift+Del", name: Lang.t("Gezinme verilerini sil", "Delete browsing data") },
         { id: "fullScreen", keys: "F11", name: Lang.t("Tam ekran", "Full screen") },
@@ -114,6 +119,8 @@ QtObject {
         if (name === "" || (!strong && !f && !(name === "Esc" && (modifiers & Qt.ShiftModifier))))
             return ""
         if ((modifiers & Qt.AltModifier) && !(modifiers & Qt.ControlModifier) && key >= Qt.Key_1 && key <= Qt.Key_6)
+            return ""
+        if (modifiers === Qt.ControlModifier && key >= Qt.Key_1 && key <= Qt.Key_9)     // these go to a tab
             return ""
         return (modifiers & Qt.ControlModifier ? "Ctrl+" : "") + (modifiers & Qt.AltModifier ? "Alt+" : "")
              + (modifiers & Qt.ShiftModifier ? "Shift+" : "") + (modifiers & Qt.MetaModifier ? "Meta+" : "") + name

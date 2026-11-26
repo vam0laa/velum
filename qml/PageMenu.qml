@@ -15,6 +15,10 @@ AppMenu {
     signal openInTab(string url)
     signal searchFor(string text)
     signal find()
+    signal savePdf()
+    signal savePage()
+    signal viewSource()
+    signal inspect()
 
     // takes what the engine reports about the click
     function describe(request) {
@@ -49,6 +53,11 @@ AppMenu {
     AppMenuLine { shown: menu.plain }
     AppMenuItem { shown: menu.plain; text: Lang.t("Sayfada ara", "Find in page"); onTriggered: menu.find() }
     AppMenuItem { shown: menu.plain; text: Lang.t("Sayfa adresini kopyala", "Copy page address"); onTriggered: menu.copyText(String(menu.view.url)) }
+
+    AppMenuItem { shown: menu.plain; text: Lang.t("Sayfayı kaydet", "Save page"); onTriggered: menu.savePage() }
+    AppMenuItem { shown: menu.plain; text: Lang.t("PDF olarak kaydet", "Save as PDF"); onTriggered: menu.savePdf() }
+    AppMenuItem { shown: menu.plain; text: Lang.t("Sayfa kaynağını gör", "View page source"); onTriggered: menu.viewSource() }
+    AppMenuItem { text: Lang.t("İncele", "Inspect"); onTriggered: menu.inspect() }
 
     // copying a text of our own goes through a hidden field
     function copyText(text) { hidden.text = text; hidden.selectAll(); hidden.copy(); hidden.text = "" }

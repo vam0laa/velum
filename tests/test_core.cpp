@@ -397,6 +397,13 @@ private slots:
         make("x.exe.velum-hold");
         QVERIFY(held::discard(dir.path(), "x.exe.velum-hold"));
         QVERIFY(!QFile::exists(dir.filePath("x.exe.velum-hold")));
+        const QString free = held::freePath(dir.path(), "../a/b: \"c\"?", "pdf");
+        QCOMPARE(QFileInfo(free).absolutePath(), QDir(dir.path()).absolutePath());
+        QCOMPARE(QFileInfo(free).fileName(), "a b c.pdf");
+        make("a b c.pdf");
+        QCOMPARE(QFileInfo(held::freePath(dir.path(), "a b c", "pdf")).fileName(), "a b c (1).pdf");
+        QCOMPARE(QFileInfo(held::freePath(dir.path(), "...", "pdf")).fileName(), "page.pdf");
+        QVERIFY(held::freePath("/nowhere", "x", "pdf").isEmpty());
         // nothing but held files, and nothing outside the folder
         QVERIFY(!held::discard(dir.path(), "tool.sh") && QFile::exists(dir.filePath("tool.sh")));
         QVERIFY(held::release(dir.path(), "../a.velum-hold").isEmpty());

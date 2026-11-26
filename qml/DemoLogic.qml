@@ -37,6 +37,8 @@ QtObject {
         }
         else if (action.startsWith("design"))
             app.start.editor?.open(Number(action.split(":")[1] ?? 0))
+        else if (action === "downloads")
+            app.openDownloads()
         else if (action === "menu")
             app.mainMenu.popup(app.width - app.mainMenu.width - 12, 90)
         else if (action === "passwords")

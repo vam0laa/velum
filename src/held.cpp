@@ -29,6 +29,27 @@ QString release(const QString &folder, const QString &file)
     return QFile::rename(dir.filePath(file), dir.filePath(name)) ? name : QString();
 }
 
+QString freePath(const QString &folder, const QString &title, const QString &suffix)
+{
+    QString stem;
+    for (const QChar c : title)
+        stem += c.category() == QChar::Other_Control || c.category() == QChar::Other_Format || QStringLiteral("/\\:*?\"<>|").contains(c) ? QLatin1Char(' ') : c;
+    stem = stem.simplified().left(80);
+    while (stem.startsWith(QLatin1Char('.')) || stem.startsWith(QLatin1Char(' ')))
+        stem.remove(0, 1);
+    if (stem.isEmpty())
+        stem = QStringLiteral("page");
+    const QDir dir(folder);
+    if (folder.isEmpty() || !dir.exists())
+        return {};
+    for (int n = 0; n < 1000; ++n) {
+        const QString name = (n == 0 ? stem : QStringLiteral("%1 (%2)").arg(stem).arg(n)) + QLatin1Char('.') + suffix;
+        if (!dir.exists(name))
+            return dir.filePath(name);
+    }
+    return {};
+}
+
 bool discard(const QString &folder, const QString &file)
 {
     if (!plain(file))

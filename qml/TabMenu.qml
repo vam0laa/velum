@@ -11,9 +11,10 @@ AppMenu {
     AppMenuItem { text: tabMenu.pinned ? Lang.t("Sabitlemeyi kaldır", "Unpin") : Lang.t("Sabitle", "Pin"); onTriggered: app.togglePin(tabMenu.index) }
     AppMenuItem { text: Lang.t("Çoğalt", "Duplicate"); onTriggered: app.openTab(app.tabs.get(tabMenu.index).pageUrl) }
     AppMenuItem { text: Lang.t("Yenile", "Reload"); onTriggered: (app.views.itemAt(tabMenu.index) as WebEngineView).reload() }
+    AppMenuItem { text: Lang.t("Sesi kapat ya da aç", "Mute or unmute"); onTriggered: app.toggleMute(tabMenu.index) }
     AppMenuItem { text: Lang.t("Uyut", "Sleep"); enabled: tabMenu.index !== app.current; onTriggered: app.sleepTab(tabMenu.index) }
     AppMenuItem { text: Lang.t("Yer imlerine ekle", "Bookmark"); onTriggered: app.addShortcut(app.tabs.get(tabMenu.index).pageUrl, app.tabs.get(tabMenu.index).title) }
-    AppMenuItem { text: Lang.t("Videoyu küçük pencereye al", "Video in a small app"); onTriggered: app.openMini(tabMenu.index) }
+    AppMenuItem { text: Lang.t("Videoyu küçük pencereye al", "Video in a small window"); onTriggered: app.openMini(tabMenu.index) }
     AppMenuItem { text: Lang.t("Yan yana aç", "Open side by side"); shown: tabMenu.index !== app.current; onTriggered: app.splitWith(tabMenu.index) }
     AppMenuItem { text: Lang.t("Bölünmeyi kapat", "End split view"); shown: app.splitShown; onTriggered: app.unsplit() }
     // moving a tab to another workspace; there are at most six

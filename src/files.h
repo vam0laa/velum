@@ -21,6 +21,9 @@ public:
     // a file address, or already a path
     Q_INVOKABLE QString toPath(const QUrl &url) const { return url.isLocalFile() ? url.toLocalFile() : url.toString(); }
 
+    // a name in `folder` for a new file called after `title`; nothing existing is named
+    Q_INVOKABLE QString freePath(const QString &folder, const QString &title, const QString &suffix) const { return held::freePath(folder, title, suffix); }
+
     // downloads waiting for your word (see held.h)
     Q_INVOKABLE QString heldEnding() const { return held::ending; }
     Q_INVOKABLE QString release(const QString &folder, const QString &file) const { return held::release(folder, file); }

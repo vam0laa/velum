@@ -120,6 +120,26 @@ ApplicationWindow {
     readonly property bool splitShown: moves >= 0 && !pageFullScreen && splitLeft !== null && splitRight !== null && view !== null
                                        && (view === splitLeft || view === splitRight) && inSpace(splitLeft.index) && inSpace(splitRight.index)
     property var downloads: []        // download requests of this run, newest first
+    property var pastDownloads: []    // what earlier downloads fetched, remembered
+    readonly property var downloadTools: ({ past: pastDownloads, canOpen: name => !risky(name), open: openDownloaded, again: url => openTab(url), forget: forgetDownload })
+    function clearDownloadList() { downloadLogic.clearDownloadList() }
+    function recordDownload(entry) { downloadLogic.recordDownload(entry) }
+    function openDownloaded(folder, name) { downloadLogic.openDownloaded(folder, name) }
+    function forgetDownload(index) { downloadLogic.forgetDownload(index) }
+    property var siteZoom: ({})
+    property string hoveredLink: ""   // under the pointer, on the page being looked at
+    function savePdf(page) { toolLogic.savePdf(page) }
+    function pdfDone(path, ok) { toolLogic.pdfDone(path, ok) }
+    function savePage() { toolLogic.savePage() }
+    function viewSource() { toolLogic.viewSource() }
+    function openDevTools(page) { toolLogic.openDevTools(page) }
+    function inspect(page) { toolLogic.inspect(page) }
+    function zoom(step) { toolLogic.zoom(step) }
+    function zoomOf(url) { return toolLogic.zoomOf(url) }
+    function toggleMute(index) { toolLogic.toggleMute(index) }
+    function goToTab(number) { toolLogic.goToTab(number) }
+    property alias tools: toolLogic
+    property alias historyMenu: historyMenu
     property alias mini: miniPlayer
     readonly property WebEngineView miniPage: miniPlayer.page   // the tab in the small window
     property string notice: ""        // a short message over the page
@@ -160,6 +180,8 @@ ApplicationWindow {
         profile.httpUserAgent = profile.httpUserAgent.replace(/QtWebEngine\/\S+\s/, "")
         shortcuts = readList(saved.shortcuts)
         readHome()
+        downloadLogic.readDownloads()
+        toolLogic.readZoom()
         neverSave = readStrings(saved.neverSave)
         iconNames = readStrings(saved.iconNames)
         watchLogins()
@@ -255,6 +277,8 @@ ApplicationWindow {
         closedTabs = []
         saved.session = "{}"
         History.clear()
+        saved.pastDownloads = "[]"
+        saved.siteZoom = "{}"
         Shield.clearData(profile)
     }
 
@@ -309,6 +333,8 @@ ApplicationWindow {
         property alias startVisited: window.showFrequent
         property alias note: window.note
         property string homeWidgets: ""
+        property string pastDownloads: "[]"
+        property string siteZoom: "{}"
         property alias homeHeadline: window.homeHeadline
         property string homeWords: "[]"
         property string homeTasks: "[]"
@@ -339,6 +365,8 @@ ApplicationWindow {
     SiteLogic { id: siteLogic; app: window }
     AskLogic { id: askLogic; app: window }
     DemoLogic { id: demoLogic; app: window }
+    ToolLogic { id: toolLogic; app: window }
+    HistoryMenu { id: historyMenu }
     property alias accountMenu: accountMenu
     property alias clearDialog: clearDialog
     property alias spaceDialog: spaceDialog
@@ -368,7 +396,7 @@ ApplicationWindow {
 
     // Adds a tab after the others, in this workspace unless another is named.
     function appendTab(url, title, lazy, inWorkspace) {
-        tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0, space: inWorkspace ?? space, kind: "" })
+        tabs.append({ startUrl: String(url), lazy: lazy === true, pageUrl: String(url), title: String(title ?? ""), siteIcon: "", loading: false, pinned: false, asleep: 0, space: inWorkspace ?? space, kind: "", audible: false, muted: false })
         touchSession()
     }
 
@@ -387,6 +415,8 @@ ApplicationWindow {
         const closing = views.itemAt(index) as WebEngineView
         if (closing && closing === fullPage)
             leavePageFull()
+        if (closing)
+            tools.forgetPage(closing)
         if (closing && closing === findPage)
             findPage = null
         if (closing && closing === miniPage)
@@ -686,6 +716,7 @@ ApplicationWindow {
     // the box belongs to the page it was opened on, and so do its marks
     property WebEngineView findPage: null
     onViewChanged: {
+        hoveredLink = ""
         if (findPage && findPage !== view) {
             findPage.findText("")
             findPage = null
@@ -793,15 +824,18 @@ ApplicationWindow {
                 onSettings: window.openSettings()
                 downloads: window.downloads
                 onShowFolder: folder => Qt.openUrlExternally(Files.toUrl(folder))
-                onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
+                onClearDownloads: window.clearDownloadList()
                 onMoved: (from, to) => window.moveTab(from, to)
                 onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
+                onMuteToggled: i => window.toggleMute(i)
                 spaces: window.spaces
                 space: window.space
                 onSpaceChosen: id => window.switchSpace(id)
                 onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
                 onSpaceAdd: spaceDialog.show(0, "", false)
                 onMenu: at => window.showMenu(at)
+                downloadTools: window.downloadTools
+                onBackMenu: (forward, at) => historyMenu.showFor(window.view, forward, at)
                 closable: window.ownButtons
                 onCloseRequested: window.close()
             }
@@ -823,6 +857,7 @@ ApplicationWindow {
                 onNewTab: window.newTab()
                 onMoved: (from, to) => window.moveTab(from, to)
                 onMenuRequested: i => { tabMenu.index = i; tabMenu.popup() }
+                onMuteToggled: i => window.toggleMute(i)
                 onReloadPage: window.view.reload()
                 onClearData: clearDialog.open()
                 onSettings: window.openSettings()
@@ -836,6 +871,8 @@ ApplicationWindow {
                 onToggleBookmark: window.toggleBookmark()
                 onExtensions: window.openSettings("extensions")
                 onMenu: at => window.showMenu(at)
+                downloadTools: window.downloadTools
+                onBackMenu: (forward, at) => historyMenu.showFor(window.view, forward, at)
                 onMaximize: window.toggleWindowFullScreen()
                 onQuitRequested: window.close()
             gaming: window.powerMode === "game"
@@ -853,7 +890,7 @@ ApplicationWindow {
                 pageButtons.onReader: card.reader()
                 pageButtons.onVideo: card.video()
                 onShowFolder: folder => Qt.openUrlExternally(Files.toUrl(folder))
-                onClearDownloads: window.downloads = window.downloads.filter(d => !d.isFinished)
+                onClearDownloads: window.clearDownloadList()
                 onSpaceChosen: id => window.switchSpace(id)
                 onSpaceEdit: id => spaceDialog.show(id, window.spaceName(window.spaces.find(s => s.id === id)), window.spaces.length > 1)
                 onSpaceAdd: spaceDialog.show(0, "", false)
@@ -883,6 +920,8 @@ ApplicationWindow {
                 videoButton: window.miniPage !== null || (!window.onStartPage && (window.view?.recentlyAudible ?? false))
                 videoOut: window.miniPage !== null
                 onVideo: window.toggleMini()
+
+                PageOverlay { app: window; anchors.fill: pagesArea; z: 2; visible: !window.pageFullScreen }
 
                 Item {
                     id: pagesArea
@@ -1189,7 +1228,7 @@ ApplicationWindow {
         heading: Lang.t("Gezinme verileri silinsin mi?", "Delete browsing data?")
         detail: Lang.t("Geçmiş, çerezler ve önbellek silinir; bütün sitelerden çıkış yapılır. Yer imlerin kalır. Bu geri alınamaz.", "History, cookies and the cache are deleted and you are signed out everywhere. Bookmarks stay. This cannot be undone.")
         action: Lang.t("Sil", "Delete")
-        onConfirmed: { History.clear(); Shield.clearData(window.profile) }
+        onConfirmed: { History.clear(); window.pastDownloads = []; saved.pastDownloads = "[]"; Shield.clearData(window.profile) }
     }
 
     ConfirmDialog {
@@ -1269,6 +1308,10 @@ ApplicationWindow {
         onOpenInTab: url => window.openTab(url)
         onSearchFor: text => window.openTab(String(Address.search(text)))
         onFind: window.findInPage()
+        onSavePdf: window.savePdf(view)
+        onSavePage: window.savePage()
+        onViewSource: window.viewSource()
+        onInspect: window.inspect(view)
     }
 
     // a newer version has been fetched and will be installed when Velum is closed

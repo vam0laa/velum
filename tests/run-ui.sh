@@ -2,6 +2,11 @@
 # Runs the interface test without a screen. Usage: tests/run-ui.sh [picture.png]
 set -e
 here=$(cd "$(dirname "$0")" && pwd)
+# every shortcut asked for by name must exist (LC_ALL=C: in Turkish "[a-z]" leaves out "i")
+known=$(LC_ALL=C grep -o '{ id: "[A-Za-z]*", keys' "$here/../qml/Keymap.qml" | cut -d'"' -f2)
+for id in $(LC_ALL=C grep -ho 'Keymap\.\(sequences\|text\|hint\)("[^"]*")' "$here"/../qml/*.qml | cut -d'"' -f2 | sort -u); do
+    echo "$known" | grep -qx "$id" || { echo "RESULT unknown shortcut name: $id"; exit 1; }
+done
 work=$(mktemp -d)
 python3 -I "$here/status_server.py" &
 server=$!
@@ -16,7 +21,7 @@ mkdir -p "$work/data" && cp -r "$here/../data/velum.svg" "$here/../data/fonts" "
 } > "$work/ui/qmldir"
 XDG_CONFIG_HOME="$work/config" XDG_DATA_HOME="$work/data" QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
 QT_QUICK_CONTROLS_STYLE=Basic QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true" \
-    timeout 150 "${QML:-qml6}" -a gui "$work/test_ui.qml" -- "${1:-$work/shot.png}" 2>&1 |
+    timeout 180 "${QML:-qml6}" -a gui "$work/test_ui.qml" -- "${1:-$work/shot.png}" 2>&1 |
     grep -E "PASS|FAIL|RESULT|DEBUG|\.qml:[0-9]+|rror" > "$work/log" || true
 cat "$work/log"
 grep -q "RESULT all passed" "$work/log"

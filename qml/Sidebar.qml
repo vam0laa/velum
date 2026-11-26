@@ -35,6 +35,9 @@ Panel {
     signal showFolder(string folder)
     signal clearDownloads()
     function openDownloads() { downloadButton.show() }
+    property var downloadTools: null        // what the list can do: { past, canOpen, open, again, forget }
+    signal backMenu(bool forward, Item at)
+    signal muteToggled(int index)
 
     title: compact ? "" : "velum"
     implicitWidth: compact ? Theme.strip : Theme.sidebar
@@ -58,8 +61,8 @@ Panel {
                 onClicked: side.toggle()
             }
             Item { Layout.fillWidth: true; visible: !side.compact }
-            IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "back"; hint: Lang.t("Geri", "Back") + Keymap.hint("back"); hintBeside: side.compact; enabled: side.view?.canGoBack ?? false; onClicked: side.view.goBack() }
-            IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "forward"; hint: Lang.t("İleri", "Forward") + Keymap.hint("forward"); hintBeside: side.compact; enabled: side.view?.canGoForward ?? false; onClicked: side.view.goForward() }
+            IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "back"; hint: Lang.t("Geri", "Back") + Keymap.hint("back"); hintBeside: side.compact; enabled: side.view?.canGoBack ?? false; onClicked: side.view.goBack(); id: backButton; TapHandler { acceptedButtons: Qt.RightButton; onTapped: side.backMenu(false, backButton) } }
+            IconButton { Layout.alignment: Qt.AlignHCenter; symbol: "forward"; hint: Lang.t("İleri", "Forward") + Keymap.hint("forward"); hintBeside: side.compact; enabled: side.view?.canGoForward ?? false; onClicked: side.view.goForward(); id: forwardButton; TapHandler { acceptedButtons: Qt.RightButton; onTapped: side.backMenu(true, forwardButton) } }
             ShieldButton {
                 Layout.alignment: Qt.AlignHCenter
                 host: side.host
@@ -142,6 +145,7 @@ Panel {
                 shown: pinned || space === side.space
                 onPicked: i => side.picked(i)
                 onClosed: i => side.closed(i)
+                onMuteToggled: i => side.muteToggled(i)
                 onMenuRequested: i => side.menuRequested(i)
                 lastPinned: index === side.pinnedCount - 1 && index < ListView.view.count - 1
                 onDragged: (i, at) => {
@@ -194,6 +198,7 @@ Panel {
                 above: true
                 onShowFolder: folder => side.showFolder(folder)
                 onClearFinished: side.clearDownloads()
+                past: side.downloadTools?.past ?? []; canOpen: side.downloadTools?.canOpen ?? (n => false); onOpenFile: (f, n) => side.downloadTools.open(f, n); onAgain: u => side.downloadTools.again(u); onForget: i => side.downloadTools.forget(i)
             }
         }
     }

@@ -45,6 +45,9 @@ Item {
     signal menu(Item at)
     readonly property bool bookmarkRow: showBookmarks && !Theme.web
     function openDownloads() { downloadButton.show() }
+    property var downloadTools: null        // what the list can do: { past, canOpen, open, again, forget }
+    signal backMenu(bool forward, Item at)
+    signal muteToggled(int index)
 
     implicitHeight: strip.height + tools.height + (bookmarkRow ? Theme.dense(32) : 0)
 
@@ -145,6 +148,7 @@ Item {
                     shown: pinned || space === bar.space
                     onPicked: i => bar.picked(i)
                     onClosed: i => bar.closed(i)
+                    onMuteToggled: i => bar.muteToggled(i)
                     onMenuRequested: i => bar.menuRequested(i)
                     lastPinned: index === bar.pinnedCount - 1 && index < list.count - 1
                     onDragged: (i, at) => {
@@ -193,8 +197,8 @@ Item {
             id: toolRow
             anchors { fill: parent; leftMargin: 10; rightMargin: 12; topMargin: 2; bottomMargin: 2 }
             spacing: Theme.web ? 9 : 4
-            IconButton { id: backButton; symbol: "back"; hint: Lang.t("Geri", "Back") + Keymap.hint("back"); enabled: bar.view?.canGoBack ?? false; onClicked: bar.view.goBack() }
-            IconButton { id: forwardButton; symbol: "forward"; hint: Lang.t("İleri", "Forward") + Keymap.hint("forward"); enabled: bar.view?.canGoForward ?? false; onClicked: bar.view.goForward() }
+            IconButton { id: backButton; symbol: "back"; hint: Lang.t("Geri", "Back") + Keymap.hint("back"); enabled: bar.view?.canGoBack ?? false; onClicked: bar.view.goBack(); TapHandler { acceptedButtons: Qt.RightButton; onTapped: bar.backMenu(false, backButton) } onPressAndHold: bar.backMenu(false, backButton) }
+            IconButton { id: forwardButton; symbol: "forward"; hint: Lang.t("İleri", "Forward") + Keymap.hint("forward"); enabled: bar.view?.canGoForward ?? false; onClicked: bar.view.goForward(); TapHandler { acceptedButtons: Qt.RightButton; onTapped: bar.backMenu(true, forwardButton) } onPressAndHold: bar.backMenu(true, forwardButton) }
             IconButton {
                 id: reloadButton
                 symbol: bar.view?.loading ? "stop" : "reload"
@@ -238,7 +242,7 @@ Item {
                     onClicked: bar.toggleBookmark()
                 }
             }
-            DownloadButton { id: downloadButton; downloads: bar.downloads; onShowFolder: folder => bar.showFolder(folder); onClearFinished: bar.clearDownloads() }
+            DownloadButton { id: downloadButton; downloads: bar.downloads; onShowFolder: folder => bar.showFolder(folder); onClearFinished: bar.clearDownloads(); past: bar.downloadTools?.past ?? []; canOpen: bar.downloadTools?.canOpen ?? (n => false); onOpenFile: (f, n) => bar.downloadTools.open(f, n); onAgain: u => bar.downloadTools.again(u); onForget: i => bar.downloadTools.forget(i) }
             IconButton { id: extensionsButton; symbol: "puzzle"; hint: Lang.t("Eklentiler", "Extensions"); onClicked: bar.extensions() }
             IconButton { id: bookmarksButton; visible: false; symbol: "star"; hint: Lang.t("Yer imleri", "Bookmarks") + Keymap.hint("bookmarks"); onClicked: bar.openBookmarksRequested() }
             IconButton { id: historyButton; visible: false; symbol: "history"; hint: Lang.t("Geçmiş", "History") + Keymap.hint("history"); onClicked: bar.historyRequested() }

@@ -333,6 +333,30 @@ Item {
             const look = w.themeText(); w.keepWords("Eski", "x"); Files.write("file:///tmp/u.velumtheme", look); w.importTheme("file:///tmp/u.velumtheme")
             t.check("a loaded theme can be undone", w.homeHeadline === "" && w.beforeImport !== ""); Theme.motion = false; w.undoImport(); t.check("which restores what you had", w.homeHeadline === "Eski" && w.beforeImport === ""); Theme.motion = true; w.keepWords("", "")
             }
+            // every key the window listens for and every command shows belongs to a known action
+            for (const action of Keymap.actions)
+                if (Keymap.sequences(action.id).length === 0) t.check("key of " + action.id, false)
+            t.check("every command names real keys", w.commandBar.commands.every(c => c.keys !== undefined) && w.commandBar.commands.filter(c => String(c.name).indexOf("Kaynaklar") === 0 || String(c.name).indexOf("Resources") === 0)[0].keys === "Shift+Esc")
+            // ---- everyday tools ----
+            {
+                const tools = w.tools
+                w.openTab(t.page("zoom"))
+                w.siteZoom = ({})
+                t.check("a site starts at normal size", w.zoomOf("https://a.example/") === 1)
+                w.siteZoom = ({ "a.example": 1.5, "bad.example": "x" }); t.check("a remembered size is used", w.zoomOf("https://a.example/p") === 1.5 && w.zoomOf("https://bad.example/") === 1)
+                w.siteZoom = ({})
+                const n = w.visibleTabs()
+                w.goToTab(1); t.check("Ctrl+1 goes to the first tab", w.current === n[0])
+                w.goToTab(9); t.check("Ctrl+9 to the last", w.current === n[n.length - 1])
+                t.check("digits with Ctrl cannot be taken", Keymap.fromEvent(Qt.Key_3, Qt.ControlModifier) === "")
+                w.pastDownloads = []
+                for (let i = 0; i < 105; i++) w.recordDownload({ name: "f" + i, folder: "/d", url: "https://a.example/f", size: 1, ok: true, when: 1 })
+                w.recordDownload({ name: "f104", folder: "/d", url: "https://a.example/f", size: 2, ok: true, when: 2 })
+                t.check("downloads are remembered, once each, up to a hundred", w.pastDownloads.length === 100 && w.pastDownloads[0].size === 2)
+                w.forgetDownload(0); t.check("one can be removed", w.pastDownloads.length === 99 && w.pastDownloads[0].name === "f103")
+                w.clearDownloadList(); t.check("and all of them", w.pastDownloads.length === 0)
+                w.closeTab(w.current)
+            }
             // your own shortcuts
             t.check("the usual keys", Keymap.text("newTab") === "Ctrl+T" && Keymap.sequences("reload").join() === "Ctrl+R,F5")
             t.check("a press is written as a sequence", Keymap.fromEvent(Qt.Key_Y, Qt.ControlModifier | Qt.ShiftModifier) === "Ctrl+Shift+Y" && Keymap.fromEvent(Qt.Key_F7, Qt.NoModifier) === "F7")
@@ -662,7 +686,73 @@ Item {
             const w = t.w
             t.check("and completes once you agree", w.downloads.length === 1 && w.downloads[0].state === WebEngineDownloadRequest.DownloadCompleted && w.downloads[0].receivedBytes > 300000)
             t.check("then it gets its real name", Files.settled.join() === "release tool.sh.velum-hold")
-            w.downloadFolder = ""; w.downloads = []
+            w.downloads = []; w.pastDownloads = []
+            w.closeTab(w.current)
+            // the everyday tools, with the real engine
+            w.openTab("http://127.0.0.1:8766/page")
+            toolStep.start()
+        }
+    }
+    Timer {
+        id: toolStep; interval: 1500
+        onTriggered: {
+            const w = t.w
+            w.zoom(1); w.zoom(1)
+            t.check("a real page zooms and the site remembers", Math.abs(w.view.zoomFactor - 1.25) < 0.01 && w.zoomOf("http://127.0.0.1:8766/other") === 1.25)
+            w.zoom(0); t.check("and goes back", Math.abs(w.view.zoomFactor - 1) < 0.01 && w.siteZoom["127.0.0.1"] === undefined)
+            w.toggleMute(w.current); t.check("a tab can be muted, and the list knows", w.view.audioMuted && w.tabs.get(w.current).muted)
+            w.toggleMute(w.current); t.check("and heard again", !w.view.audioMuted && !w.tabs.get(w.current).muted)
+            w.notice = ""
+            w.savePdf()
+            pdfStep.start()
+        }
+    }
+    Timer {
+        id: pdfStep; interval: 500
+        property int tries: 0
+        onTriggered: {
+            const w = t.w
+            if (!/PDF (kaydedildi|saved)|kaydedilemedi|could not/.test(w.notice) && ++tries < 20) { restart(); return }
+            t.check("a real page is saved as PDF", /PDF (kaydedildi|saved)/.test(w.notice))
+            w.openDevTools()
+            t.check("the developer tools open on this page", w.tools.devWindow !== null && w.tools.devWindow.visible && w.tools.devWindow.page === w.view)
+            w.tools.devWindow.close(); t.check("and close", w.tools.devWindow.page === null)
+            w.pastDownloads = []
+            w.savePage()
+            sourceStep.start()
+        }
+    }
+    Timer {
+        id: sourceStep; interval: 1500
+        property bool asked: false
+        onTriggered: {
+            const w = t.w
+            if (!asked) {
+                t.check("a real page is saved whole", w.pastDownloads.length === 1 && w.pastDownloads[0].ok && w.pastDownloads[0].size > 0 && w.waiting.length === 0)
+                w.downloads = []; w.pastDownloads = []
+                asked = true
+                w.viewSource()
+                restart()
+                return
+            }
+            t.check("the source opens in its own tab", String(w.view.url).indexOf("view-source:") === 0 && !w.onStartPage)
+            w.view.runJavaScript("document.body.innerText", text => {
+                t.check("and shows the markup", String(text).indexOf("<title>Check</title>") >= 0)
+                w.closeTab(w.current)
+                w.view.url = "http://127.0.0.1:8766/page?2"
+                historyStep.start()
+            })
+        }
+    }
+    Timer {
+        id: historyStep; interval: 1500
+        onTriggered: {
+            const w = t.w
+            w.historyMenu.showFor(w.view, false, w.contentItem)
+            t.check("the pages behind are listed", w.historyMenu.opened || w.historyMenu.visible)
+            t.check("with their entries", w.historyMenu.count >= 1)
+            w.historyMenu.close()
+            w.downloadFolder = ""
             w.closeTab(w.current)
             w.openTab("")
             w.view.url = "http://127.0.0.1:8766/page"

@@ -15,10 +15,13 @@ AppMenu {
     AppMenuItem { text: Lang.t("Eklentiler", "Extensions"); onTriggered: app.openSettings("extensions") }
     AppMenuLine {}
     AppMenuItem { text: Lang.t("Sayfada ara", "Find in page"); keys: Keymap.text("find"); enabled: !app.onStartPage && !app.onSettings; onTriggered: app.findInPage() }
-    AppMenuItem { text: Lang.t("Yakınlaştır", "Zoom in"); keys: Keymap.text("zoomIn"); onTriggered: app.view.zoomFactor = Math.min(3, app.view.zoomFactor + 0.1) }
-    AppMenuItem { text: Lang.t("Uzaklaştır", "Zoom out"); keys: Keymap.text("zoomOut"); onTriggered: app.view.zoomFactor = Math.max(0.5, app.view.zoomFactor - 0.1) }
+    AppMenuItem { text: Lang.t("Yakınlaştır", "Zoom in"); keys: Keymap.text("zoomIn"); onTriggered: app.zoom(1) }
+    AppMenuItem { text: Lang.t("Uzaklaştır", "Zoom out"); keys: Keymap.text("zoomOut"); onTriggered: app.zoom(-1) }
+    AppMenuItem { text: Lang.t("PDF olarak kaydet", "Save as PDF"); keys: Keymap.text("pdf"); enabled: !app.onStartPage && !app.onSettings; onTriggered: app.savePdf() }
+    AppMenuItem { text: Lang.t("Sayfayı kaydet", "Save page"); keys: Keymap.text("savePage"); enabled: !app.onStartPage && !app.onSettings; onTriggered: app.savePage() }
+    AppMenuItem { text: Lang.t("Geliştirici araçları", "Developer tools"); keys: Keymap.text("devTools"); enabled: !app.onStartPage && !app.onSettings; onTriggered: app.openDevTools() }
     AppMenuItem { text: Lang.t("Okuma modu", "Reading mode"); keys: Keymap.text("reader"); enabled: !app.onStartPage && !app.onSettings; onTriggered: app.toggleReader() }
-    AppMenuItem { text: Lang.t("Küçük video penceresi", "Mini video app"); keys: Keymap.text("mini"); enabled: !app.onStartPage && !app.onSettings; onTriggered: app.toggleMini() }
+    AppMenuItem { text: Lang.t("Küçük video penceresi", "Mini video window"); keys: Keymap.text("mini"); enabled: !app.onStartPage && !app.onSettings; onTriggered: app.toggleMini() }
     AppMenuItem { text: Lang.t("Ekranı böl ya da birleştir", "Split or join the view"); keys: Keymap.text("split"); onTriggered: app.toggleSplit() }
     AppMenuLine {}
     AppMenuItem { keys: Keymap.text("gameMode"); text: (app.powerMode === "game" ? "✓  " : "") + Lang.t("Oyun modu", "Game mode"); onTriggered: app.setPowerMode(app.powerMode === "game" ? "balanced" : "game") }
