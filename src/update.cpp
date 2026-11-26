@@ -2,12 +2,14 @@
 
 #include <QCryptographicHash>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
 
 #include <openssl/evp.h>
 
+#include <filesystem>
 #include <memory>
 
 namespace update {
@@ -70,6 +72,31 @@ bool matches(const QString &file, const Release &release)
         return false;
     QCryptographicHash hash(QCryptographicHash::Sha256);
     return hash.addData(&f) && hash.result().toHex() == release.sha256;
+}
+
+bool replaceProgram(const QString &source, const QString &target)
+{
+    const QString fresh = target + QStringLiteral(".new");
+    QFile::remove(fresh);
+    if (!QFile::copy(source, fresh)
+        || !QFile::setPermissions(fresh, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner | QFile::ReadGroup
+                                             | QFile::ExeGroup | QFile::ReadOther | QFile::ExeOther)) {
+        QFile::remove(fresh);
+        return false;
+    }
+    std::error_code failed;
+    std::filesystem::rename(fresh.toStdU16String(), target.toStdU16String(), failed);      // in one step
+    if (failed)
+        QFile::remove(fresh);
+    return !failed;
+}
+
+QString ownAppImage(const QString &appImage, const QString &appDir, const QString &program)
+{
+    if (appImage.isEmpty() || appDir.isEmpty() || !QFileInfo(appImage).isFile())
+        return {};
+    const QString inside = QFileInfo(appDir).canonicalFilePath();
+    return !inside.isEmpty() && QFileInfo(program).canonicalFilePath().startsWith(inside + QLatin1Char('/')) ? appImage : QString();
 }
 
 }

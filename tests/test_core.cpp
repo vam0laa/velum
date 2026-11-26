@@ -632,6 +632,28 @@ private slots:
         QVERIFY(!update::matches(installer.fileName(), *release));
     }
 
+    void appImageReplacesItself()
+    {
+        QTemporaryDir dir;
+        const auto put = [&](const QString &name, const QByteArray &text) { QFile f(dir.filePath(name)); QVERIFY(f.open(QIODevice::WriteOnly)); f.write(text); };
+        const auto read = [&](const QString &name) { QFile f(dir.filePath(name)); return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray(); };
+        put("Velum.AppImage", "old");
+        put("fresh", "new");
+        QVERIFY(update::replaceProgram(dir.filePath("fresh"), dir.filePath("Velum.AppImage")));
+        QCOMPARE(read("Velum.AppImage"), QByteArray("new"));
+        QVERIFY(QFileInfo(dir.filePath("Velum.AppImage")).isExecutable() || QSysInfo::productType() == "windows");
+        QVERIFY(!update::replaceProgram(dir.filePath("missing"), dir.filePath("Velum.AppImage")));
+        QCOMPARE(read("Velum.AppImage"), QByteArray("new"));
+        QVERIFY(QDir(dir.path()).mkpath("mount/usr/bin"));
+        put("mount/usr/bin/velum", "x");
+        put("other", "x");
+        const QString image = dir.filePath("Velum.AppImage"), mount = dir.filePath("mount");
+        QCOMPARE(update::ownAppImage(image, mount, dir.filePath("mount/usr/bin/velum")), image);
+        QVERIFY(update::ownAppImage(image, mount, dir.filePath("other")).isEmpty());       // inherited from another image
+        QVERIFY(update::ownAppImage(image, "", dir.filePath("mount/usr/bin/velum")).isEmpty());
+        QVERIFY(update::ownAppImage("", mount, dir.filePath("mount/usr/bin/velum")).isEmpty());
+    }
+
     void ownProcess()
     {
         const qint64 self = QCoreApplication::applicationPid();

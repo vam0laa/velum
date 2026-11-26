@@ -1,0 +1,128 @@
+# Builds Velum on Linux and packs it into one AppImage file.
+# The release is signed and published from the maintainer's computer (scripts/release.sh),
+# so no signing secret is ever stored here.
+name: linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version, e.g. 0.1.0-beta.2"
+        required: true
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # an old system on purpose: the result runs on this one and anything newer
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Version
+        id: version
+        env:
+          ASKED: ${{ github.event.inputs.version }}
+        run: |
+          v="$ASKED"
+          [ -n "$v" ] || v="${GITHUB_REF_NAME#v}"
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]] || { echo "bad version: $v"; exit 1; }
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+
+      - name: System packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -yq ninja-build libssl-dev libsecret-1-dev libfuse2 file \
+              libgl1-mesa-dev libegl1-mesa-dev libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
+              libxcb-keysyms1 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libxcb-xkb1 libnss3 libasound2 \
+              libxkbfile1 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libgbm1 libfontconfig1 libdbus-1-3 \
+              libcups2 libpulse0 libwayland-client0 libwayland-cursor0 libwayland-egl1
+
+      - uses: jurplel/install-qt-action@b344308e4483fc892e0d27b3cd1b173ebdd95f06 # v4
+        with:
+          version: "6.10.3"
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+          modules: "qtwebengine qtwebchannel qtpositioning qtshadertools"
+          cache: true
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+          "-DVELUM_RELEASE=${{ steps.version.outputs.value }}"
+
+      # the updater compares this number: a wrong one would reinstall for ever
+      - name: Check the version
+        run: grep -x "VELUM_RELEASE:STRING=${{ steps.version.outputs.value }}" build/CMakeCache.txt
+
+      - name: Build
+        run: cmake --build build -- -k 0
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -E ui
+
+      - name: AppImage
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          DESTDIR="$PWD/AppDir" cmake --install build
+          sed -i 's|^Exec=.*velum|Exec=velum|' AppDir/usr/share/applications/velum.desktop
+          mkdir tools out
+          base=https://github.com/linuxdeploy
+          curl -sSfL -o tools/linuxdeploy $base/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -sSfL -o tools/linuxdeploy-plugin-qt $base/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x tools/*
+          export PATH="$PWD/tools:$PATH"
+          export QMAKE="$(command -v qmake)" QML_SOURCES_PATHS="$PWD/qml" LD_LIBRARY_PATH="$QT_ROOT_DIR/lib"
+          plugins="$QT_ROOT_DIR/plugins"
+          export EXTRA_PLATFORM_PLUGINS="$(cd $plugins/platforms && ls libqwayland*.so libqoffscreen.so | paste -sd';')"
+          export EXTRA_QT_PLUGINS="$(cd $plugins && ls -d wayland-* imageformats tls networkinformation 2>/dev/null | paste -sd';')"
+          export LDAI_OUTPUT="out/Velum-$VERSION-x86_64.AppImage"
+          export OUTPUT="$LDAI_OUTPUT"
+          linuxdeploy --appdir AppDir --plugin qt --output appimage
+
+      - name: Smoke test
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          # the packed program must start and draw its window without the build's Qt
+          env -i HOME="$(mktemp -d)" PATH=/usr/bin:/bin APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen \
+              QT_QUICK_BACKEND=software VELUM_NO_UPDATES=1 QT_FORCE_STDERR_LOGGING=1 \
+              timeout 90 "$PWD/out/Velum-$VERSION-x86_64.AppImage" --screenshot "$PWD/smoke.png" 2> smoke.log \
+              || { cat smoke.log; exit 1; }
+          cat smoke.log
+          test -s smoke.png
+          ! grep -E "Cannot load font|TypeError|ReferenceError|is not installed" smoke.log
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: velum-linux
+          path: out/*.AppImage
+          if-no-files-found: error
+
+  # The AppImage is also put into a draft release of this (private) repository, which only
+  # the maintainer sees: scripts/release.sh fetches it from there.
+  store:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: velum-linux
+          path: files
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --json tagName,isDraft --jq '.[] | select(.isDraft and (.tagName | startswith("linux-build-"))) | .tagName' |
+              while read -r old; do gh release delete "$old" --repo "$GITHUB_REPOSITORY" --yes; done
+          gh release create "linux-build-$GITHUB_RUN_ID" files/* --repo "$GITHUB_REPOSITORY" --draft \
+              --target "$GITHUB_SHA" --title "Linux build $GITHUB_RUN_ID" --notes "Unsigned build output. Not for use."

@@ -2,6 +2,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -13,9 +14,10 @@
 
 #include "update.h"
 
-// Keeps the Windows version current ("Updater"): looks for a newer signed release,
-// downloads its installer quietly, checks it, and runs it when Velum is closed.
-// On Linux updates belong to the package manager, so it stays off.
+// Keeps Velum current ("Updater"): looks for a newer signed release, downloads it quietly
+// and checks it. When Velum is closed, Windows runs the new installer and the Linux
+// AppImage puts the new file in its own place. Any other Linux install belongs to whoever
+// installed it, so there it stays off.
 class Updater : public QObject
 {
     Q_OBJECT
@@ -28,16 +30,20 @@ class Updater : public QObject
 public:
     explicit Updater(QObject *parent = nullptr) : QObject(parent)
     {
-#ifdef Q_OS_WIN
         if (qEnvironmentVariableIsSet("VELUM_NO_UPDATES"))
             return;
+#ifndef Q_OS_WIN
+        m_image = update::ownAppImage(qEnvironmentVariable("APPIMAGE"), qEnvironmentVariable("APPDIR"), QCoreApplication::applicationFilePath());
+        // a file that cannot be replaced is not worth downloading for
+        if (m_image.isEmpty() || !QFileInfo(m_image).isWritable() || !QFileInfo(QFileInfo(m_image).absolutePath()).isWritable())
+            return;
+#endif
         m_status = QStringLiteral("idle");
         QDir(folder()).removeRecursively();      // installers of earlier runs
         connect(&m_timer, &QTimer::timeout, this, &Updater::check);
         m_timer.start(6 * 60 * 60 * 1000);
         QTimer::singleShot(20000, this, &Updater::check);
         connect(qApp, &QCoreApplication::aboutToQuit, this, &Updater::install);
-#endif
     }
     QString status() const { return m_status; }
     QString version() const { return m_release.version; }
@@ -48,7 +54,11 @@ public:
             || m_status == QLatin1String("downloading") || m_status == QLatin1String("ready"))
             return;
         set(QStringLiteral("checking"));
+#ifdef Q_OS_WIN
         const QString latest = QStringLiteral("https://github.com/vam0laa/velum-releases/releases/latest/download/update.json");
+#else
+        const QString latest = QStringLiteral("https://github.com/vam0laa/velum-releases/releases/latest/download/update-linux.json");
+#endif
         QNetworkReply *manifest = get(QUrl(latest));
         connect(manifest, &QNetworkReply::finished, this, [this, manifest, latest] {
             manifest->deleteLater();
@@ -90,7 +100,11 @@ private:
     {
         m_release = release;
         QDir().mkpath(folder());
+#ifdef Q_OS_WIN
         m_file = folder() + QStringLiteral("/Velum-") + release.version + QStringLiteral("-setup.exe");
+#else
+        m_file = folder() + QStringLiteral("/Velum-") + release.version + QStringLiteral("-x86_64.AppImage");
+#endif
         auto *file = new QFile(m_file, this);
         if (!file->open(QIODevice::WriteOnly | QIODevice::Truncate))
             return set(QStringLiteral("failed"));
@@ -118,8 +132,13 @@ private:
         // checked again right before it is run, in case the file changed since
         if (m_status != QLatin1String("ready") || !update::matches(m_file, m_release))
             return;
+#ifdef Q_OS_WIN
         QProcess::startDetached(m_file, {QStringLiteral("/VERYSILENT"), QStringLiteral("/SUPPRESSMSGBOXES"),
                                          QStringLiteral("/NORESTART"), QStringLiteral("/CLOSEAPPLICATIONS")});
+#else
+        if (update::replaceProgram(m_file, m_image))
+            QFile::remove(m_file);
+#endif
     }
 
     void set(const QString &status)
@@ -132,5 +151,6 @@ private:
     QTimer m_timer;
     update::Release m_release;
     QString m_file;
+    QString m_image;                 // Linux: the AppImage file Velum runs from
     QString m_status = QStringLiteral("off");
 };

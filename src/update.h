@@ -28,4 +28,12 @@ std::optional<Release> verify(const QByteArray &manifest, const QByteArray &sign
 // Does the file have the size and the digest the release states?
 bool matches(const QString &file, const Release &release);
 
+// Puts a copy of `source` where `target` is and makes it a program. The old file stays
+// whole until the new one is complete, so a program that is running is not disturbed.
+bool replaceProgram(const QString &source, const QString &target);
+
+// The AppImage this program runs from, else "". The two values the AppImage start sets are
+// believed only if the program really lies in that image: another one may have passed them on.
+QString ownAppImage(const QString &appImage, const QString &appDir, const QString &program);
+
 }

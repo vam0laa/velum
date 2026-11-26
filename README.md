@@ -102,6 +102,10 @@ The welcome offers Dark Reader and SponsorBlock, none ticked; they are also sugg
 
 Import in the bookmark manager takes bookmarks (with folders) and the last 90 days of history from Firefox, Zen, LibreWolf, Chromium, Chrome, Brave, Helium, Vivaldi or Edge. Only when you ask, from copies of their files; passwords and cookies are not touched.
 
+## Download and updates
+
+[Releases](https://github.com/vam0laa/velum-releases/releases/latest): an installer for Windows and an AppImage for Linux (make it executable, then run it). Both look for a newer release, download it quietly, check its signature and put it in place when Velum is closed. The AppImage replaces its own file, so keep it where you may write. A Velum you built or installed yourself does not update itself.
+
 ## What it does not do yet
 
 - The download list lasts until Velum closes. Interrupted downloads cannot be resumed.
