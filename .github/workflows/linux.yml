@@ -90,7 +90,12 @@ jobs:
           export EXTRA_QT_PLUGINS="$(cd $plugins && ls -d wayland-* imageformats tls networkinformation 2>/dev/null | paste -sd';')"
           export LDAI_OUTPUT="out/Velum-$VERSION-x86_64.AppImage"
           export OUTPUT="$LDAI_OUTPUT"
-          linuxdeploy --appdir AppDir --plugin qt --output appimage
+          # NSS opens these by itself, so no tool finds them. Without them the packed NSS
+          # loads the system's, of another version, and the program dies at start.
+          nss=()
+          for so in /usr/lib/x86_64-linux-gnu/nss/*.so; do nss+=(--library "$so"); done
+          [ ${#nss[@]} -gt 0 ]
+          linuxdeploy --appdir AppDir "${nss[@]}" --plugin qt --output appimage
 
       - name: Smoke test
         env:
@@ -111,10 +116,27 @@ jobs:
           path: out/*.AppImage
           if-no-files-found: error
 
+  # A newer system of another family: what the build system lends does not hide a gap here.
+  elsewhere:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: velum-linux
+          path: files
+      - name: Start on Arch Linux
+        run: |
+          chmod +x files/*.AppImage
+          docker run --rm -v "$PWD/files:/files:ro" archlinux:latest bash -c '
+              pacman -Syu --noconfirm --needed nss alsa-lib libxkbcommon-x11 libxcomposite libxdamage libxrandr libxtst libxkbfile fontconfig mesa libglvnd dbus >/dev/null &&
+              useradd -m u && su u -c "cd /tmp && APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software VELUM_NO_UPDATES=1 QT_FORCE_STDERR_LOGGING=1 QTWEBENGINE_CHROMIUM_FLAGS=--no-sandbox timeout 90 /files/*.AppImage --screenshot /tmp/s.png https://example.com && test -s /tmp/s.png"'
+
   # The AppImage is also put into a draft release of this (private) repository, which only
   # the maintainer sees: scripts/release.sh fetches it from there.
   store:
-    needs: build
+    needs: [build, elsewhere]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
