@@ -90,11 +90,16 @@ jobs:
         run: |
           export PATH="/usr/bin:$PATH"
           cd ../engine-build
-          ( while sleep 900; do echo "== $(date -u +%T)"; df -h / | tail -1; free -g | sed -n 2,3p; ccache -s | head -6; done ) &
+          # disk and progress as notes on the run, which can be read while it goes on
+          state() {
+              echo "::notice title=build state::$(date -u +%H:%M) UTC, ninja $(grep -oE '^\[[0-9]+/[0-9]+\]' build.log | tail -1), disk free $(df -h --output=avail / | tail -1 | tr -d ' ') of $(df -h --output=size / | tail -1 | tr -d ' '), build folder $(du -sh . 2>/dev/null | cut -f1), cache $(du -sh "$CCACHE_DIR" 2>/dev/null | cut -f1)"
+          }
+          ( sleep 180; state; while sleep 1800; do state; done ) &
           watch=$!
           rc=0
           timeout --signal=INT --kill-after=120 265m cmake --build . --parallel 4 > build.log 2>&1 || rc=$?
-          kill $watch
+          kill $watch 2>/dev/null
+          state
           tail -40 build.log; ccache -s; df -h /; du -sh . "$CCACHE_DIR"
           if [ $rc = 0 ]; then
               cmake --install . --prefix "$GITHUB_WORKSPACE/engine-out"
