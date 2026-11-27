@@ -81,7 +81,7 @@ jobs:
               -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DQT_BUILD_QTPDF=OFF -DFEATURE_qtpdf_build=OFF \
               -DFEATURE_webengine_proprietary_codecs=OFF -DFEATURE_webengine_webrtc_pipewire=OFF -DFEATURE_webengine_kerberos=OFF \
               -DFEATURE_webengine_native_spellchecker=OFF -DFEATURE_webengine_vaapi=ON -DFEATURE_webengine_vulkan=ON 2>&1 | tee configure.log
-          grep -E 'QT\.webengine' -r mkspecs 2>/dev/null || true
+          if grep -q 'QtWebEngine will not be built' configure.log; then exit 1; fi
 
       - name: Build
         id: build
@@ -122,6 +122,10 @@ jobs:
           note notice "configure problems" n1
           sed -n '/Configure summary/,$p' configure.log | grep -iE 'webengine|build ' > n2 || true
           note notice "configure summary" n2
+          grep -iE 'Performing Test.*(webengine|gcc|glibc|compiler).*Fail|not found|Could NOT|missing|required|requires|Checking for.*no$' configure.log > n5 || true
+          note notice "configure missing" n5
+          tail -60 configure.log > n6 || true
+          note notice "configure tail" n6
           if [ "${{ job.status }}" = failure ]; then
               grep -nE -m12 -B2 -A8 'FAILED:|error:|Error ' build.log > n3 || true
               note error "build errors" n3
