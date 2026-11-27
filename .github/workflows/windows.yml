@@ -30,12 +30,17 @@ jobs:
 
       - uses: jurplel/install-qt-action@b344308e4483fc892e0d27b3cd1b173ebdd95f06 # v4
         with:
-          version: "6.10.3"
+          version: "6.12.1"
           host: windows
           target: desktop
           arch: win64_msvc2022_64
-          modules: "qtwebengine qtwebchannel qtpositioning qtshadertools"
+          modules: "qtwebchannel qtpositioning qtshadertools"
           cache: true
+
+      # from Qt 6.12 the engine comes on its own; the script checks its sum
+      - name: Qt WebEngine
+        shell: bash
+        run: python scripts/fetch-webengine.py windows "$QT_ROOT_DIR"
 
       - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
         with:
@@ -134,6 +139,8 @@ jobs:
   # the maintainer sees: scripts/release.sh fetches it from there. Only this small job may
   # write, and it builds nothing.
   store:
+    # a trial branch must not replace the build waiting to be released
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10

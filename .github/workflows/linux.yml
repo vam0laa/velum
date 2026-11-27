@@ -41,12 +41,17 @@ jobs:
 
       - uses: jurplel/install-qt-action@b344308e4483fc892e0d27b3cd1b173ebdd95f06 # v4
         with:
-          version: "6.10.3"
+          version: "6.12.1"
           host: linux
           target: desktop
           arch: linux_gcc_64
-          modules: "qtwebengine qtwebchannel qtpositioning qtshadertools"
+          modules: "qtwebchannel qtpositioning qtshadertools"
           cache: true
+
+      # from Qt 6.12 the engine comes on its own; the script checks its sum
+      - name: Qt WebEngine
+        shell: bash
+        run: python3 scripts/fetch-webengine.py linux "$QT_ROOT_DIR"
 
       - name: Configure
         run: >
@@ -156,6 +161,8 @@ jobs:
   # The AppImage is also put into a draft release of this (private) repository, which only
   # the maintainer sees: scripts/release.sh fetches it from there.
   store:
+    # a trial branch must not replace the build waiting to be released
+    if: github.ref == 'refs/heads/main'
     needs: [build, elsewhere]
     runs-on: ubuntu-latest
     timeout-minutes: 10
