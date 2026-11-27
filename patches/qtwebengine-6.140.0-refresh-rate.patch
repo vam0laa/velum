@@ -1,0 +1,63 @@
+Qt WebEngine 6.140.0: tell Chromium how fast the display is.
+Without this, web pages are drawn at 60 frames a second on any screen (Linux).
+Licence: as the files it changes (LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only).
+
+diff --git a/src/core/render_widget_host_view_qt.cpp b/src/core/render_widget_host_view_qt.cpp
+index cb77820..5a611fa 100644
+--- a/src/core/render_widget_host_view_qt.cpp
++++ b/src/core/render_widget_host_view_qt.cpp
+@@ -203,6 +203,8 @@ RenderWidgetHostViewQt::~RenderWidgetHostViewQt()
+ {
+     m_gestureProvider->Shutdown();
+ 
++    QObject::disconnect(m_refreshRateConnection);
++
+     m_delegate.reset();
+ 
+     QObject::disconnect(m_adapterClientDestroyedConnection);
+@@ -977,6 +979,22 @@ bool RenderWidgetHostViewQt::updateScreenInfo()
+     // This screen information is stored on a per-view basis
+     auto &screen = newScreenInfos.mutable_current();
+     screen.device_scale_factor = window->devicePixelRatio();
++
++    // Chromium paces frames at 60 Hz until it is told how fast the display is, and nothing
++    // else here tells it. The compositor drops repeats, so this may run on every change.
++    if (QScreen *current = window->screen()) {
++        if (current->refreshRate() > 0)
++            m_uiCompositor->SetDisplayVSyncParameters(base::TimeTicks(), base::Hertz(current->refreshRate()));
++        // a new refresh rate alone does not otherwise bring us back here
++        if (current != m_refreshRateScreen) {
++            QObject::disconnect(m_refreshRateConnection);
++            m_refreshRateScreen = current;
++            m_refreshRateConnection = QObject::connect(
++                    current, &QScreen::refreshRateChanged, current,
++                    [client = m_delegateClient.get()] { client->visualPropertiesChanged(); });
++        }
++    }
++
+     if (screen_infos_ == newScreenInfos)
+         return false;
+ 
+diff --git a/src/core/render_widget_host_view_qt.h b/src/core/render_widget_host_view_qt.h
+index 395334f..fcff5df 100644
+--- a/src/core/render_widget_host_view_qt.h
++++ b/src/core/render_widget_host_view_qt.h
+@@ -18,6 +18,9 @@
+ #include "content/browser/renderer_host/text_input_manager.h"
+ #include "ui/events/gesture_detection/filtered_gesture_provider.h"
+ 
++#include <QPointer>
++#include <QScreen>
++
+ QT_FORWARD_DECLARE_CLASS(QWebEngineSettings)
+ 
+ namespace content {
+@@ -210,6 +213,8 @@ private:
+     std::unique_ptr<RenderWidgetHostViewQtDelegate> m_delegate;
+     std::unique_ptr<WebContentsAccessibilityQt> m_webContentsAccessibility;
+     QMetaObject::Connection m_adapterClientDestroyedConnection;
++    QMetaObject::Connection m_refreshRateConnection;
++    QPointer<QScreen> m_refreshRateScreen;
+     WebContentsAdapterClient *m_adapterClient = nullptr;
+ 
+     bool m_isMouseLocked = false;
