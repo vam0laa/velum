@@ -1,5 +1,6 @@
-# One stretch of building the patched Qt WebEngine. A hosted job may run six hours and the
-# engine takes longer, so each stretch leaves what it compiled in a cache for the next one.
+# One stretch of building the patched Qt WebEngine. The engine takes much longer than is safe
+# for one hosted machine, so each stretch builds for a set time, stops ninja in good order and
+# uploads sources and build folder; the next stretch checks the archive and goes on from there.
 name: engine stage
 
 on:
@@ -8,24 +9,39 @@ on:
       stage:
         required: true
         type: number
+      minutes:
+        required: true
+        type: number
+      sha:
+        description: digest of the checkpoint to go on from
+        type: string
+        default: ""
+      left:
+        description: steps ninja had left when that checkpoint was made
+        type: string
+        default: ""
     outputs:
-      done:
-        value: ${{ jobs.build.outputs.done }}
-
-permissions:
-  contents: read
+      next:
+        value: ${{ jobs.build.outputs.next }}
+      sha:
+        value: ${{ jobs.build.outputs.sha }}
+      left:
+        value: ${{ jobs.build.outputs.left }}
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 355
+    timeout-minutes: 240
     outputs:
-      done: ${{ steps.build.outputs.done }}
+      next: ${{ steps.hand.outputs.next }}
+      sha: ${{ steps.pack.outputs.sha }}
+      left: ${{ steps.decide.outputs.left }}
     env:
-      CCACHE_DIR: /home/runner/ccache
-      CCACHE_MAXSIZE: 8G
-      CCACHE_COMPILERCHECK: content
-      CCACHE_SLOPPINESS: include_file_mtime,include_file_ctime,time_macros,pch_defines
+      # the same in every stretch: ninja knows its files by these paths
+      WORK: /home/runner/engine
+      STAGE: ${{ inputs.stage }}
+      # the engine's own ninja, which does nearly all the work, takes its job count only from here
+      NINJAFLAGS: -j3
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -34,19 +50,22 @@ jobs:
           df -h /
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift /usr/local/share/boost
           sudo docker image prune -af >/dev/null
-          sudo fallocate -l 8G /extra-swap && sudo chmod 600 /extra-swap && sudo mkswap -q /extra-swap && sudo swapon /extra-swap
-          df -h /
+          sudo fallocate -l 8G /extra-swap && sudo chmod 600 /extra-swap && sudo mkswap /extra-swap >/dev/null && sudo swapon /extra-swap
+          df -h /; free -h
 
       - name: System packages
         run: |
           sudo apt-get update -q
-          sudo apt-get install -yq ninja-build ccache g++-12 gperf bison flex python3-html5lib \
+          sudo apt-get install -yq ninja-build zstd g++-12 gperf bison flex python3-html5lib \
               libgl1-mesa-dev libegl1-mesa-dev libgbm-dev libdrm-dev libva-dev libvulkan-dev \
               libnss3-dev libdbus-1-dev libfontconfig1-dev libfreetype-dev libasound2-dev libpulse-dev \
               libcups2-dev libpci-dev libudev-dev libsnappy-dev libkrb5-dev libcap-dev \
               libx11-dev libx11-xcb-dev libxcb1-dev libxcb-dri3-dev libxcomposite-dev libxcursor-dev \
               libxdamage-dev libxext-dev libxfixes-dev libxi-dev libxrandr-dev libxrender-dev libxss-dev \
               libxtst-dev libxshmfence-dev libxkbcommon-dev libxkbcommon-x11-dev libxkbfile-dev
+
+      - name: Rehearse stop, checkpoint and resume
+        run: PATH="/usr/bin:$PATH" scripts/engine/selftest.sh
 
       - uses: jurplel/install-qt-action@b344308e4483fc892e0d27b3cd1b173ebdd95f06 # v4
         with:
@@ -57,110 +76,233 @@ jobs:
           modules: "qtwebchannel qtpositioning qtshadertools"
           cache: true
 
-      - name: Engine source, with Velum's patch
-        run: |
-          git clone -q --depth 1 --branch v6.140.0 https://github.com/qt/qtwebengine.git ../engine
-          test "$(git -C ../engine rev-parse HEAD)" = e081473af432e2b09d17caa3ca3bffd45992a0bd
-          git -C ../engine submodule update -q --init --depth 1
-          cat ../engine/CHROMIUM_VERSION
-          grep -q '157\.0\.8103\.50' ../engine/CHROMIUM_VERSION
-          git -C ../engine apply --verbose "$GITHUB_WORKSPACE"/patches/qtwebengine-6.140.0-refresh-rate.patch
-          df -h /
+      # a file that merely was installed again must not look changed to ninja
+      - name: Same file times for Qt in every stretch
+        run: find "$QT_ROOT_DIR" -exec touch -h -d '2020-01-01 00:00:00 UTC' {} +
 
-      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: /home/runner/ccache
-          key: engine-6.140.0-${{ github.run_id }}-${{ inputs.stage }}
-          restore-keys: engine-6.140.0-
+      - name: Engine source, with Velum's patch
+        if: inputs.stage == 1
+        run: |
+          export PATH="/usr/bin:$PATH"
+          mkdir -p "$WORK/state"
+          git clone -q --depth 1 --branch v6.140.0 https://github.com/qt/qtwebengine.git "$WORK/src"
+          test "$(git -C "$WORK/src" rev-parse HEAD)" = e081473af432e2b09d17caa3ca3bffd45992a0bd
+          git -C "$WORK/src" submodule update -q --init --depth 1
+          cat "$WORK/src/CHROMIUM_VERSION"
+          grep -q '157\.0\.8103\.50' "$WORK/src/CHROMIUM_VERSION"
+          git -C "$WORK/src" apply --verbose "$GITHUB_WORKSPACE"/patches/qtwebengine-6.140.0-refresh-rate.patch
+          sha256sum "$GITHUB_WORKSPACE"/patches/qtwebengine-6.140.0-refresh-rate.patch | cut -d' ' -f1 > "$WORK/state/patch.sha256"
+          # as in Qt's source packages; the history would only make every checkpoint larger
+          find "$WORK/src" -name .git -prune -exec rm -rf {} +
+          find "$WORK/src" -exec touch -h -d '2020-01-01 00:00:00 UTC' {} +
+          { gcc-12 --version | head -1; ninja --version; cmake --version | head -1; } > "$WORK/state/toolchain"
+          du -sh "$WORK/src"; df -h /
 
       # the features are those of Qt's own build, so that ours can take its place
       - name: Configure
+        if: inputs.stage == 1
         run: |
           # the Python that has html5lib is the system's, not the one the Qt installer brought
           export PATH="/usr/bin:$PATH"
-          mkdir ../engine-build && cd ../engine-build
-          CC=gcc-12 CXX=g++-12 "$QT_ROOT_DIR/bin/qt-cmake" -S ../engine -B . -G Ninja -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE=/usr/bin/python3 \
-              -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DQT_BUILD_QTPDF=OFF -DFEATURE_qtpdf_build=OFF \
+          mkdir "$WORK/build" && cd "$WORK/build"
+          CC=gcc-12 CXX=g++-12 "$QT_ROOT_DIR/bin/qt-cmake" -S "$WORK/src" -B . -G Ninja -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE=/usr/bin/python3 \
+              -DQT_BUILD_QTPDF=OFF -DFEATURE_qtpdf_build=OFF \
               -DFEATURE_webengine_proprietary_codecs=OFF -DFEATURE_webengine_webrtc_pipewire=OFF -DFEATURE_webengine_kerberos=OFF \
-              -DFEATURE_webengine_native_spellchecker=OFF -DFEATURE_webengine_vaapi=ON -DFEATURE_webengine_vulkan=ON 2>&1 | tee configure.log
-          if grep -q 'QtWebEngine will not be built' configure.log; then exit 1; fi
+              -DFEATURE_webengine_native_spellchecker=OFF -DFEATURE_webengine_vaapi=ON -DFEATURE_webengine_vulkan=ON 2>&1 | tee "$WORK/state/configure.log"
+          if grep -q 'QtWebEngine will not be built' "$WORK/state/configure.log"; then exit 1; fi
+          grep -q -- 'ninja -j3 -C' build.ninja || { echo "the engine's ninja is not limited to 3 jobs" >&2; exit 1; }
+
+      # expressions cannot subtract
+      - name: Number of the stage before
+        id: prev
+        run: echo "n=$((STAGE - 1))" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch the checkpoint
+        if: inputs.stage > 1
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: engine-checkpoint-${{ steps.prev.outputs.n }}
+          path: ${{ runner.temp }}/checkpoint
+
+      - name: Go on from the checkpoint
+        if: inputs.stage > 1
+        env:
+          WANT_SHA: ${{ inputs.sha }}
+          WANT_LEFT: ${{ inputs.left }}
+        run: |
+          export PATH="/usr/bin:$PATH"
+          scripts/engine/checkpoint.sh restore "$WORK" "$RUNNER_TEMP/checkpoint/checkpoint.tar.zst" "$WANT_SHA"
+          rm -f "$WORK/state/build.log" "$WORK/state/report.json" "$WORK/state/usage.csv"
+          test "$(sha256sum patches/qtwebengine-6.140.0-refresh-rate.patch | cut -d' ' -f1)" = "$(cat "$WORK/state/patch.sha256")"
+          { gcc-12 --version | head -1; ninja --version; cmake --version | head -1; } | diff "$WORK/state/toolchain" -
+          # the proof that nothing starts over: ninja must see no more work than was left
+          now=$(python3 -I scripts/engine/supervise.py --count --build "$WORK/build")
+          echo "::notice title=stage $STAGE resume check::steps left when saved $WANT_LEFT, after restore $now"
+          if [ "$now" -lt 0 ] || [ "$now" -gt $((WANT_LEFT + 50)) ]; then
+              inner=$(dirname "$(ls "$WORK"/build/src/core/*/*/args.gn | head -1)")
+              why=$(ninja -C "$inner" -n -d explain QtWebEngineCore 2>&1 | grep -m25 'explain' | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+              echo "::error title=resume is not reliable::left $WANT_LEFT before, $now now. $why"
+              exit 1
+          fi
+
+      - name: Remove the checkpoint before that one
+        if: inputs.stage > 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for a in $(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=engine-checkpoint-$((STAGE - 2))" --jq '.artifacts[].id'); do
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$a"
+          done
 
       - name: Build
         id: build
+        timeout-minutes: 150
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MINUTES: ${{ inputs.minutes }}
         run: |
           export PATH="/usr/bin:$PATH"
-          cd ../engine-build
-          # disk and progress as notes on the run, which can be read while it goes on
-          state() {
-              echo "::notice title=build state::$(date -u +%H:%M) UTC, ninja $(grep -oE '^\[[0-9]+/[0-9]+\]' build.log | tail -1), disk free $(df -h --output=avail / | tail -1 | tr -d ' ') of $(df -h --output=size / | tail -1 | tr -d ' '), build folder $(du -sh . 2>/dev/null | cut -f1), cache $(du -sh "$CCACHE_DIR" 2>/dev/null | cut -f1)"
-          }
-          ( sleep 180; state; while sleep 1800; do state; done ) &
-          watch=$!
-          rc=0
-          timeout --signal=INT --kill-after=120 265m cmake --build . --parallel 4 > build.log 2>&1 || rc=$?
-          kill $watch 2>/dev/null
-          state
-          tail -40 build.log; ccache -s; df -h /; du -sh . "$CCACHE_DIR"
-          if [ $rc = 0 ]; then
-              cmake --install . --prefix "$GITHUB_WORKSPACE/engine-out"
-              echo done=true >> "$GITHUB_OUTPUT"
-          elif [ $rc = 124 ] || [ $rc = 137 ]; then
-              echo "time is up, the next stage goes on"
-              echo done=false >> "$GITHUB_OUTPUT"
-          else
-              grep -n -m20 -B3 -A12 -E 'FAILED:|error:' build.log; exit $rc
+          b="$WORK/build"
+          # first the engine with nothing beside its three jobs, then what is left of Qt's side
+          python3 -I scripts/engine/supervise.py --build "$b" --state "$WORK/state" --minutes "$MINUTES" \
+              --status-context "engine/stage $STAGE" \
+              --command "[\"cmake\", \"--build\", \"$b\", \"--target\", \"run_core_NinjaDone\", \"--parallel\", \"1\"]" \
+              --command "[\"cmake\", \"--build\", \"$b\", \"--parallel\", \"3\"]"
+
+      - name: Decide
+        id: decide
+        run: |
+          python3 -I - "$WORK/state/report.json" "$STAGE" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          r, stage = json.load(open(sys.argv[1])), int(sys.argv[2])
+          left, before = r["remaining_after"], r["remaining_before"]
+          done = r["reason"] == "done"
+          save = not done and not r["forced_kill"] and left >= 0
+          # once the engine itself is finished only Qt's side is left, which this count does not see
+          moved = left >= 0 and (before < 0 or left < before or left == 0) and bool(r["last_step"])
+          print("done=" + str(done).lower())
+          print("save=" + str(save).lower())
+          print("go_on=" + str(save and moved and r["reason"] == "time").lower())
+          print("left=%d" % left)
+          PY
+
+      - name: Pack the checkpoint
+        id: pack
+        if: steps.decide.outputs.save == 'true'
+        run: |
+          scripts/engine/checkpoint.sh pack "$WORK" "$GITHUB_WORKSPACE/checkpoint.tar.zst"
+          size=$(stat -c %s checkpoint.tar.zst)
+          echo "size=$size" >> "$GITHUB_OUTPUT"
+          echo "work_gib=$(du -s --block-size=1G "$WORK" | cut -f1)" >> "$GITHUB_OUTPUT"
+          echo "free_after=$(df -h --output=avail / | tail -1 | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          # more than this could outgrow the free storage allowance: ask before going on
+          if [ "$size" -gt $((12 * 1024 * 1024 * 1024)) ]; then
+              echo "::error title=checkpoint too large::$size bytes; not uploaded" ; exit 1
           fi
+          echo "sha=$(cat checkpoint.tar.zst.sha256)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        if: always()
+      - name: Upload the checkpoint
+        id: upload
+        if: steps.decide.outputs.save == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          path: /home/runner/ccache
-          key: engine-6.140.0-${{ github.run_id }}-${{ inputs.stage }}
+          name: engine-checkpoint-${{ inputs.stage }}
+          path: checkpoint.tar.zst
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
 
-      # also as notes on the run: those can be read where the log files cannot be fetched
-      - name: Say what happened
+      # only a checkpoint that is safely stored lets the next stretch start
+      - name: Hand on
+        id: hand
+        if: steps.upload.outcome == 'success'
+        run: echo "next=${{ steps.decide.outputs.go_on }}" >> "$GITHUB_OUTPUT"
+
+      - name: Install and pack the engine
+        id: engine
+        if: steps.decide.outputs.done == 'true'
+        run: |
+          cmake --install "$WORK/build" --prefix "$GITHUB_WORKSPACE/engine-out"
+          tar -C engine-out -cJf velum-webengine-6.140.0-linux.tar.xz .
+          echo "sha=$(sha256sum velum-webengine-6.140.0-linux.tar.xz | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "size=$(stat -c %s velum-webengine-6.140.0-linux.tar.xz)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: steps.engine.outcome == 'success'
+        with:
+          name: velum-webengine
+          path: velum-webengine-6.140.0-linux.tar.xz
+          compression-level: 0
+          retention-days: 14
+
+      # as notes on the run: those can be read where the log files cannot be fetched
+      - name: Report
         if: always()
+        env:
+          CP_SHA: ${{ steps.pack.outputs.sha }}
+          CP_SIZE: ${{ steps.pack.outputs.size }}
+          CP_WORK: ${{ steps.pack.outputs.work_gib }}
+          CP_FREE: ${{ steps.pack.outputs.free_after }}
+          CP_UPLOAD: ${{ steps.upload.outcome }}
+          GO_ON: ${{ steps.hand.outputs.next }}
+          ENGINE_SHA: ${{ steps.engine.outputs.sha }}
+          ENGINE_SIZE: ${{ steps.engine.outputs.size }}
         run: |
           note() { # level title file
               body=$(head -c 3800 "$3" | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
               [ -z "$body" ] || echo "::$1 title=$2::$body"
           }
-          cd ../engine-build 2>/dev/null || exit 0
-          grep -nE -A3 'CMake (Error|Warning)|will not be built|Dependency check failed|^ *ERROR' configure.log > n1 || true
-          note notice "configure problems" n1
-          sed -n '/Configure summary/,$p' configure.log | grep -iE 'webengine|build ' > n2 || true
-          note notice "configure summary" n2
-          grep -iE 'Performing Test.*(webengine|gcc|glibc|compiler).*Fail|not found|Could NOT|missing|required|requires|Checking for.*no$' configure.log > n5 || true
-          note notice "configure missing" n5
-          tail -60 configure.log > n6 || true
-          note notice "configure tail" n6
-          if [ "${{ job.status }}" = failure ]; then
-              grep -nE -m12 -B2 -A8 'FAILED:|error:|Error ' build.log > n3 || true
+          mkdir -p engine-report
+          {
+              echo "stage $STAGE"
+              [ ! -f "$WORK/state/report.json" ] || python3 -I -c 'import json,sys; [print(k + ": " + str(v)) for k, v in json.load(open(sys.argv[1])).items()]' "$WORK/state/report.json"
+              if [ "$CP_UPLOAD" = success ]; then
+                  echo "checkpoint: engine-checkpoint-$STAGE, $CP_SIZE bytes (from $CP_WORK GiB), sha256 $CP_SHA, disk free after packing $CP_FREE"
+              else
+                  echo "checkpoint: none uploaded in this stage"
+              fi
+              if [ "$GO_ON" = true ]; then echo "next: stage $((STAGE + 1)) goes on from engine-checkpoint-$STAGE"
+              elif [ -n "$ENGINE_SHA" ]; then echo "engine: velum-webengine, $ENGINE_SIZE bytes, sha256 $ENGINE_SHA"
+              else echo "next: nothing starts by itself"; fi
+          } > engine-report/summary.txt
+          note notice "stage $STAGE report" engine-report/summary.txt
+          cat engine-report/summary.txt >> "$GITHUB_STEP_SUMMARY"
+          cp "$WORK"/state/*.json "$WORK"/state/*.csv engine-report/ 2>/dev/null || true
+          [ ! -f "$WORK/state/build.log" ] || gzip -c "$WORK/state/build.log" > engine-report/build.log.gz
+          log="$WORK/state/configure.log"
+          if [ "$STAGE" = 1 ] && [ -f "$log" ]; then
+              cp "$log" engine-report/
+              sed -n '/Configure summary/,$p' "$log" | grep -iE 'webengine|build ' > n1 || true
+              note notice "configure summary" n1
+              grep -nE -A3 'CMake Error|will not be built|Dependency check failed|^ *ERROR' "$log" > n2 || true
+              note notice "configure problems" n2
+          fi
+          if grep -qE '^reason: (error|memory|disk)' engine-report/summary.txt; then
+              grep -nE -m12 -B2 -A8 'FAILED:|error:' "$WORK/state/build.log" > n3 || true
               note error "build errors" n3
-              tail -30 build.log > n4 || true
+              tail -30 "$WORK/state/build.log" > n4 || true
               note error "build tail" n4
           fi
 
-      # artifacts may only come from inside the workspace
-      - name: Collect the logs
-        if: always()
-        run: mkdir -p engine-logs && cp ../engine-build/*.log engine-logs/ 2>/dev/null || true
-
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: engine-logs-${{ inputs.stage }}
-          path: engine-logs/*.log
+          name: engine-report-${{ inputs.stage }}
+          path: engine-report/
           retention-days: 7
           if-no-files-found: ignore
 
-      - name: Pack
-        if: steps.build.outputs.done == 'true'
-        run: tar -C engine-out -cJf velum-webengine-6.140.0-linux.tar.xz .
+      - name: Remove checkpoints that are no longer needed
+        if: steps.engine.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for a in $(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" --jq '.artifacts[] | select(.name | startswith("engine-checkpoint-")) | .id'); do
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$a"
+          done
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: steps.build.outputs.done == 'true'
-        with:
-          name: velum-webengine
-          path: velum-webengine-6.140.0-linux.tar.xz
-          retention-days: 14
+      # anything but "time is up, go on" and "built" ends the chain, visibly
+      - name: Result
+        run: |
+          [ "${{ steps.hand.outputs.next }}" = true ] || [ "${{ steps.engine.outcome }}" = success ] || {
+              echo "::error title=stage $STAGE stopped::the chain ends here, see the stage report"; exit 1; }

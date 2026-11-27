@@ -1,44 +1,142 @@
 # Builds Qt WebEngine with Velum's patch (patches/), in stretches that follow one another.
+# Each stretch hands its sources and build folder to the next one as a checked archive.
 name: engine
 
 on:
   push:
     branches: [qt-6.12.1-upgrade]
-    paths: ["patches/**", ".github/workflows/engine*.yml"]
+    paths: ["patches/**", ".github/workflows/engine*.yml", "scripts/engine/**"]
 
 permissions:
   contents: read
+  actions: write    # a stretch removes the checkpoint that is two stretches old
+  statuses: write   # progress that can be read while a stretch runs
 
 concurrency:
   group: engine-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # the first stretch is short: the second one proves early that resuming works
   stage1:
     uses: ./.github/workflows/engine-stage.yml
     with:
       stage: 1
+      minutes: 30
   stage2:
     needs: stage1
-    if: needs.stage1.outputs.done == 'false'
+    if: needs.stage1.outputs.next == 'true'
     uses: ./.github/workflows/engine-stage.yml
     with:
       stage: 2
+      minutes: 95
+      sha: ${{ needs.stage1.outputs.sha }}
+      left: ${{ needs.stage1.outputs.left }}
   stage3:
     needs: stage2
-    if: needs.stage2.outputs.done == 'false'
+    if: needs.stage2.outputs.next == 'true'
     uses: ./.github/workflows/engine-stage.yml
     with:
       stage: 3
+      minutes: 95
+      sha: ${{ needs.stage2.outputs.sha }}
+      left: ${{ needs.stage2.outputs.left }}
   stage4:
     needs: stage3
-    if: needs.stage3.outputs.done == 'false'
+    if: needs.stage3.outputs.next == 'true'
     uses: ./.github/workflows/engine-stage.yml
     with:
       stage: 4
+      minutes: 95
+      sha: ${{ needs.stage3.outputs.sha }}
+      left: ${{ needs.stage3.outputs.left }}
   stage5:
     needs: stage4
-    if: needs.stage4.outputs.done == 'false'
+    if: needs.stage4.outputs.next == 'true'
     uses: ./.github/workflows/engine-stage.yml
     with:
       stage: 5
+      minutes: 95
+      sha: ${{ needs.stage4.outputs.sha }}
+      left: ${{ needs.stage4.outputs.left }}
+  stage6:
+    needs: stage5
+    if: needs.stage5.outputs.next == 'true'
+    uses: ./.github/workflows/engine-stage.yml
+    with:
+      stage: 6
+      minutes: 95
+      sha: ${{ needs.stage5.outputs.sha }}
+      left: ${{ needs.stage5.outputs.left }}
+  stage7:
+    needs: stage6
+    if: needs.stage6.outputs.next == 'true'
+    uses: ./.github/workflows/engine-stage.yml
+    with:
+      stage: 7
+      minutes: 95
+      sha: ${{ needs.stage6.outputs.sha }}
+      left: ${{ needs.stage6.outputs.left }}
+  stage8:
+    needs: stage7
+    if: needs.stage7.outputs.next == 'true'
+    uses: ./.github/workflows/engine-stage.yml
+    with:
+      stage: 8
+      minutes: 95
+      sha: ${{ needs.stage7.outputs.sha }}
+      left: ${{ needs.stage7.outputs.left }}
+  stage9:
+    needs: stage8
+    if: needs.stage8.outputs.next == 'true'
+    uses: ./.github/workflows/engine-stage.yml
+    with:
+      stage: 9
+      minutes: 95
+      sha: ${{ needs.stage8.outputs.sha }}
+      left: ${{ needs.stage8.outputs.left }}
+  stage10:
+    needs: stage9
+    if: needs.stage9.outputs.next == 'true'
+    uses: ./.github/workflows/engine-stage.yml
+    with:
+      stage: 10
+      minutes: 95
+      sha: ${{ needs.stage9.outputs.sha }}
+      left: ${{ needs.stage9.outputs.left }}
+  stage11:
+    needs: stage10
+    if: needs.stage10.outputs.next == 'true'
+    uses: ./.github/workflows/engine-stage.yml
+    with:
+      stage: 11
+      minutes: 95
+      sha: ${{ needs.stage10.outputs.sha }}
+      left: ${{ needs.stage10.outputs.left }}
+  stage12:
+    needs: stage11
+    if: needs.stage11.outputs.next == 'true'
+    uses: ./.github/workflows/engine-stage.yml
+    with:
+      stage: 12
+      minutes: 95
+      sha: ${{ needs.stage11.outputs.sha }}
+      left: ${{ needs.stage11.outputs.left }}
+  stage13:
+    needs: stage12
+    if: needs.stage12.outputs.next == 'true'
+    uses: ./.github/workflows/engine-stage.yml
+    with:
+      stage: 13
+      minutes: 95
+      sha: ${{ needs.stage12.outputs.sha }}
+      left: ${{ needs.stage12.outputs.left }}
+  stage14:
+    needs: stage13
+    if: needs.stage13.outputs.next == 'true'
+    uses: ./.github/workflows/engine-stage.yml
+    with:
+      stage: 14
+      minutes: 95
+      sha: ${{ needs.stage13.outputs.sha }}
+      left: ${{ needs.stage13.outputs.left }}
