@@ -76,8 +76,10 @@ jobs:
       # the features are those of Qt's own build, so that ours can take its place
       - name: Configure
         run: |
+          # the Python that has html5lib is the system's, not the one the Qt installer brought
+          export PATH="/usr/bin:$PATH"
           mkdir ../engine-build && cd ../engine-build
-          CC=gcc-12 CXX=g++-12 "$QT_ROOT_DIR/bin/qt-cmake" -S ../engine -B . -G Ninja -DCMAKE_BUILD_TYPE=Release \
+          CC=gcc-12 CXX=g++-12 "$QT_ROOT_DIR/bin/qt-cmake" -S ../engine -B . -G Ninja -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE=/usr/bin/python3 \
               -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DQT_BUILD_QTPDF=OFF -DFEATURE_qtpdf_build=OFF \
               -DFEATURE_webengine_proprietary_codecs=OFF -DFEATURE_webengine_webrtc_pipewire=OFF -DFEATURE_webengine_kerberos=OFF \
               -DFEATURE_webengine_native_spellchecker=OFF -DFEATURE_webengine_vaapi=ON -DFEATURE_webengine_vulkan=ON 2>&1 | tee configure.log
@@ -86,6 +88,7 @@ jobs:
       - name: Build
         id: build
         run: |
+          export PATH="/usr/bin:$PATH"
           cd ../engine-build
           ( while sleep 900; do echo "== $(date -u +%T)"; df -h / | tail -1; free -g | sed -n 2,3p; ccache -s | head -6; done ) &
           watch=$!
