@@ -35,6 +35,8 @@ jobs:
           target: desktop
           arch: win64_msvc2022_64
           modules: "qtwebchannel qtpositioning qtshadertools"
+          # 3.3.0 does not know where Qt 6.12 for Windows lies; this commit of its master does
+          aqtsource: "git+https://github.com/miurahr/aqtinstall@4c759852b1108cc801d8e24979136b895b5155d4"
           cache: true
 
       # from Qt 6.12 the engine comes on its own; the script checks its sum
