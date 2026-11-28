@@ -1209,6 +1209,14 @@ ApplicationWindow {
                     onClosed: { window.view?.findText(""); window.view?.forceActiveFocus() }
                 }
 
+                StoreBar {
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 72 }
+                    z: 2
+                    visible: !window.onStartPage && !window.onSettings && window.view !== null && !window.fetchingExtension
+                             && WebStore.idFrom(window.view.url) !== ""
+                    onAdd: window.askExtension(String(window.view.url), false)
+                }
+
                 PermissionBar {
                     anchors { top: parent.top; left: parent.left; margins: 12 }
                     z: 2

@@ -44,19 +44,33 @@ Item {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 8
-                Words {
+                // Velum's mark and name; a headline of your own takes their place
+                RowLayout {
                     Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    face: Theme.display
-                    names: ["headline"]
+                    spacing: 14
                     visible: root.page.css(["headline"], "display", "block") !== "none"
-                    readonly property string hello: root.page.greeting(root.page.now.getHours())
-                    text: root.page.headline !== "" ? root.page.headline : hello.charAt(0).toLocaleUpperCase(Lang.turkish ? "tr_TR" : "en_US") + hello.slice(1)
-                    size: root.width < 640 ? 32 : 52
-                    weight: 500
-                    font.letterSpacing: -1.4
-                    fontSizeMode: Text.HorizontalFit
-                    minimumPixelSize: 22
+                    Item { Layout.fillWidth: true; visible: root.page.headline === "" }
+                    Item {
+                        visible: root.page.headline === ""
+                        implicitWidth: title.size
+                        implicitHeight: title.size
+                        Layout.alignment: Qt.AlignVCenter
+                        Brand { named: false; anchors.centerIn: parent; scale: title.size / 28 }
+                    }
+                    Words {
+                        id: title
+                        Layout.fillWidth: root.page.headline !== ""
+                        horizontalAlignment: Text.AlignHCenter
+                        face: Theme.display
+                        names: ["headline"]
+                        text: root.page.headline !== "" ? root.page.headline : "Velum"
+                        size: root.width < 640 ? 32 : 52
+                        weight: 500
+                        font.letterSpacing: -1.4
+                        fontSizeMode: Text.HorizontalFit
+                        minimumPixelSize: 22
+                    }
+                    Item { Layout.fillWidth: true; visible: root.page.headline === "" }
                 }
                 Words {
                     Layout.alignment: Qt.AlignHCenter

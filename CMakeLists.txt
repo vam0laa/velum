@@ -152,6 +152,7 @@ qt_add_qml_module(velum
         qml/Reader.qml
         qml/LoginScript.qml
         qml/PasswordBar.qml
+        qml/StoreBar.qml
         qml/PasswordList.qml
         qml/ThemePicker.qml
         qml/Card.qml

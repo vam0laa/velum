@@ -19,7 +19,7 @@ QtObject {
     property Timer clock: Timer { interval: 30000; running: true; repeat: true; onTriggered: theme.hour = new Date().getHours() }
     property string accentChoice: ""       // "" keeps the palette's own accent
     property bool glass: false             // see-through windows; the desktop blurs behind them
-    property bool darkSites: true          // with a dark theme, light web pages are darkened too
+    property bool darkSites: false         // with a dark theme, darken light web pages too (asked for in the settings)
     readonly property bool darkening: darkSites && !web && dark
     property real solidity: 0.72           // how opaque the glass is: 0.55, 0.72 or 0.88
     property bool motion: true             // false: nothing slides or grows

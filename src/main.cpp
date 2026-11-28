@@ -6,6 +6,7 @@
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
+#include <QStyleHints>
 #include <QQuickWindow>
 #include <QSettings>
 #include <QStandardPaths>
@@ -53,6 +54,11 @@ int main(int argc, char *argv[])
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     graphics::restoreEnvironment();
+#ifdef Q_OS_LINUX
+    // One turn of the wheel moves the page 100 px, as in other browsers; the toolkit's
+    // three lines give 60. The engine reads this once, so it is set before any page.
+    app.styleHints()->setWheelScrollLines(5);
+#endif
     app.setApplicationName(QStringLiteral("velum"));
     app.setOrganizationName(QStringLiteral("velum"));
     app.setApplicationVersion(QStringLiteral(VELUM_VERSION));      // may carry "-beta.N"
