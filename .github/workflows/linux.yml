@@ -9,9 +9,16 @@ on:
       version:
         description: "Version, e.g. 0.1.0-beta.2"
         required: true
+      engine_run:
+        description: "Run of engine.yml whose patched Qt WebEngine to pack (empty: Qt's own)"
+        required: false
+      engine_sha:
+        description: "SHA-256 of that run's engine archive (needed with engine_run)"
+        required: false
 
 permissions:
   contents: read
+  actions: read # to fetch the engine from an engine.yml run
 
 jobs:
   build:
@@ -50,8 +57,25 @@ jobs:
 
       # from Qt 6.12 the engine comes on its own; the script checks its sum
       - name: Qt WebEngine
+        if: ${{ !github.event.inputs.engine_run }}
         shell: bash
         run: python3 scripts/fetch-webengine.py linux "$QT_ROOT_DIR"
+
+      # Velum's patched engine (patches/), as built by engine.yml
+      - name: Qt WebEngine, patched
+        if: ${{ github.event.inputs.engine_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.event.inputs.engine_run }}
+          SHA: ${{ github.event.inputs.engine_sha }}
+        run: |
+          [[ "$RUN" =~ ^[0-9]+$ && "$SHA" =~ ^[0-9a-f]{64}$ ]] || { echo "engine_run and engine_sha are needed"; exit 1; }
+          # libraries this engine takes from the system, which Qt's own build carries inside
+          sudo apt-get install -yq libsnappy1v5 liblcms2-2
+          gh run download "$RUN" --repo "$GITHUB_REPOSITORY" --name velum-webengine --dir "$RUNNER_TEMP/engine"
+          file="$RUNNER_TEMP/engine/velum-webengine-6.140.0-linux.tar.xz"
+          echo "$SHA  $file" | sha256sum -c -
+          tar -C "$QT_ROOT_DIR" -xJf "$file"
 
       - name: Configure
         run: >
@@ -102,7 +126,16 @@ jobs:
           # it Velum cannot open a window there.
           cp -r "$plugins/wayland-graphics-integration-client" AppDir/usr/plugins/
           test -f AppDir/usr/plugins/wayland-graphics-integration-client/libqt-plugin-wayland-egl.so
-          linuxdeploy --appdir AppDir --deploy-deps-only AppDir/usr/plugins/wayland-graphics-integration-client --output appimage
+          # The system's FreeType brings the system's libbrotlidec along; with the packed, older
+          # libbrotlicommon beside it the page process cannot start. Use the system's pair.
+          rm -f AppDir/usr/lib/libbrotli*
+          linuxdeploy --appdir AppDir --exclude-library 'libbrotli*' --deploy-deps-only AppDir/usr/plugins/wayland-graphics-integration-client --output appimage
+          if ls AppDir/usr/lib/libbrotli* 2>/dev/null; then echo "brotli was packed again"; exit 1; fi
+          # whatever the engine needs beyond the basic system must be inside
+          if [ -n "${{ github.event.inputs.engine_run }}" ]; then
+              test -f AppDir/usr/lib/libsnappy.so.1
+              test -f AppDir/usr/lib/liblcms2.so.2
+          fi
 
       - name: Smoke test
         env:
@@ -115,7 +148,7 @@ jobs:
               || { cat smoke.log; exit 1; }
           cat smoke.log
           test -s smoke.png
-          ! grep -E "Cannot load font|TypeError|ReferenceError|is not installed" smoke.log
+          ! grep -E "Cannot load font|TypeError|ReferenceError|is not installed|symbol lookup error|error while loading shared libraries" smoke.log
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -141,8 +174,11 @@ jobs:
           app=$(ls /files/*.AppImage)
           export APPIMAGE_EXTRACT_AND_RUN=1 VELUM_NO_UPDATES=1 QT_FORCE_STDERR_LOGGING=1 QTWEBENGINE_CHROMIUM_FLAGS=--no-sandbox
           cd /tmp
-          QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software timeout 90 "$app" --screenshot /tmp/plain.png https://example.com
+          QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software timeout 90 "$app" --screenshot /tmp/plain.png https://example.com 2> plain.log || { cat plain.log; exit 1; }
+          cat plain.log
           test -s /tmp/plain.png
+          # the page process is a program of its own: a library that does not fit shows only here
+          ! grep -E "symbol lookup error|error while loading shared libraries" plain.log
           # a real Wayland compositor, drawing in memory: the window must come up with OpenGL
           export XDG_RUNTIME_DIR=/tmp/run LIBGL_ALWAYS_SOFTWARE=1
           mkdir -m 700 "$XDG_RUNTIME_DIR"
@@ -152,7 +188,7 @@ jobs:
           WAYLAND_DISPLAY=wl-test QT_QPA_PLATFORM=wayland timeout 90 "$app" --screenshot /tmp/wayland.png 2> velum.log || { cat velum.log weston.log; exit 1; }
           cat velum.log
           test -s /tmp/wayland.png
-          ! grep -E "Failed to initialize graphics|Failed to create RHI|Could not load the Qt platform plugin" velum.log
+          ! grep -E "Failed to initialize graphics|Failed to create RHI|Could not load the Qt platform plugin|symbol lookup error|error while loading shared libraries" velum.log
           EOS
           docker run --rm -v "$PWD/files:/files:ro" archlinux:latest bash -c '
               pacman -Syu --noconfirm --needed nss alsa-lib libxkbcommon-x11 libxcomposite libxdamage libxrandr libxtst libxkbfile fontconfig mesa libglvnd dbus wayland weston >/dev/null &&
